@@ -17,7 +17,12 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
-const PORT = process.env.REACT_APP_SERVER_DOMIN || 5000;
+const PORT = process.env.REACT_APP_SERVER_DOMAIN || 5000;
+
+const UserRoute = require("./route/userRoutes");
+
+app.use("/user", UserRoute);
+
 
 app.get("/", (req, res) => {
   res.json({
