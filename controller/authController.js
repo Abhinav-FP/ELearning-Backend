@@ -4,11 +4,6 @@ const jwt = require("jsonwebtoken");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
 
-const validateEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
 exports.signup = catchAsync(async (req, res) => {
   try {
     const { name, email, password, role, gender, nationality, time_zone} = req.body;
