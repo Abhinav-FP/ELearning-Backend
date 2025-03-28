@@ -1,4 +1,5 @@
 const User = require("../model/user");
+const Teacher = require("../model/teacher");
 const jwt = require("jsonwebtoken");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
@@ -8,35 +9,69 @@ const validateEmail = (email) => {
   return emailRegex.test(email);
 };
 
-const validatePhoneNumber = (phoneNumber) => {
-  const phoneNumberRegex = /^[0-9]{10}$/; // Assumes a 10-digit phone number
-  return phoneNumberRegex.test(phoneNumber);
-};
-
 exports.signup = catchAsync(async (req, res) => {
   try {
-    const { name, email, password, role, contact } = req.body;
+    const { name, email, password, role, gender, nationality, time_zone} = req.body;
 
-    // Check if required fields are provided
-    if ((!email, !password, !role)) {
+    if ((!email, !password, !role, !gender, !time_zone)) {
       return errorResponse(res, "All fields are required", 401, "false");
     }
+    if(role === "teacher"){
+      const { description, experience, city, intro_video, qualifications, lesson_price, lesson_types, languages_spoken, is_ais_trained, payment_method, earnings } = req.body;
+      if((!description, !experience, !city, !intro_video, !qualifications, !lesson_price, !lesson_types, !languages_spoken, !is_ais_trained, !payment_method, !earnings)){
+        return errorResponse(res, "All fields are required", 401, "false");
+      }
+    }
 
-    // Create new user record
-    const record = new User({
+    const userRecord = new User({
       name,
       email,
       password,
       role,
-      contact,
-      created_by: null,
+      gender,
+      nationality,
+      time_zone
     });
 
-    const result = await record.save();
-    if (result) {
-      successResponse(res, "You have been registered successfully !!", 201);
+    const userResult = await userRecord.save();
+
+    if (!userResult) {
+      return errorResponse(res, "Failed to create user.", 500);
+    }
+
+    if(role !== "teacher"){
+      successResponse(res, "User created successfully!", 201, {
+        user: userResult,
+      });
+    }
+
+    // Save remaining data to Carrier table with reference to User
+    const teacherRecord = new Teacher({
+      user_id: userResult._id,
+      description,
+      experience,
+      city,
+      intro_video,
+      qualifications,
+      lesson_price,
+      lesson_types,
+      languages_spoken,
+      is_ais_trained,
+      payment_method,
+      earnings,
+    });
+
+    const teacherResult = await teacherRecord.save();
+
+    if (teacherResult) {
+      successResponse(res, "Teacher created successfully!", 201, {
+        user: userResult,
+        carrier: teacherResult,
+      });
     } else {
-      errorResponse(res, "Failed to create user.", 500);
+      // Rollback user creation if carrier creatison fails
+      await User.findByIdAndDelete(userResult._id);
+      errorResponse(res, "Failed to create carrier.", 500);
     }
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
@@ -68,14 +103,6 @@ exports.login = catchAsync(async (req, res) => {
     if (!user) {
       return errorResponse(res, "Invalid email", 401);
     }
-    if (user?.role === "driver") {
-      return errorResponse(
-        res,
-        "Drivers are not allowed to login on website",
-        401,
-        "false"
-      );
-    }
 
     if (password != user.password) {
       return errorResponse(res, "Invalid password", 401);
@@ -87,13 +114,11 @@ exports.login = catchAsync(async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || "24h" }
     );
 
-    const userObject = user.toObject();
-    delete userObject.password;
     return res.status(200).json({
       status: true,
       message: "Login successful",
       token,
-      user: userObject,
+      role: user?.role,
     });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
