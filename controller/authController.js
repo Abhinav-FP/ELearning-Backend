@@ -74,14 +74,19 @@ exports.signup = catchAsync(async (req, res) => {
 });
 
 exports.login = catchAsync(async (req, res) => {
-  // Code to sync indexes
-  // User.syncIndexes()
-  // .then(() => {
-  //   console.log('Indexes synced successfully');
-  // })
-  // .catch((err) => {
-  //   console.error('Error syncing indexes:', err.message);
-  // });
+  // Code to sync indexes, just replace Ranks with your model name
+  // (async () => {
+  //   try {
+  //     await Ranks.syncIndexes(); // Ensures missing indexes are created
+  //     console.log("Indexes synced successfully!");
+  //     res.status(200).json({
+  //       status:true,
+  //       message:"Indexes synced successfully"
+  //     })
+  //   } catch (error) {
+  //     console.error("Error syncing indexes:", error);
+  //   }
+  // })();
 
   try {
     const { email, password } = req.body;
@@ -101,6 +106,16 @@ exports.login = catchAsync(async (req, res) => {
 
     if (password != user.password) {
       return errorResponse(res, "Invalid password", 401);
+    }
+
+    if(user?.role==="teacher"){
+      const teacher = await Teacher.findOne({ user_id: user._id });
+      if (!teacher) {
+        return errorResponse(res, "Teacher not found", 401);
+      }
+      if (teacher?.is_japanese_for_me_approved === false) {
+        return errorResponse(res, "Account not approved yet", 401);
+      }
     }
 
     const token = jwt.sign(

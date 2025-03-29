@@ -24,6 +24,10 @@ const messageSchema = new mongoose.Schema({
       enum: ["student", "teacher"],
       required: [true, "Sent by is required"],
     },
+    is_deleted: {
+      type: Boolean,
+      default: false,
+    },
   },{ timestamps: true });
 
 const Message = mongoose.model("Message", messageSchema);
