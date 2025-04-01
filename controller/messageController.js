@@ -4,17 +4,29 @@ const catchAsync = require("../utils/catchAsync");
 
 exports.AddMessage = catchAsync(async (req, res) => {
   try {
-    const { student, teacher, content, sent_by } = req.body;
+    const { receiver, content } = req.body;
 
-    if (!student || !teacher || !content || !sent_by) {
-      return errorResponse(res, "All fields are required", 400);
+    if (!receiver || !content) {
+      return errorResponse(res, "Receiver and content are required", 400);
+    }
+
+    let student, teacher;
+
+    if (req.user.role === "student") {
+      student = req.user.id;
+      teacher = receiver;
+    } else if (req.user.role === "teacher") {
+      teacher = req.user.id;
+      student = receiver;
+    } else {
+      return errorResponse(res, "Invalid user role", 400);
     }
 
     const messageRecord = new Message({
       student,
       teacher,
       content,
-      sent_by,
+      sent_by: req.user.role, // Derived automatically from req.user.role
     });
 
     const messageResult = await messageRecord.save();
@@ -23,7 +35,7 @@ exports.AddMessage = catchAsync(async (req, res) => {
       return errorResponse(res, "Failed to send message.", 500);
     }
 
-    return successResponse(res, "Message Sent successfully", 201);
+    return successResponse(res, "Message sent successfully", 201);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
@@ -54,17 +66,29 @@ exports.DeleteMessage = catchAsync(async (req, res) => {
 
 exports.GetMessage = catchAsync(async (req, res) => {
   try {
-    const { studentId, teacherId } = req.params;
-    if(!studentId || !teacherId ){
-      return errorResponse(res, "Student and teacher id are required", 400);
+    const { Id } = req.params;
+    if(!Id ){
+      return errorResponse(res, "Id are required", 400);
     }
+    let student, teacher;
+
+    if (req.user.role === "student") {
+      student = req.user.id;
+      teacher = Id;
+    } else if (req.user.role === "teacher") {
+      teacher = req.user.id;
+      student = Id;
+    } else {
+      return errorResponse(res, "Invalid user role", 400);
+    }
+
     const messages = await Message.find({
-      student: studentId,
-      teacher: teacherId,
+      student: student,
+      teacher: teacher,
     }).sort({ createdAt: 1 }); // Sort by time (oldest to newest)
 
-    res.json({ success: true, messages });
+    return successResponse(res, "Message sent successfully", 201, messages);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });

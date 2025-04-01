@@ -4,15 +4,15 @@ const catchAsync = require("../utils/catchAsync");
 
 exports.AddTeacher = catchAsync(async (req, res) => {
   try {
-    const { student, teacher } = req.body;
+    const { teacherId } = req.body;
 
-    if (!student || !teacher) {
-      return errorResponse(res, "All fields are required", 400);
+    if (!teacherId) {
+      return errorResponse(res, "Teacher ID is required", 400);
     }
 
     const wishlistRecord = new Wishlist({
-      student,
-      teacher,
+      student:req.user.id,
+      teacher:teacherId,
     });
 
     const wishlistResult = await wishlistRecord.save();
@@ -28,13 +28,13 @@ exports.AddTeacher = catchAsync(async (req, res) => {
 
 exports.RemoveTeacher = catchAsync(async (req, res) => {
     try {
-      const { student, teacher } = req.body;
+      const { teacherId } = req.body;
   
-      if (!student || !teacher) {
+      if (!teacherId) {
         return errorResponse(res, "All fields are required", 400);
       }
       
-      const wishlistResult = await Wishlist.findOneAndDelete({ student, teacher });
+      const wishlistResult = await Wishlist.findOneAndDelete({ student:req.user.id, teacher:teacherId });
   
       if (!wishlistResult) {
         return errorResponse(res, "Failed to remove from favourites.", 500);
