@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema({
-    student_id: {
+    student: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Student ID is required"],
     },
-    teacher_id: {
+    teacher: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Teacher ID is required"],

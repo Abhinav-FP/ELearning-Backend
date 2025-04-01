@@ -1,19 +1,18 @@
 const Message = require("../model/message");
-const jwt = require("jsonwebtoken");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
 
 exports.AddMessage = catchAsync(async (req, res) => {
   try {
-    const { student_id, teacher_id, content, sent_by } = req.body;
+    const { student, teacher, content, sent_by } = req.body;
 
-    if (!student_id || !teacher_id || !content || !sent_by) {
+    if (!student || !teacher || !content || !sent_by) {
       return errorResponse(res, "All fields are required", 400);
     }
 
     const messageRecord = new Message({
-      student_id,
-      teacher_id,
+      student,
+      teacher,
       content,
       sent_by,
     });
@@ -32,7 +31,7 @@ exports.AddMessage = catchAsync(async (req, res) => {
 
 exports.DeleteMessage = catchAsync(async (req, res) => {
     try {
-        const { id } = req.body;
+        const { id } = req.params;
 
         if (!id) {
             return errorResponse(res, "Message ID is required", 400);
@@ -51,4 +50,21 @@ exports.DeleteMessage = catchAsync(async (req, res) => {
     } catch (error) {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
+});
+
+exports.GetMessage = catchAsync(async (req, res) => {
+  try {
+    const { studentId, teacherId } = req.params;
+    if(!studentId || !teacherId ){
+      return errorResponse(res, "Student and teacher id are required", 400);
+    }
+    const messages = await Message.find({
+      student: studentId,
+      teacher: teacherId,
+    }).sort({ createdAt: 1 }); // Sort by time (oldest to newest)
+
+    res.json({ success: true, messages });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });

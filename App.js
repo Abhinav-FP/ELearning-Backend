@@ -20,8 +20,12 @@ app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 const PORT = process.env.REACT_APP_SERVER_DOMAIN || 5000;
 
 const UserRoute = require("./route/userRoutes");
+const MessageRoute = require("./route/messageRoutes");
+const WishlistRoute = require("./route/wishlistRoutes");
 
 app.use("/user", UserRoute);
+app.use("/message", MessageRoute);
+app.use("/favourite", WishlistRoute);
 
 
 app.get("/", (req, res) => {
