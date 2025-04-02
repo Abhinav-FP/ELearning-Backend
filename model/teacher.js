@@ -26,19 +26,6 @@ const teacherSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
-  lesson_price: {
-    type: Number,
-    required: [true, "Lesson price is required"],
-  },
-  lesson_types: {
-    type: [
-      {
-        duration: { type: Number, required: true },
-        price: { type: Number, required: true },
-      },
-    ],
-    default: [],
-  },
   languages_spoken: {
     type: [String],
     default: [],

@@ -22,10 +22,12 @@ const PORT = process.env.REACT_APP_SERVER_DOMAIN || 5000;
 const UserRoute = require("./route/userRoutes");
 const MessageRoute = require("./route/messageRoutes");
 const WishlistRoute = require("./route/wishlistRoutes");
+const LessonRoute = require("./route/lessonRoutes");
 
 app.use("/user", UserRoute);
 app.use("/message", MessageRoute);
 app.use("/favourite", WishlistRoute);
+app.use("/lesson", LessonRoute);
 
 
 app.get("/", (req, res) => {
