@@ -12,8 +12,8 @@ exports.signup = catchAsync(async (req, res) => {
       return errorResponse(res, "All fields are required", 401, "false");
     }
     if(role === "teacher"){
-      const { description, experience, city, intro_video, qualifications, lesson_price, lesson_types, languages_spoken, is_ais_trained, payment_method, earnings } = req.body;
-      if((!description, !experience, !city, !intro_video, !qualifications, !lesson_price, !lesson_types, !languages_spoken, !is_ais_trained, !payment_method, !earnings)){
+      const { description, experience, city, intro_video, qualifications, languages_spoken, is_ais_trained, payment_method, earnings } = req.body;
+      if((!description, !experience, !city, !intro_video, !qualifications, !languages_spoken, !is_ais_trained, !payment_method, !earnings)){
         return errorResponse(res, "All fields are required", 401, "false");
       }
     }
@@ -48,8 +48,6 @@ exports.signup = catchAsync(async (req, res) => {
       city,
       intro_video,
       qualifications,
-      lesson_price,
-      lesson_types,
       languages_spoken,
       is_ais_trained,
       payment_method,
