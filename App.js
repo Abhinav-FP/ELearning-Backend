@@ -23,8 +23,10 @@ const UserRoute = require("./route/userRoutes");
 const MessageRoute = require("./route/messageRoutes");
 const WishlistRoute = require("./route/wishlistRoutes");
 const LessonRoute = require("./route/lessonRoutes");
+const HomeRoute = require("./route/homeRoute");
 
 app.use("/user", UserRoute);
+app.use("/home", HomeRoute);
 app.use("/message", MessageRoute);
 app.use("/favourite", WishlistRoute);
 app.use("/lesson", LessonRoute);
