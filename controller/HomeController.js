@@ -5,6 +5,7 @@ const Loggers = require("../utils/Logger");
 const catchAsync = require("../utils/catchAsync");
 const Faq = require("../model/Faq");
 
+// Home Section
 exports.homeAdd = catchAsync(async (req, res, next) => {
     try {
         const { home_img_first, hero_img_second, hero_heading, best_teacher, learn, course_heading, course_paragraph, course_img } = req.body;
@@ -73,6 +74,7 @@ exports.homeupdate = catchAsync(async (req, res, next) => {
     }
 });
 
+// Faq Section  
 exports.FAQAdd = catchAsync(async (req, res, next) => {
     try {
         const { type, question, answer } = req.body;
