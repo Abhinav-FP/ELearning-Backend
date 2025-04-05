@@ -24,12 +24,16 @@ const MessageRoute = require("./route/messageRoutes");
 const WishlistRoute = require("./route/wishlistRoutes");
 const LessonRoute = require("./route/lessonRoutes");
 const HomeRoute = require("./route/homeRoute");
+const PaymentRoute = require("./route/paymentroute");
+
 
 app.use("/user", UserRoute);
 app.use("/home", HomeRoute);
 app.use("/message", MessageRoute);
 app.use("/favourite", WishlistRoute);
 app.use("/lesson", LessonRoute);
+app.use("/payment", PaymentRoute);
+
 
 
 app.get("/", (req, res) => {
