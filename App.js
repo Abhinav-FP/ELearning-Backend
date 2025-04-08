@@ -19,20 +19,13 @@ app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
 const PORT = process.env.REACT_APP_SERVER_DOMAIN || 5000;
 
-const UserRoute = require("./route/userRoutes");
-const MessageRoute = require("./route/messageRoutes");
-const WishlistRoute = require("./route/wishlistRoutes");
-const LessonRoute = require("./route/lessonRoutes");
-const HomeRoute = require("./route/homeRoute");
-const PaymentRoute = require("./route/paymentroute");
 
-
-app.use("/user", UserRoute);
-app.use("/home", HomeRoute);
-app.use("/message", MessageRoute);
-app.use("/favourite", WishlistRoute);
-app.use("/lesson", LessonRoute);
-app.use("/payment", PaymentRoute);
+app.use("/api", require("./route/userRoutes"));
+app.use("/api", require("./route/messageRoutes"));
+app.use("/api", require("./route/wishlistRoutes"));
+app.use("/api", require("./route/lessonRoutes"));
+app.use("/api", require("./route/homeRoutes"));
+app.use("/api", require("./route/paymentRoutes"));
 
 
 

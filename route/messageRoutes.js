@@ -3,8 +3,8 @@ const { verifyToken } = require("../middleware/tokenVerify");
 
 const router = require("express").Router();
 
-router.post("/send", verifyToken, AddMessage);
-router.delete("/delete/:id", verifyToken, DeleteMessage);
-router.get("/get/:Id", verifyToken, GetMessage);
+router.post("/message/send", verifyToken, AddMessage);
+router.delete("/message/delete/:id", verifyToken, DeleteMessage);
+router.get("/message/get/:Id", verifyToken, GetMessage);
 
 module.exports = router;

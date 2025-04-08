@@ -3,8 +3,8 @@ const { verifyToken } = require("../middleware/tokenVerify");
 
 const router = require("express").Router();
 
-router.post("/add", verifyToken, AddTeacher);
-router.delete("/delete", verifyToken, RemoveTeacher);
-router.get("/get-all", verifyToken, GetFavouriteTeachers);
+router.post("/favourite/add", verifyToken, AddTeacher);
+router.delete("/favourite/delete", verifyToken, RemoveTeacher);
+router.get("/favourite/get-all", verifyToken, GetFavouriteTeachers);
 
 module.exports = router;

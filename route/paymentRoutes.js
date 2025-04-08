@@ -2,9 +2,9 @@ const { PaymentcreateOrder, PaymentcaptureOrder } = require("../controller/payme
 
 const router = require("express").Router();
 
-router.post("/create-order" , PaymentcreateOrder);
+router.post("/payment/create-order" , PaymentcreateOrder);
 
-router.post("/capture-order" , PaymentcaptureOrder);
+router.post("/payment/capture-order" , PaymentcaptureOrder);
 
 // router.post("/cancel-order" ,cancelOrder)
 
