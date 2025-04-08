@@ -12,8 +12,8 @@ exports.signup = catchAsync(async (req, res) => {
       return errorResponse(res, "All fields are required", 401, "false");
     }
     if(role === "teacher"){
-      const { description, experience, city, intro_video, qualifications, languages_spoken, is_ais_trained, payment_method, earnings } = req.body;
-      if((!description, !experience, !city, !intro_video, !qualifications, !languages_spoken, !is_ais_trained, !payment_method, !earnings)){
+      const { description, experience, city, intro_video, qualifications, languages_spoken, ais_trained, payment_method } = req.body;
+      if((!description, !experience, !city, !intro_video, !qualifications, !languages_spoken, !ais_trained, !payment_method)){
         return errorResponse(res, "All fields are required", 401, "false");
       }
     }
@@ -49,9 +49,9 @@ exports.signup = catchAsync(async (req, res) => {
       intro_video,
       qualifications,
       languages_spoken,
-      is_ais_trained,
+      ais_trained,
       payment_method,
-      earnings,
+      profile_photo: req.file?.location || null,
     });
 
     const teacherResult = await teacherRecord.save();
@@ -111,7 +111,7 @@ exports.login = catchAsync(async (req, res) => {
       if (!teacher) {
         return errorResponse(res, "Teacher not found", 401);
       }
-      if (teacher?.is_japanese_for_me_approved === false) {
+      if (teacher?.admin_approved === false) {
         return errorResponse(res, "Account not approved yet", 401);
       }
     }

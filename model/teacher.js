@@ -30,22 +30,22 @@ const teacherSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
-  is_ais_trained: {
+  ais_trained: {
     type: Boolean,
     default: false,
   },
-  is_japanese_for_me_approved: {
+  japanese_for_me_approved: {
+    type: Boolean,
+    default: false,
+  },
+  admin_approved: {
     type: Boolean,
     default: false,
   },
   payment_method: {
     type: String,
-    enum: ['PayPal', 'Bank', 'WISE'],
+    enum: ['PayPal', 'Stripe'],
     default: 'PayPal',
-  },
-  earnings: {
-    usd: { type: Number, default: 0 },
-    jpy: { type: Number, default: 0 },
   },
   profile_photo :{
     type: String,
