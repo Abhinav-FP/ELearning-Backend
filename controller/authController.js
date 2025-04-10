@@ -1,23 +1,16 @@
 const User = require("../model/user");
 const Teacher = require("../model/teacher");
 const jwt = require("jsonwebtoken");
-const { errorResponse, successResponse } = require("../utils/ErrorHandling");
+const { errorResponse, successResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
+const Loggers = require("../utils/Logger");
 
 exports.signup = catchAsync(async (req, res) => {
   try {
-    const { name, email, password, role, gender, nationality, time_zone} = req.body;
-
-    if ((!email, !password, !role, !gender, !time_zone)) {
+    const { name, email, password, role, gender, nationality, time_zone } = req.body;
+    if ((!email, !password, !role, !name, !time_zone)) {
       return errorResponse(res, "All fields are required", 401, "false");
     }
-    if(role === "teacher"){
-      const { description, experience, city, intro_video, qualifications, languages_spoken, ais_trained, payment_method } = req.body;
-      if((!description, !experience, !city, !intro_video, !qualifications, !languages_spoken, !ais_trained, !payment_method)){
-        return errorResponse(res, "All fields are required", 401, "false");
-      }
-    }
-
     const userRecord = new User({
       name,
       email,
@@ -27,15 +20,20 @@ exports.signup = catchAsync(async (req, res) => {
       nationality,
       time_zone
     });
-
     const userResult = await userRecord.save();
-
     if (!userResult) {
       return errorResponse(res, "Failed to create user.", 500);
     }
+    // Teacher Register
+    if (role === "teacher") {
+      const { description, experience, city, intro_video, qualifications, languages_spoken, ais_trained, payment_method } = req.body;
+      if ((!description, !experience, !city, !intro_video, !qualifications, !languages_spoken, !ais_trained, !payment_method)) {
+        return errorResponse(res, "All fields are required", 401, "false");
+      }
+    }
 
-    if(role !== "teacher"){
-      successResponse(res, "User created successfully!", 201, {
+    if (role !== "teacher") {
+      return successResponse(res, "User created successfully!", 201, {
         user: userResult,
       });
     }
@@ -64,9 +62,17 @@ exports.signup = catchAsync(async (req, res) => {
     } else {
       // Rollback user creation if carrier creatison fails
       await User.findByIdAndDelete(userResult._id);
+
       errorResponse(res, "Failed to create carrier.", 500);
     }
   } catch (error) {
+    console.log("error", error)
+    Loggers.error(error);
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(el => el.message);
+      console.log("errors", errors)
+      return validationErrorResponse(res, errors.join(", "), 400, "error");
+    }
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
@@ -106,7 +112,7 @@ exports.login = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid password", 401);
     }
 
-    if(user?.role==="teacher"){
+    if (user?.role === "teacher") {
       const teacher = await Teacher.findOne({ user_id: user._id });
       if (!teacher) {
         return errorResponse(res, "Teacher not found", 401);
@@ -132,3 +138,26 @@ exports.login = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
+
+exports.userId = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    if (!userId) {
+      Loggers.error("Invalid User");
+      return errorResponse(res, "Invalid User", 401);
+    }
+    const user = await User.findById({ _id: userId }).select("email name role");
+    if (!user) {
+      Loggers.error("Invalid User");
+      return errorResponse(res, "Invalid User", 401);
+    }
+    if (user) {
+      return successResponse(res, "User Get successfully!", 201, {
+        user,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+})
