@@ -10,6 +10,11 @@ const teacherSchema = new mongoose.Schema({
     type: String,
     required: [true, "Description is required"],
   },
+  gender: {
+    type: String,
+    required: [true, "Gender is required"],
+    enum: ['M', 'F' ,"O"],
+  },
   experience: {
     type: Number,
     default: null,

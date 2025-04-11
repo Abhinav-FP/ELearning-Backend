@@ -5,8 +5,8 @@ const router = require("express").Router();
 
 router.post("/user/register", signup);
 router.post("/user/login", login);
-router.get("/user/profile", verifyToken ,GetUser);
-router.get("/user/update-profile", verifyToken ,updateProfile );
-router.get("/user/reset-password", verifyToken ,resetPassword );
+router.get("/user/profile", verifyToken, GetUser);
+router.post("/user/update-profile", verifyToken, updateProfile);
+router.post("/user/reset-password", verifyToken, resetPassword);
 
 module.exports = router;

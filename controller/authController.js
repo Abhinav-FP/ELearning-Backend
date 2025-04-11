@@ -146,7 +146,7 @@ exports.GetUser = catchAsync(async (req, res) => {
       Loggers.error("Invalid User");
       return errorResponse(res, "Invalid User", 401);
     }
-    const user = await User.findById({ _id: userId }).select("email name role");
+    const user = await User.findById({ _id: userId }).select("email name role phone");
     if (!user) {
       Loggers.error("Invalid User");
       return errorResponse(res, "Invalid User", 401);
@@ -164,7 +164,7 @@ exports.GetUser = catchAsync(async (req, res) => {
 
 exports.updateProfile = catchAsync(async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     if (!userId) {
       return errorResponse(res, "Invalid User", 401);
@@ -194,7 +194,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
 
 exports.resetPassword = catchAsync(async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { existingPassword, newPassword } = req.body;
 
     if (!existingPassword || !newPassword) {

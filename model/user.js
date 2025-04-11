@@ -13,16 +13,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Password is required"],
   },
+  phone: {
+    type: Number,
+  },
   role: {
     type: String,
     required: [true, "Role is required"],
     enum: ['student', 'teacher', "admin"],
   },
-  gender: {
-    type: String,
-    required: [true, "Gender is required"],
-    enum: ['M', 'F' ,"O"],
-  },
+
   nationality: {
     type: String,
     default: null,
