@@ -1,16 +1,40 @@
-const mongoose = require("mongoose");
+// Filename: models/orderModel.js
+const mongoose = require('mongoose');
 
-const orderSchema =  mongoose.Schema(
-  {
-    orderId: { type: String, required: true, unique: true },
-    payerEmail: { type: String },
-    amount: { type: Number, required: true },
-    currency: { type: String, default: "USD" },
-    status: { type: String, required: true },
+const orderSchema = new mongoose.Schema({
+  orderID: { type: String, required: true, unique: true },
+  intent: String,
+  status: String,
+  purchase_units: [
+    {
+      amount: {
+        currency_code: String,
+        value: String,
+      },
+    },
+  ],
+  payer: {
+    name: {
+      given_name: String,
+      surname: String,
+    },
+    email_address: String,
+    payer_id: String,
+    address: {
+      address_line_1: String,
+      admin_area_2: String,
+      admin_area_1: String,
+      postal_code: String,
+      country_code: String,
+    },
   },
-  { timestamps: true }
-);
+  payment_source: Object, 
+  capturedAt: Date,
+ LessonId: {
+     type: mongoose.Schema.Types.ObjectId,
+     ref: 'Lesson',
+   },
+  createdAt: { type: Date, default: Date.now },
+});
 
-const Order = mongoose.model("payment", orderSchema);
-
-module.exports = Order;
+module.exports = mongoose.model('Payment', orderSchema);

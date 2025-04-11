@@ -1,11 +1,8 @@
-const { PaymentcreateOrder, PaymentcaptureOrder } = require("../controller/paymentController");
+const express = require('express');
+const router = express.Router();
+const paymentController = require('../controller/paymentController');
 
-const router = require("express").Router();
-
-router.post("/payment/create-order" , PaymentcreateOrder);
-
-router.post("/payment/capture-order" , PaymentcaptureOrder);
-
-// router.post("/cancel-order" ,cancelOrder)
+router.post('/create-order', paymentController.createOrder);
+router.post('/capture-order', paymentController.PaymentcaptureOrder);
 
 module.exports = router;
