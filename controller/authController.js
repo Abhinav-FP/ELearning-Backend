@@ -139,7 +139,7 @@ exports.login = catchAsync(async (req, res) => {
   }
 });
 
-exports.userId = catchAsync(async (req, res) => {
+exports.GetUser = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
     if (!userId) {
@@ -162,4 +162,61 @@ exports.userId = catchAsync(async (req, res) => {
   }
 })
 
+exports.updateProfile = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user._id;
 
+    if (!userId) {
+      return errorResponse(res, "Invalid User", 401);
+    }
+    const updates = req.body;
+    if(updates.password){
+      return errorResponse(res, "Pasword cannot be updated", 401);
+    }
+    if (Object.keys(updates).length === 0) {
+      return errorResponse(res, "No fields to update", 400);
+    }
+    const user = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    });
+    if (!user) {
+      return errorResponse(res, "User not found", 404);
+    }
+    return successResponse(res, "Profile updated successfully!", 200, {
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.resetPassword = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { existingPassword, newPassword } = req.body;
+
+    if (!existingPassword || !newPassword) {
+      return errorResponse(res, "Existing password and new password are required", 400);
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return errorResponse(res, "User not found", 404);
+    }
+
+    if (existingPassword !== user.password) {
+      return errorResponse(res, "Existing password is incorrect", 401);
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    return successResponse(res, "Password updated successfully!", 200);
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
