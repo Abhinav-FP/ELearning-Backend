@@ -34,6 +34,10 @@ const orderSchema = new mongoose.Schema({
      type: mongoose.Schema.Types.ObjectId,
      ref: 'Lesson',
    },
+   UserId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

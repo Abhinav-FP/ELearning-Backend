@@ -133,3 +133,26 @@ exports.faqupdate = catchAsync(async (req, res, next) => {
     }
 });
 
+exports.policycondition = catchAsync(async (req, res, next) => {
+    try {
+        const { _id, ...updateData } = req.body;
+
+        const updatedRecord = await Home.findByIdAndUpdate(
+            _id,
+            updateData,
+            { new: true }
+        );
+
+        if (!updatedRecord) {
+            Loggers.warn("No data found with this ID.");
+            return validationErrorResponse(res, "Not Updated", 400);
+        }
+        Loggers.info("Home Update successfully!");
+        return successResponse(res, "Term & privacy Update successfully!", 200, { updatedRecord });
+
+    } catch (error) {
+        Loggers.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
+

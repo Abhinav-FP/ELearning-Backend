@@ -35,7 +35,14 @@ const homeSchema = mongoose.Schema({
         type: String,
         default: ""
     },
-
+    term_contdition :{
+        type :String ,
+        default :null
+    },
+    privcay_policy :{
+        type :String ,
+        default :null
+    }
 });
 
 module.exports = mongoose.model("home", homeSchema);

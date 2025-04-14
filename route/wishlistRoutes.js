@@ -5,6 +5,5 @@ const router = require("express").Router();
 
 router.post("/favourite/add", verifyToken, AddTeacher);
 router.delete("/favourite/delete", verifyToken, RemoveTeacher);
-router.get("/favourite/get-all", verifyToken, GetFavouriteTeachers);
 
 module.exports = router;
