@@ -25,6 +25,11 @@ app.use("/api", require("./route/messageRoutes"));
 app.use("/api", require("./route/wishlistRoutes"));
 app.use("/api", require("./route/lessonRoutes"));
 app.use("/api", require("./route/homeRoutes"));
+app.use("/api", require("./route/reviewroute"));
+app.use("/api", require("./route/studentRoutes"));
+
+
+
 app.use("/api/paypal", require("./route/paymentRoutes"));
 
 app.get("/", (req, res) => {

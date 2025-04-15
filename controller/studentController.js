@@ -1,4 +1,5 @@
 const Payment = require("../model/Payment");
+const review = require("../model/review");
 const Teacher = require("../model/teacher");
 const User = require("../model/user");
 const catchAsync = require("../utils/catchAsync");
@@ -72,3 +73,21 @@ exports.GetFavouriteTeachers = catchAsync(async (req, res) => {
     }
 });
 
+
+exports.reviewUserGet = catchAsync(async (req, res) => {
+    const userId = req.user.id
+    try {
+        const reviews = await review.find({ userId: userId }).populate({
+            path :"lessonId",
+            select: "title"
+        });
+        if (!reviews.length) {
+            Loggers.warn("No reviews found");
+            return validationErrorResponse(res, "No reviews available", 404);
+        }
+        return successResponse(res, "Reviews retrieved successfully", 200, { reviews });
+    } catch (error) {
+        Loggers.error(error.message);
+        return errorResponse(res, "Failed to retrieve reviews", 500);
+    }
+});
