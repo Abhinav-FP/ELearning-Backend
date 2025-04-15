@@ -9,7 +9,7 @@ router.get("/review/get", reviewGet);
 
 router.post("/review/edit", ReviewEdit);
 
-router.post("/review/status", ReviewStatus);
+router.post("/review/status/:status", ReviewStatus);
 
 router.post("/review/delete", ReviewDelete);
 

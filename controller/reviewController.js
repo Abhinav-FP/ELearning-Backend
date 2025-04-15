@@ -22,17 +22,27 @@ exports.reviewAdd = catchAsync(async (req, res) => {
 
 exports.reviewGet = catchAsync(async (req, res) => {
     try {
-        const reviews = await Review.find({});
+        const { status } = req.params; // URL param se status nikaal rahe hain
+
+        let query = {};
+        if (status) {
+            query.review_status = status;
+        }
+
+        const reviews = await Review.find(query);
+
         if (!reviews.length) {
             Loggers.warn("No reviews found");
             return validationErrorResponse(res, "No reviews available", 404);
         }
+
         return successResponse(res, "Reviews retrieved successfully", 200, { reviews });
     } catch (error) {
         Loggers.error(error.message);
         return errorResponse(res, "Failed to retrieve reviews", 500);
     }
 });
+
 
 exports.ReviewStatus = catchAsync(async (req, res) => {
     const { _id, review_status } = req.body;
