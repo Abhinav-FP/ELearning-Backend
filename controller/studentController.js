@@ -36,10 +36,13 @@ exports.paymentget = catchAsync(async (req, res) => {
 
 exports.teacherget = catchAsync(async (req, res) => {
     try {
-        const teachers = await Teacher.find({}).populate("userId");
+        const teachers = await Teacher.find({}).populate(
+            {
+                path: "userId",
+                select: "-password"
+            }
+        );
         const wishlistResult = await Wishlist.find({ student: req.user.id }).populate("teacher");
-        console.log("wishlistResult",wishlistResult);
-
         if (!teachers) {
             return validationErrorResponse(res, "No teacher found", 400);
         }
@@ -74,8 +77,8 @@ exports.GetFavouriteTeachers = catchAsync(async (req, res) => {
         const wishlistResult = await Wishlist.find({ student: req.user.id }).populate("teacher");
         if (!wishlistResult) {
             return errorResponse(res, "No Teachers found", 500);
-          }
-          return successResponse(res, "Teachers retrieved successfully.", 201);
+        }
+        return successResponse(res, "Teachers retrieved successfully.", 201 , wishlistResult);
     } catch (error) {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
@@ -85,7 +88,7 @@ exports.reviewUserGet = catchAsync(async (req, res) => {
     const userId = req.user.id
     try {
         const reviews = await review.find({ userId: userId }).populate({
-            path :"lessonId",
+            path: "lessonId",
             select: "title"
         });
         if (!reviews.length) {
