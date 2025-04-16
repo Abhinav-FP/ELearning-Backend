@@ -8,6 +8,9 @@ const Loggers = require("../utils/Logger");
 exports.signup = catchAsync(async (req, res) => {
   try {
     const { name, email, password, role, gender, nationality, time_zone } = req.body;
+    // teacher  field 
+    const { description, experience, city, intro_video, qualifications, languages_spoken, ais_trained, payment_method } = req.body;
+
     if ((!email, !password, !role, !name, !time_zone)) {
       return errorResponse(res, "All fields are required", 401, "false");
     }
@@ -26,7 +29,6 @@ exports.signup = catchAsync(async (req, res) => {
     }
     // Teacher Register
     if (role === "teacher") {
-      const { description, experience, city, intro_video, qualifications, languages_spoken, ais_trained, payment_method } = req.body;
       if ((!description, !experience, !city, !intro_video, !qualifications, !languages_spoken, !ais_trained, !payment_method)) {
         return errorResponse(res, "All fields are required", 401, "false");
       }
@@ -39,9 +41,11 @@ exports.signup = catchAsync(async (req, res) => {
     }
 
     // Save remaining data to Carrier table with reference to User
+
+
     const teacherRecord = new Teacher({
-      user_id: userResult._id,
-      description,
+      userId: userResult._id,
+      description: description,
       experience,
       city,
       intro_video,
@@ -113,7 +117,7 @@ exports.login = catchAsync(async (req, res) => {
     }
 
     if (user?.role === "teacher") {
-      const teacher = await Teacher.findOne({ user_id: user._id });
+      const teacher = await Teacher.findOne({ userId: user._id });
       if (!teacher) {
         return errorResponse(res, "Teacher not found", 401);
       }
@@ -170,7 +174,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid User", 401);
     }
     const updates = req.body;
-    if(updates.password){
+    if (updates.password) {
       return errorResponse(res, "Pasword cannot be updated", 401);
     }
     if (Object.keys(updates).length === 0) {

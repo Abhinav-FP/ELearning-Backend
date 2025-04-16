@@ -12,8 +12,9 @@ const teacherSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
-    required: [true, "Gender is required"],
-    enum: ['M', 'F' ,"O"],
+    // required: [true, "Gender is required"],
+    enum: ['M', 'F', "O"],
+    default: null
   },
   experience: {
     type: Number,
@@ -52,9 +53,10 @@ const teacherSchema = new mongoose.Schema({
     enum: ['PayPal', 'Stripe'],
     default: 'PayPal',
   },
-  profile_photo :{
+  profile_photo: {
     type: String,
-    required: [true, "Profile Photo is required"],  
+    default: null
+    // required: [true, "Profile Photo is required"],  
   },
 }, { timestamps: true });
 

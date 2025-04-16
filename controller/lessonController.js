@@ -6,8 +6,8 @@ exports.AddLesson = catchAsync(async (req, res) => {
   try {
     const { title, description, duration, price } = req.body;
 
-    if (!receiver || !content) {
-      return errorResponse(res, "Receiver and content are required", 400);
+    if (!title || !description ) {
+      return errorResponse(res, "title and description are required", 400);
     }
 
     const lessonRecord = new Lesson({
@@ -61,10 +61,12 @@ exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
         if (teacherId) {
             lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate({
                 path: "teacher",
+                select :"-password"
               });
         } else {
             lessons = await Lesson.find({ is_deleted: { $ne: true } }).populate({
                 path: "teacher",
+                  select :"-password"
               });;
         }
 
