@@ -5,6 +5,7 @@ const Wishlist = require("../model/wishlist");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const Loggers = require("../utils/Logger");
+const mongoose = require("mongoose");
 
 exports.paymentget = catchAsync(async (req, res) => {
 
@@ -75,11 +76,37 @@ exports.teacherget = catchAsync(async (req, res) => {
 exports.GetFavouriteTeachers = catchAsync(async (req, res) => {
     try {
         const wishlistResult = await Wishlist.find({ student: req.user.id }).populate("teacher");
-        if (!wishlistResult) {
-            return errorResponse(res, "No Teachers found", 500);
+
+        if (!wishlistResult || wishlistResult.length === 0) {
+            return errorResponse(res, "No Teachers found", 404);
         }
-        return successResponse(res, "Teachers retrieved successfully.", 201 , wishlistResult);
+
+        const userIds = wishlistResult
+            .map(item => item.teacher?._id?.toString())
+            .filter(Boolean); 
+
+        const teacherProfiles = await Teacher.find({ userId: { $in: userIds } });
+
+        const teacherMap = {};
+        teacherProfiles.forEach(teacher => {
+            teacherMap[teacher.userId.toString()] = teacher.toObject();
+        });
+
+        const enrichedWishlist = wishlistResult.map(item => {
+            const teacherUserId = item.teacher?._id?.toString();
+            const extraFields = teacherMap[teacherUserId] || {};
+            return {
+                ...item.toObject(),
+                teacher: {
+                    ...item.teacher?.toObject?.(),
+                    ...extraFields
+                }
+            };
+        });
+
+        return successResponse(res, "Teachers retrieved successfully.", 200, enrichedWishlist);
     } catch (error) {
+        console.error("Error in GetFavouriteTeachers:", error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
