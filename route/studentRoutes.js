@@ -5,7 +5,7 @@ const router = require("express").Router();
 
 router.get("/student/payment" , verifyToken , paymentget);
 
-router.get("/student/teacher_get" , teacherget);
+router.get("/student/teacherGet" , verifyToken , teacherget);
 
 router.get("/student/favourite/get_all", verifyToken, GetFavouriteTeachers);
 
