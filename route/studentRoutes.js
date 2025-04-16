@@ -7,7 +7,7 @@ router.get("/student/payment" , verifyToken , paymentget);
 
 router.get("/student/teacher_get" , teacherget);
 
-router.get("/student/favourite/get-all", verifyToken, GetFavouriteTeachers);
+router.get("/student/favourite/get_all", verifyToken, GetFavouriteTeachers);
 
 router.get("/student/review", verifyToken, reviewUserGet);
 
