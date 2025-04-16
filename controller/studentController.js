@@ -34,7 +34,6 @@ exports.paymentget = catchAsync(async (req, res) => {
     }
 });
 
-
 exports.teacherget = catchAsync(async (req, res) => {
     try {
         const teacher = await Teacher.find({}).populate("UserId");
@@ -60,7 +59,6 @@ exports.teacherget = catchAsync(async (req, res) => {
     }
 })
 
-
 exports.GetFavouriteTeachers = catchAsync(async (req, res) => {
     try {
         const wishlistResult = await Wishlist.find({ student: req.user.id });
@@ -72,7 +70,6 @@ exports.GetFavouriteTeachers = catchAsync(async (req, res) => {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
-
 
 exports.reviewUserGet = catchAsync(async (req, res) => {
     const userId = req.user.id
