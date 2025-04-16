@@ -17,18 +17,14 @@ const reviewSchema = mongoose.Schema({
     },
     review_status: {
         type: String,
-        default: "Reject",
-        enum: ["Accept", "Reject"]
+        default: "Pending",
+        enum: ["Accept", "Reject", "Pending"]
     },
     rating: {
         type: Number,
         default: 1
-    },
-    createdAt: {
-        type: Date,
-        deafult: Date.now
-    },
+    }
 
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("review", reviewSchema)

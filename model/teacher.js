@@ -16,6 +16,12 @@ const teacherSchema = new mongoose.Schema({
     enum: ['M', 'F', "O"],
     default: null
   },
+  average_duration: {
+    type: Number,
+  },
+  average_price: {
+    type: Number,
+  },
   experience: {
     type: Number,
     default: null,

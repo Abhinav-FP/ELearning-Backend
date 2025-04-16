@@ -1,4 +1,4 @@
-const { homeAdd, homefind, homeupdate, FAQAdd, faqfind, faqupdate, policycondition } = require("../controller/HomeController");
+const { homeAdd, homefind, homeupdate, FAQAdd, faqfind, faqupdate, policycondition , GetTeachersData } = require("../controller/HomeController");
 const router = require("express").Router();
 
 router.post("/home/add", homeAdd);
@@ -11,6 +11,9 @@ router.post("/home/policy" , policycondition)
 router.post("/home/faqAdd", FAQAdd);
 router.get("/home/faqFind", faqfind);
 router.post("/home/faqUpdate", faqupdate);
+
+// Teacher 
+router.get("/home/teacher" ,  GetTeachersData)
 
 
 

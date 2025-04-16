@@ -4,6 +4,7 @@ const { errorResponse, successResponse, validationErrorResponse } = require("../
 const Loggers = require("../utils/Logger");
 const catchAsync = require("../utils/catchAsync");
 const Faq = require("../model/Faq");
+const Teacher = require("../model/teacher");
 
 // Home Section
 exports.homeAdd = catchAsync(async (req, res, next) => {
@@ -155,4 +156,24 @@ exports.policycondition = catchAsync(async (req, res, next) => {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
+
+
+exports.GetTeachersData = catchAsync(async (req, res, next) => {
+    try {
+        const record = await Teacher.find({}).populate({
+            path:"userId",
+            select :"-password"
+        });
+        if (record.length === 0) {
+            return validationErrorResponse(res, "Faq Data Not Found", 400);
+        }
+
+        Loggers.info("Faq Find successfully!");
+        return successResponse(res, "Faq Find successfully!", 200, { record });
+
+    } catch (error) {
+        Loggers.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+}); 
 
