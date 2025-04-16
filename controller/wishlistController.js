@@ -49,9 +49,9 @@ exports.GetFavouriteTeachers = catchAsync(async (req, res) => {
     try {
       const wishlistResult = await Wishlist.find({ student:req.user.id });
       if (!wishlistResult) {
-        return errorResponse(res, "Failed to remove from favourites.", 500);
+        return errorResponse(res, "No Teachers found", 500);
       }
-      return successResponse(res, "Teacher removed successfuly from favourites", 201);
+      return successResponse(res, "Teachers retrieved successfully.", 201);
     } catch (error) {
       return errorResponse(res, error.message || "Internal Server Error", 500);
     }

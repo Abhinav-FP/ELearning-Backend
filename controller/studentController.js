@@ -1,7 +1,7 @@
 const Payment = require("../model/Payment");
 const review = require("../model/review");
 const Teacher = require("../model/teacher");
-const User = require("../model/user");
+const Wishlist = require("../model/wishlist");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const Loggers = require("../utils/Logger");
@@ -36,36 +36,46 @@ exports.paymentget = catchAsync(async (req, res) => {
 
 exports.teacherget = catchAsync(async (req, res) => {
     try {
-        const teacher = await Teacher.find({}).populate("UserId");
+        const teachers = await Teacher.find({}).populate("userId");
+        const wishlistResult = await Wishlist.find({ student: req.user.id }).populate("teacher");
+        console.log("wishlistResult",wishlistResult);
 
-        if (!teacher) {
-            Loggers.warn("Payment Not Found.");
-            return validationErrorResponse(res, "payment Not Updated", 400);
+        if (!teachers) {
+            return validationErrorResponse(res, "No teacher found", 400);
         }
-        return successResponse(res, "User created successfully!", 201, {
-            user: teacher,
+
+        // Extract wishlist emails
+        const wishlistEmails = wishlistResult.map(w => w.teacher?.email);
+
+        // Add isLiked to each teacher
+        const updatedTeachers = teachers.map(t => {
+            const isLiked = wishlistEmails.includes(t.userId?.email);
+            return {
+                ...t.toObject(),
+                isLiked
+            };
         });
 
+        return successResponse(res, "Teachers retrieved successfully!", 200, updatedTeachers);
+
     } catch (error) {
-        console.log("error", error)
+        console.log("error", error);
         Loggers.error(error);
         if (error.name === 'ValidationError') {
             const errors = Object.values(error.errors).map(el => el.message);
-            console.log("errors", errors)
             return validationErrorResponse(res, errors.join(", "), 400, "error");
         }
         return errorResponse(res, error.message || "Internal Server Error", 500);
-
     }
-})
+});
 
 exports.GetFavouriteTeachers = catchAsync(async (req, res) => {
     try {
-        const wishlistResult = await Wishlist.find({ student: req.user.id });
+        const wishlistResult = await Wishlist.find({ student: req.user.id }).populate("teacher");
         if (!wishlistResult) {
-            return errorResponse(res, "Failed to remove from favourites.", 500);
-        }
-        return successResponse(res, "Teacher removed successfuly from favourites", 201);
+            return errorResponse(res, "No Teachers found", 500);
+          }
+          return successResponse(res, "Teachers retrieved successfully.", 201);
     } catch (error) {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
