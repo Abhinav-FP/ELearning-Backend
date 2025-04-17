@@ -98,7 +98,6 @@ exports.GetMessage = catchAsync(async (req, res) => {
 exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
   try {
     let aggregationPipeline = [];
-
     if (req.user.role === "teacher") {
       aggregationPipeline = [
         {
