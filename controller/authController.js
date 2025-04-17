@@ -106,7 +106,7 @@ exports.login = catchAsync(async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return errorResponse(res, "Invalid email", 401);
