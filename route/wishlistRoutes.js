@@ -4,6 +4,6 @@ const { verifyToken } = require("../middleware/tokenVerify");
 const router = require("express").Router();
 
 router.post("/favourite/add", verifyToken, AddTeacher);
-router.delete("/favourite/delete", verifyToken, RemoveTeacher);
+router.post("/favourite/delete", verifyToken, RemoveTeacher);
 
 module.exports = router;

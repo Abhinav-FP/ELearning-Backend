@@ -128,3 +128,22 @@ exports.reviewUserGet = catchAsync(async (req, res) => {
         return errorResponse(res, "Failed to retrieve reviews", 500);
     }
 });
+
+exports.studentDashbard = catchAsync(async (req,res)=>{
+    try {
+        const UserId = req.user.id;
+        const reviews = await review.find({ userId: UserId }).populate({
+            path: "lessonId",
+            select: "title"
+        }).limit(5).sort({
+            updatedAt
+             :-1});
+        
+        return successResponse(res, "Dashboard retrieved successfully", 200, { reviews });
+             
+    } catch (error) {
+        console.log("error" ,error)
+        return errorResponse(res, "Failed to retrieve reviews", 500);
+
+    }
+})
