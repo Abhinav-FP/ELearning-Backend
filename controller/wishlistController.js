@@ -11,8 +11,8 @@ exports.AddTeacher = catchAsync(async (req, res) => {
     }
 
     const wishlistRecord = new Wishlist({
-      student:req.user.id,
-      teacher:teacherId,
+      student: req.user.id,
+      teacher: teacherId,
     });
 
     const wishlistResult = await wishlistRecord.save();
@@ -27,32 +27,32 @@ exports.AddTeacher = catchAsync(async (req, res) => {
 });
 
 exports.RemoveTeacher = catchAsync(async (req, res) => {
-    try {
-      const { teacherId } = req.body;
-  
-      if (!teacherId) {
-        return errorResponse(res, "All fields are required", 400);
-      }
-      
-      const wishlistResult = await Wishlist.findOneAndDelete({ student:req.user.id, teacher:teacherId });
-  
-      if (!wishlistResult) {
-        return errorResponse(res, "Failed to remove from favourites.", 500);
-      }
-      return successResponse(res, "Teacher removed successfuly from favourites", 201);
-    } catch (error) {
-      return errorResponse(res, error.message || "Internal Server Error", 500);
+  try {
+    const { teacherId } = req.body;
+
+    if (!teacherId) {
+      return errorResponse(res, "All fields are required", 400);
     }
-  });
+
+    const wishlistResult = await Wishlist.findOneAndDelete({ student: req.user.id, teacher: teacherId });
+
+    if (!wishlistResult) {
+      return errorResponse(res, "Failed to remove from favourites.", 500);
+    }
+    return successResponse(res, "Teacher removed successfuly from favourites", 201);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
 
 exports.GetFavouriteTeachers = catchAsync(async (req, res) => {
-    try {
-      const wishlistResult = await Wishlist.find({ student:req.user.id });
-      if (!wishlistResult) {
-        return errorResponse(res, "No Teachers found", 500);
-      }
-      return successResponse(res, "Teachers retrieved successfully.", 201);
-    } catch (error) {
-      return errorResponse(res, error.message || "Internal Server Error", 500);
+  try {
+    const wishlistResult = await Wishlist.find({ student: req.user.id });
+    if (!wishlistResult) {
+      return errorResponse(res, "No Teachers found", 500);
     }
-  });
+    return successResponse(res, "Teachers retrieved successfully.", 201);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
