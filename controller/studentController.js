@@ -83,7 +83,7 @@ exports.GetFavouriteTeachers = catchAsync(async (req, res) => {
 
         const userIds = wishlistResult
             .map(item => item.teacher?._id?.toString())
-            .filter(Boolean); 
+            .filter(Boolean);
 
         const teacherProfiles = await Teacher.find({ userId: { $in: userIds } });
 
@@ -114,6 +114,8 @@ exports.GetFavouriteTeachers = catchAsync(async (req, res) => {
 exports.reviewUserGet = catchAsync(async (req, res) => {
     const userId = req.user.id
     try {
+
+
         const reviews = await review.find({ userId: userId }).populate({
             path: "lessonId",
             select: "title"
@@ -122,27 +124,54 @@ exports.reviewUserGet = catchAsync(async (req, res) => {
             Loggers.warn("No reviews found");
             return validationErrorResponse(res, "No reviews available", 404);
         }
-        return successResponse(res, "Reviews retrieved successfully", 200, { reviews });
+        return successResponse(res, "Reviews retrieved successfully", 200, {
+
+            reviews
+        });
+
+
     } catch (error) {
         Loggers.error(error.message);
         return errorResponse(res, "Failed to retrieve reviews", 500);
     }
 });
 
-exports.studentDashbard = catchAsync(async (req,res)=>{
+exports.studentDashboard = catchAsync(async (req, res) => {
+    const userId = req.user.id;
     try {
-        const UserId = req.user.id;
-        const reviews = await review.find({ userId: UserId }).populate({
+        //review
+        const reviews = await review.find({ userId: userId }).populate({
             path: "lessonId",
             select: "title"
-        }).limit(5).sort({
-            updatedAt
-             :-1});
-       
-        return successResponse(res, "Dashboard retrieved successfully", 200, { reviews  ,  });
-             
+        }).limit(5).sort({ createdAt: -1 });
+        // favrator Techaer 
+        const wishlistResult = await Wishlist.find({ student: userId }).populate("teacher").limit(3).sort({ createdAt: -1 });
+
+        if (!wishlistResult || wishlistResult.length === 0) {
+            return errorResponse(res, "No Teachers found", 404);
+        }
+
+        const userIds = wishlistResult
+            .map(item => item.teacher?._id?.toString())
+            .filter(Boolean);
+
+        const teacherProfiles = await Teacher.find({ userId: { $in: userIds } });
+
+        const teacherMap = {};
+        teacherProfiles.forEach(teacher => {
+            teacherMap[teacher.userId.toString()] = teacher.toObject();
+        });
+
+   
+        res.json({
+            message: "Dashboard retrieved successfully",
+            reviews: reviews,
+            wishlistResult: wishlistResult
+
+        })
+
     } catch (error) {
-        console.log("error" ,error)
+        console.log("error", error)
         return errorResponse(res, "Failed to retrieve reviews", 500);
 
     }
