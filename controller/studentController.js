@@ -147,10 +147,6 @@ exports.studentDashboard = catchAsync(async (req, res) => {
         // favrator Techaer 
         const wishlistResult = await Wishlist.find({ student: userId }).populate("teacher").limit(3).sort({ createdAt: -1 });
 
-        if (!wishlistResult || wishlistResult.length === 0) {
-            return errorResponse(res, "No Teachers found", 404);
-        }
-
         const userIds = wishlistResult
             .map(item => item.teacher?._id?.toString())
             .filter(Boolean);
