@@ -107,15 +107,12 @@ exports.login = catchAsync(async (req, res) => {
     }
 
     const user = await User.findOne({ email }).select("+password");
-
     if (!user) {
       return errorResponse(res, "Invalid email", 401);
     }
-
     if (password != user.password) {
       return errorResponse(res, "Invalid password", 401);
     }
-
     if (user?.role === "teacher") {
       const teacher = await Teacher.findOne({ userId: user._id });
       if (!teacher) {
