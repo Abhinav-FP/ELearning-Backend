@@ -48,7 +48,7 @@ exports.createOrder = async (req, res) => {
         {
           amount: {
             currency_code: 'USD',
-            value: '10.00',     
+            value: '10.00',
           },
         },
       ],
@@ -72,16 +72,16 @@ exports.createOrder = async (req, res) => {
 
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders`,
-      orderData, 
+      orderData,
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`, 
+          Authorization: `Bearer ${accessToken}`,
         },
       }
     );
     console.log("✅ PayPal Create Order Response:", response.data);
-    res.status(201).json(response.data); 
+    res.status(201).json(response.data);
   } catch (error) {
     console.error('Error in createOrder controller:', error);
     res.status(500).json({ error: 'Failed to create PayPal order' });
@@ -112,7 +112,7 @@ exports.PaymentcaptureOrder = async (req, res) => {
     try {
       const newPayment = new Payment({
         orderId: captureData.id,
-        status: captureData.status, 
+        status: captureData.status,
         paymentSource: captureData.payment_source,
         purchaseUnits: captureData.purchase_units,
         payer: captureData.payer,

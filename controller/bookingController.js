@@ -72,14 +72,14 @@ exports.GetBookings = catchAsync(async (req, res) => {
         { path: "student" },
         { path: "lesson" },
       ]);
-    } else if(role === "student") {
+    } else if (role === "student") {
       data = await Bookings.find({ student: _id }).populate([
         { path: "teacher" },
         { path: "student" },
         { path: "lesson" },
       ]);
     }
-    else{
+    else {
       // Case when role is admin
       data = await Bookings.find().populate([
         { path: "teacher" },

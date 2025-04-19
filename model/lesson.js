@@ -27,7 +27,7 @@ const lessonSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-  },{ timestamps: true }
+  }, { timestamps: true }
 );
 
 const Lesson = mongoose.model("Lesson", lessonSchema);

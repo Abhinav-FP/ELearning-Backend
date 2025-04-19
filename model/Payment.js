@@ -28,13 +28,13 @@ const orderSchema = new mongoose.Schema({
       country_code: String,
     },
   },
-  payment_source: Object, 
+  payment_source: Object,
   capturedAt: Date,
- LessonId: {
-     type: mongoose.Schema.Types.ObjectId,
-     ref: 'Lesson',
-   },
-   UserId: {
+  LessonId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Lesson',
+  },
+  UserId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },

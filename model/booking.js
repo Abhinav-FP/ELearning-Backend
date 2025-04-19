@@ -13,9 +13,9 @@ const bookingSchema = new mongoose.Schema(
       required: [true, "Student id is required"],
     },
     lesson: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Lesson",
-        required: [true, "Lesson id is required"],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Lesson",
+      required: [true, "Lesson id is required"],
     },
     time: {
       type: String,

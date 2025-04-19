@@ -161,8 +161,8 @@ exports.policycondition = catchAsync(async (req, res, next) => {
 exports.GetTeachersData = catchAsync(async (req, res, next) => {
     try {
         const record = await Teacher.find({}).populate({
-            path:"userId",
-            select :"-password"
+            path: "userId",
+            select: "-password"
         });
         if (record.length === 0) {
             return validationErrorResponse(res, "Faq Data Not Found", 400);
@@ -175,5 +175,5 @@ exports.GetTeachersData = catchAsync(async (req, res, next) => {
         Loggers.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
-}); 
+});
 

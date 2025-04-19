@@ -87,6 +87,8 @@ exports.GetMessage = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid user role", 400);
     }
 
+    const ReciverUser = await User.findById(id);
+
     // Fetch messages
     const messages = await Message.find({
       student,
@@ -106,7 +108,13 @@ exports.GetMessage = catchAsync(async (req, res) => {
       { $set: { is_read: true } }
     );
 
-    return successResponse(res, "Messages fetched successfully", 200, messages);
+    res.json({
+      ReciverUser: ReciverUser,
+      messages: messages,
+      status: 200,
+      message: "Messages fetched successfully"
+    })
+    // return successResponse(res, "Messages fetched successfully", 200, messages);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
@@ -128,13 +136,13 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
       if (!messagesMap.has(userId)) {
         messagesMap.set(userId, {
           count: 0,
-          [field]: user, 
+          [field]: user,
         });
       }
     });
     return Array.from(messagesMap.values());
-  }  
-  
+  }
+
   try {
     let aggregationPipeline = [];
     if (req.user.role === "teacher") {
@@ -211,8 +219,8 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
     }
 
     const messages = await Message.aggregate(aggregationPipeline);
-    let roletoSearch= req.user.role === "teacher" ? "student" : "teacher";
-    const users = await User.find({role: roletoSearch});
+    let roletoSearch = req.user.role === "teacher" ? "student" : "teacher";
+    const users = await User.find({ role: roletoSearch });
     const mergedMessages = mergeUsersWithMessages(users, messages, req.user.role);
     return successResponse(res, "Message count fetched successfully", 200, mergedMessages);
   } catch (error) {

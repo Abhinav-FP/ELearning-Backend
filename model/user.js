@@ -27,15 +27,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
-  time_zone :{
+  time_zone: {
     type: String,
-    required: [true, "Time zone is required"],    
+    required: [true, "Time zone is required"],
   },
   block: {
     type: Boolean,
     default: false,
   },
-},{ timestamps: true });
+}, { timestamps: true });
 
 userSchema.index({ email: 1 }, { unique: [true, 'Unique email is required!'] });
 

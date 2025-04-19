@@ -3,31 +3,31 @@ const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
 
 exports.AddLesson = catchAsync(async (req, res) => {
-  try {
-    const { title, description, duration, price } = req.body;
+    try {
+        const { title, description, duration, price } = req.body;
 
-    if (!title || !description ) {
-      return errorResponse(res, "title and description are required", 400);
+        if (!title || !description) {
+            return errorResponse(res, "title and description are required", 400);
+        }
+
+        const lessonRecord = new Lesson({
+            title,
+            description,
+            duration,
+            price,
+            teacher: req.user.id,
+        });
+
+        const lessonResult = await lessonRecord.save();
+
+        if (!lessonResult) {
+            return errorResponse(res, "Failed to add lesson.", 500);
+        }
+
+        return successResponse(res, "Lesson added successfully", 201);
+    } catch (error) {
+        return errorResponse(res, error.message || "Internal Server Error", 500);
     }
-
-    const lessonRecord = new Lesson({
-        title,
-        description,
-        duration,
-        price,
-        teacher: req.user.id, 
-    });
-
-    const lessonResult = await lessonRecord.save();
-
-    if (!lessonResult) {
-      return errorResponse(res, "Failed to add lesson.", 500);
-    }
-
-    return successResponse(res, "Lesson added successfully", 201);
-  } catch (error) {
-    return errorResponse(res, error.message || "Internal Server Error", 500);
-  }
 });
 
 exports.DeleteLesson = catchAsync(async (req, res) => {
@@ -61,13 +61,13 @@ exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
         if (teacherId) {
             lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate({
                 path: "teacher",
-                select :"-password"
-              });
+                select: "-password"
+            });
         } else {
             lessons = await Lesson.find({ is_deleted: { $ne: true } }).populate({
                 path: "teacher",
-                  select :"-password"
-              });;
+                select: "-password"
+            });;
         }
 
         if (!lessons || lessons.length === 0) {
