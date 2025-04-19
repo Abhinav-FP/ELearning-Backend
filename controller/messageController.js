@@ -1,7 +1,8 @@
-const Message = require("../model/message");
 const mongoose = require("mongoose");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
+const Message = require("../model/message");
+const User = require("../model/user");
 
 exports.AddMessage = catchAsync(async (req, res) => {
   try {
@@ -71,31 +72,69 @@ exports.GetMessage = catchAsync(async (req, res) => {
     if (!id) {
       return errorResponse(res, "Id is required", 400);
     }
-    let student, teacher;
+
+    let student, teacher, senderRole;
 
     if (req.user.role === "student") {
       student = req.user.id;
       teacher = id;
+      senderRole = "teacher"; // mark teacher's messages as read
     } else if (req.user.role === "teacher") {
       teacher = req.user.id;
       student = id;
+      senderRole = "student"; // mark student's messages as read
     } else {
       return errorResponse(res, "Invalid user role", 400);
     }
 
+    // Fetch messages
     const messages = await Message.find({
-      student: student,
-      teacher: teacher,
+      student,
+      teacher,
       is_deleted: false,
     }).sort({ createdAt: 1 });
 
-    return successResponse(res, "Message sent successfully", 201, messages);
+    // Mark relevant messages as read
+    await Message.updateMany(
+      {
+        student,
+        teacher,
+        sent_by: senderRole,
+        is_read: false,
+        is_deleted: false,
+      },
+      { $set: { is_read: true } }
+    );
+
+    return successResponse(res, "Messages fetched successfully", 200, messages);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
 
 exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
+  // Merge teacher and message jsons
+  function mergeUsersWithMessages(users, messages, role) {
+    const messagesMap = new Map();
+    const field = role === "teacher" ? "student" : "teacher";
+    messages.forEach(msg => {
+      const userId = msg[field]?._id?.toString();
+      if (userId) {
+        messagesMap.set(userId, msg);
+      }
+    });
+    users.forEach(user => {
+      const userId = user._id.toString();
+      if (!messagesMap.has(userId)) {
+        messagesMap.set(userId, {
+          count: 0,
+          [field]: user, 
+        });
+      }
+    });
+    return Array.from(messagesMap.values());
+  }  
+  
   try {
     let aggregationPipeline = [];
     if (req.user.role === "teacher") {
@@ -104,6 +143,7 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
           $match: {
             teacher: new mongoose.Types.ObjectId(req.user.id),
             is_read: false,
+            sent_by: "student",
             is_deleted: false,
           },
         },
@@ -123,6 +163,7 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
           },
         },
         { $unwind: "$student" },
+        { $unset: "student.password" },
         {
           $project: {
             _id: 0,
@@ -137,6 +178,7 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
           $match: {
             student: new mongoose.Types.ObjectId(req.user.id),
             is_read: false,
+            sent_by: "teacher",
             is_deleted: false,
           },
         },
@@ -155,6 +197,7 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
           },
         },
         { $unwind: "$teacher" },
+        { $unset: "teacher.password" },
         {
           $project: {
             _id: 0,
@@ -168,8 +211,10 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
     }
 
     const messages = await Message.aggregate(aggregationPipeline);
-
-    return successResponse(res, "Message count fetched successfully", 200, messages);
+    let roletoSearch= req.user.role === "teacher" ? "student" : "teacher";
+    const users = await User.find({role: roletoSearch});
+    const mergedMessages = mergeUsersWithMessages(users, messages, req.user.role);
+    return successResponse(res, "Message count fetched successfully", 200, mergedMessages);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
