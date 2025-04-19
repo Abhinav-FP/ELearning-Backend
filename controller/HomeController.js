@@ -157,7 +157,6 @@ exports.policycondition = catchAsync(async (req, res, next) => {
     }
 });
 
-
 exports.GetTeachersData = catchAsync(async (req, res, next) => {
     try {
         const record = await Teacher.find({}).populate({
@@ -177,3 +176,22 @@ exports.GetTeachersData = catchAsync(async (req, res, next) => {
     }
 });
 
+exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
+    try {
+        const record = await Teacher.find({}).populate({
+            path: "userId",
+            select: "-password"
+        }).limit(2).sort({
+            createdAt: -1
+        }).select("name intro_video average_duration average_price");
+        if (record.length === 0) {
+            return validationErrorResponse(res, "Teacher Data Not Found", 400);
+        }
+
+        return successResponse(res, "Teacher Find successfully!", 200, { record });
+
+    } catch (error) {
+        Loggers.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
