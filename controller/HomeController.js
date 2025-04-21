@@ -75,6 +75,45 @@ exports.homeupdate = catchAsync(async (req, res, next) => {
     }
 });
 
+exports.GetTeachersData = catchAsync(async (req, res, next) => {
+    try {
+        const record = await Teacher.find({}).populate({
+            path: "userId",
+            select: "-password"
+        });
+        if (record.length === 0) {
+            return validationErrorResponse(res, "Faq Data Not Found", 400);
+        }
+
+        Loggers.info("Faq Find successfully!");
+        return successResponse(res, "Faq Find successfully!", 200, { record });
+
+    } catch (error) {
+        Loggers.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
+
+exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
+    try {
+        const record = await Teacher.find({}).populate({
+            path: "userId",
+            select: "-password"
+        }).limit(2).sort({
+            createdAt: -1
+        }).select("name intro_video average_duration average_price");
+        if (record.length === 0) {
+            return validationErrorResponse(res, "Teacher Data Not Found", 400);
+        }
+
+        return successResponse(res, "Teacher Find successfully!", 200, { record });
+
+    } catch (error) {
+        Loggers.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
+
 // Faq Section  
 exports.FAQAdd = catchAsync(async (req, res, next) => {
     try {
@@ -150,45 +189,6 @@ exports.policycondition = catchAsync(async (req, res, next) => {
         }
         Loggers.info("Home Update successfully!");
         return successResponse(res, "Term & privacy Update successfully!", 200, { updatedRecord });
-
-    } catch (error) {
-        Loggers.error(error);
-        return errorResponse(res, error.message || "Internal Server Error", 500);
-    }
-});
-
-exports.GetTeachersData = catchAsync(async (req, res, next) => {
-    try {
-        const record = await Teacher.find({}).populate({
-            path: "userId",
-            select: "-password"
-        });
-        if (record.length === 0) {
-            return validationErrorResponse(res, "Faq Data Not Found", 400);
-        }
-
-        Loggers.info("Faq Find successfully!");
-        return successResponse(res, "Faq Find successfully!", 200, { record });
-
-    } catch (error) {
-        Loggers.error(error);
-        return errorResponse(res, error.message || "Internal Server Error", 500);
-    }
-});
-
-exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
-    try {
-        const record = await Teacher.find({}).populate({
-            path: "userId",
-            select: "-password"
-        }).limit(2).sort({
-            createdAt: -1
-        }).select("name intro_video average_duration average_price");
-        if (record.length === 0) {
-            return validationErrorResponse(res, "Teacher Data Not Found", 400);
-        }
-
-        return successResponse(res, "Teacher Find successfully!", 200, { record });
 
     } catch (error) {
         Loggers.error(error);

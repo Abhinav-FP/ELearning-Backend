@@ -14,9 +14,6 @@ const generateAccessToken = async () => {
     const auth = Buffer.from(
       `${clientId}:${clientSecret}`
     ).toString('base64');
-    console.log("auth", auth);
-    console.log("PAYPAL_API", clientId, clientSecret, paypalApiUrl);
-
     const response = await axios.post(
       `${paypalApiUrl}/v1/oauth2/token`,
       qs.stringify({
@@ -31,14 +28,14 @@ const generateAccessToken = async () => {
     );
     return response.data.access_token;
   } catch (error) {
-    console.error("❌ PayPal Token Error:", error.response?.data || error.message);
-    throw new Error("Failed to generate PayPal access token");
+    console.error("PayPal Token Error:", error.response?.data || error.message);
   }
 };
 
 
 exports.createOrder = async (req, res) => {
   try {
+    const { amount, currency } = req.body
     const accessToken = await generateAccessToken();
     const paypalApiUrl = process.env.PAYPAL_API;
 
@@ -47,15 +44,11 @@ exports.createOrder = async (req, res) => {
       purchase_units: [
         {
           amount: {
-            currency_code: 'USD',
-            value: '10.00',
+            currency_code: currency,
+            value: amount,
           },
         },
       ],
-      application_context: {
-        return_url: `${process.env.PAYPAL_REDIRECT_BASE_URL}/complete-payment`,
-        cancel_url: `${process.env.PAYPAL_REDIRECT_BASE_URL}/cancel-payment`,
-      },
       payment_source: {
         paypal: {
           experience_context: {
@@ -80,20 +73,21 @@ exports.createOrder = async (req, res) => {
         },
       }
     );
-    console.log("✅ PayPal Create Order Response:", response.data);
+
+
     res.status(201).json(response.data);
   } catch (error) {
     console.error('Error in createOrder controller:', error);
     res.status(500).json({ error: 'Failed to create PayPal order' });
   }
 };
+
+
 exports.PaymentcaptureOrder = async (req, res) => {
   try {
     const accessToken = await generateAccessToken();
-    const { orderID } = req.body;
+    const { orderID, LessonId, UserId } = req.body;
 
-    console.log("paymentId", orderID);
-    console.log("accessToken", accessToken);
 
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
@@ -107,27 +101,73 @@ exports.PaymentcaptureOrder = async (req, res) => {
     );
 
     const captureData = response.data;
-    console.log("Captured Payment Data:", captureData);
+    const newPayment = new Payment({
+      orderID: captureData.id,
+      intent: captureData.intent,
+      status: captureData.status,
+      purchase_units: captureData.purchase_units,
+      payer: captureData.payer,
+      payment_source: captureData.payment_source,
+      capturedAt: new Date(),
+      LessonId: LessonId || undefined,
+      UserId: UserId || undefined,
+      amount: captureData.purchase_units[0].payments.captures[0].amount.value, // "100.00"
+      currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
+    });
+    const savedPayment = await newPayment.save();
 
-    try {
-      const newPayment = new Payment({
-        orderId: captureData.id,
-        status: captureData.status,
-        paymentSource: captureData.payment_source,
-        purchaseUnits: captureData.purchase_units,
-        payer: captureData.payer,
-      });
-
-      const savedPayment = await newPayment.save();
-      console.log("Payment saved to database:", savedPayment);
-      res.status(200).json(captureData);
-    } catch (dbError) {
-      console.error("Error saving payment to database:", dbError);
-      res.status(200).json(captureData);
-    }
-
+    res.status(200).json(savedPayment);
   } catch (error) {
-    console.error('Error capturing payment:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to capture PayPal order' });
+    console.error("❌ Error capturing PayPal order:", error?.response?.data || error.message);
+    res.status(500).json({ error: "Failed to capture and save PayPal order" });
   }
 };
+
+
+exports.PaymentcancelOrder = async (req, res) => {
+  try {
+    const { orderID, LessonId, UserId } = req.body;
+
+    if (!orderID) {
+      return res.status(400).json({ error: "orderID is required" });
+    }
+
+    const accessToken = await generateAccessToken();
+
+    let voidResponse;
+    try {
+      voidResponse = await axios.post(
+        `${paypalApiUrl}/v2/checkout/orders/${orderID}/void`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+    } catch (paypalErr) {
+      console.warn("Could not void PayPal order (maybe already captured?):", paypalErr.response?.data || paypalErr.message);
+    }
+    const existing = await Payment.findOne({ orderID });
+    if (existing) {
+      return res.status(200).json({ status: "CANCELLED", message: "Already recorded" });
+    }
+
+    const newPayment = new Payment({
+      orderID,
+      status: "CANCELLED",
+      capturedAt: new Date(),
+      LessonId: LessonId || undefined,
+      UserId: UserId || undefined,
+    });
+
+    await newPayment.save();
+
+    res.status(200).json({ status: "CANCELLED", message: "Order cancelled successfully" });
+  } catch (error) {
+    console.error("Error saving cancelled order:", error.message);
+    res.status(500).json({ error: "Failed to cancel order" });
+  }
+};
+

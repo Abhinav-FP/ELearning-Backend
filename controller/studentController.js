@@ -11,16 +11,16 @@ exports.paymentget = catchAsync(async (req, res) => {
 
     try {
         const UserId = req.user.id;
-        const payment = await Payment.findById({
-            _id: UserId
-        });
+        console.log("req.user.id", req.user.id)
+        const payment = await Payment.find({UserId :UserId}).populate("LessonId");
 
+        console.log("_id:", payment)
         if (!payment) {
             Loggers.warn("Payment Not Found.");
             return validationErrorResponse(res, "payment Not Updated", 400);
         }
         return successResponse(res, "Payment Get successfully!", 201, {
-            user: payment,
+            payment,
         });
 
     } catch (error) {
