@@ -1,7 +1,6 @@
 const catchAsync = require("../utils/catchAsync");
 const axios = require("axios");
 const qs = require('qs');
-const Loggers = require("../utils/Logger");
 const Payment = require("../model/Payment");
 
 
@@ -33,57 +32,59 @@ const generateAccessToken = async () => {
 };
 
 
-exports.createOrder = async (req, res) => {
-  try {
-    const { amount, currency } = req.body
-    const accessToken = await generateAccessToken();
-    const paypalApiUrl = process.env.PAYPAL_API;
+exports.createOrder = CatchAsync(
+  async (req, res) => {
+    try {
+      const { amount, currency } = req.body
+      const accessToken = await generateAccessToken();
+      const paypalApiUrl = process.env.PAYPAL_API;
 
-    const orderData = {
-      intent: 'CAPTURE',
-      purchase_units: [
+      const orderData = {
+        intent: 'CAPTURE',
+        purchase_units: [
+          {
+            amount: {
+              currency_code: currency,
+              value: amount,
+            },
+          },
+        ],
+        payment_source: {
+          paypal: {
+            experience_context: {
+              payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
+              payment_method_selected: "PAYPAL",
+              brand_name: "DekayHub - Volatility Grid",
+              shipping_preference: "NO_SHIPPING",
+              locale: "en-US",
+              user_action: "PAY_NOW",
+            },
+          },
+        },
+      };
+
+      const response = await axios.post(
+        `${paypalApiUrl}/v2/checkout/orders`,
+        orderData,
         {
-          amount: {
-            currency_code: currency,
-            value: amount,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
           },
-        },
-      ],
-      payment_source: {
-        paypal: {
-          experience_context: {
-            payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
-            payment_method_selected: "PAYPAL",
-            brand_name: "DekayHub - Volatility Grid",
-            shipping_preference: "NO_SHIPPING",
-            locale: "en-US",
-            user_action: "PAY_NOW",
-          },
-        },
-      },
-    };
-
-    const response = await axios.post(
-      `${paypalApiUrl}/v2/checkout/orders`,
-      orderData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+        }
+      );
 
 
-    res.status(201).json(response.data);
-  } catch (error) {
-    console.error('Error in createOrder controller:', error);
-    res.status(500).json({ error: 'Failed to create PayPal order' });
+      res.status(201).json(response.data);
+    } catch (error) {
+      console.error('Error in createOrder controller:', error);
+      res.status(500).json({ error: 'Failed to create PayPal order' });
+    }
   }
-};
+);
 
 
-exports.PaymentcaptureOrder = async (req, res) => {
+exports.PaymentcaptureOrder = CatchAsync(async (req, res) => {
   try {
     const accessToken = await generateAccessToken();
     const { orderID, LessonId, UserId } = req.body;
@@ -118,56 +119,58 @@ exports.PaymentcaptureOrder = async (req, res) => {
 
     res.status(200).json(savedPayment);
   } catch (error) {
-    console.error("❌ Error capturing PayPal order:", error?.response?.data || error.message);
+    console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
     res.status(500).json({ error: "Failed to capture and save PayPal order" });
   }
-};
+});
 
 
-exports.PaymentcancelOrder = async (req, res) => {
-  try {
-    const { orderID, LessonId, UserId } = req.body;
-
-    if (!orderID) {
-      return res.status(400).json({ error: "orderID is required" });
-    }
-
-    const accessToken = await generateAccessToken();
-
-    let voidResponse;
+exports.PaymentcancelOrder = (
+  async (req, res) => {
     try {
-      voidResponse = await axios.post(
-        `${paypalApiUrl}/v2/checkout/orders/${orderID}/void`,
-        {},
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-    } catch (paypalErr) {
-      console.warn("Could not void PayPal order (maybe already captured?):", paypalErr.response?.data || paypalErr.message);
+      const { orderID, LessonId, UserId } = req.body;
+
+      if (!orderID) {
+        return res.status(400).json({ error: "orderID is required" });
+      }
+
+      const accessToken = await generateAccessToken();
+
+      let voidResponse;
+      try {
+        voidResponse = await axios.post(
+          `${paypalApiUrl}/v2/checkout/orders/${orderID}/void`,
+          {},
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+      } catch (paypalErr) {
+        console.warn("Could not void PayPal order (maybe already captured?):", paypalErr.response?.data || paypalErr.message);
+      }
+      const existing = await Payment.findOne({ orderID });
+      if (existing) {
+        return res.status(200).json({ status: "CANCELLED", message: "Already recorded" });
+      }
+
+      const newPayment = new Payment({
+        orderID,
+        status: "CANCELLED",
+        capturedAt: new Date(),
+        LessonId: LessonId || undefined,
+        UserId: UserId || undefined,
+      });
+
+      await newPayment.save();
+
+      res.status(200).json({ status: "CANCELLED", message: "Order cancelled successfully" });
+    } catch (error) {
+      console.error("Error saving cancelled order:", error.message);
+      res.status(500).json({ error: "Failed to cancel order" });
     }
-    const existing = await Payment.findOne({ orderID });
-    if (existing) {
-      return res.status(200).json({ status: "CANCELLED", message: "Already recorded" });
-    }
-
-    const newPayment = new Payment({
-      orderID,
-      status: "CANCELLED",
-      capturedAt: new Date(),
-      LessonId: LessonId || undefined,
-      UserId: UserId || undefined,
-    });
-
-    await newPayment.save();
-
-    res.status(200).json({ status: "CANCELLED", message: "Order cancelled successfully" });
-  } catch (error) {
-    console.error("Error saving cancelled order:", error.message);
-    res.status(500).json({ error: "Failed to cancel order" });
   }
-};
+);
 
