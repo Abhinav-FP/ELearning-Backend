@@ -28,8 +28,7 @@ app.use("/api", require("./route/homeRoutes"));
 app.use("/api", require("./route/reviewroute"));
 app.use("/api", require("./route/studentRoutes"));
 app.use("/api", require("./route/adminRoutes"));
-
-
+app.use("/api", require("./route/bookingRoutes"));
 
 
 app.use("/api/paypal", require("./route/paymentRoutes"));

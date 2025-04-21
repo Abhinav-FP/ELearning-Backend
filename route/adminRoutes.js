@@ -8,9 +8,4 @@ router.post("/admin/approveteacher", ApproveTeacher);
 router.get("/admin/studentlist", StudentList);
 router.post("/admin/blockuser", AdminBlockUser);
 
-
-
-
-
-
 module.exports = router;

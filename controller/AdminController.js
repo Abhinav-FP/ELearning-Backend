@@ -43,9 +43,6 @@ exports.ApproveTeacher = catchAsync(async (req, res) => {
         const AdminApprove = admin_approved === true ? false : true;
         const teacher = await Teacher.findByIdAndUpdate(_id, {
             admin_approved: AdminApprove
-        }).populate({
-            path: "userId",
-            select: "-password"
         });
         return successResponse(res, "Teacher retrieved successfully", 200, {
             teacher

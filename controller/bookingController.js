@@ -49,6 +49,10 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
       booking.lessonCompletedTeacher = lessonCompletedTeacher;
     }
 
+    if (time != null && booking.rescheduled) {
+      return errorResponse(res, "Booking has already been rescheduled once", 404);
+    }
+
     if (time != null && !booking.rescheduled) {
       booking.time = time;
       booking.rescheduled = true;
@@ -63,29 +67,17 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
 
 exports.GetBookings = catchAsync(async (req, res) => {
   try {
-    const { role, _id } = req.user;
+    const { role,id } = req.user;
 
     let data;
     if (role === "teacher") {
-      data = await Bookings.find({ teacher: _id }).populate([
-        { path: "teacher" },
-        { path: "student" },
-        { path: "lesson" },
-      ]);
+      data = await Bookings.find({ teacher: id }).populate('teacher').populate('student').populate('lesson');
     } else if (role === "student") {
-      data = await Bookings.find({ student: _id }).populate([
-        { path: "teacher" },
-        { path: "student" },
-        { path: "lesson" },
-      ]);
+      data = await Bookings.find({ student: id }).populate('teacher').populate('student').populate('lesson');
     }
     else {
       // Case when role is admin
-      data = await Bookings.find().populate([
-        { path: "teacher" },
-        { path: "student" },
-        { path: "lesson" },
-      ]);
+      data = await Bookings.find().populate('teacher').populate('student').populate('lesson');
     }
 
     if (!data || data.length === 0) {
@@ -93,6 +85,24 @@ exports.GetBookings = catchAsync(async (req, res) => {
     }
 
     return successResponse(res, "Bookings retrieved successfully", 200, data);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.CancelBooking = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return errorResponse(res, "Booking ID is required", 400);
+    }
+    const booking = await Bookings.findById(id);
+    if (!booking) {
+      return errorResponse(res, "Booking not found", 404);
+    }
+    booking.cancelled = true;
+    await booking.save();
+    return successResponse(res, "Booking updated successfully", 200);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
