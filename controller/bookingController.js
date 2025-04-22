@@ -4,9 +4,9 @@ const catchAsync = require("../utils/catchAsync");
 
 exports.AddBooking = catchAsync(async (req, res) => {
   try {
-    const { teacher_id, lesson_id, time } = req.body;
+    const { startDateTime, endDateTime, teacher_id, lesson_id, time } = req.body;
 
-    if (!teacher_id || !lesson_id || !time) {
+    if (!startDateTime, !endDateTime, !teacher_id || !lesson_id || !time) {
       return errorResponse(
         res,
         "Teacher ID, Lesson ID, and time are required",
@@ -16,8 +16,9 @@ exports.AddBooking = catchAsync(async (req, res) => {
 
     const booking = await Bookings.create({
       teacher: teacher_id,
+      startDateTime,
+      endDateTime,
       lesson: lesson_id,
-      time,
       student: req.user._id,
     });
 

@@ -17,8 +17,12 @@ const bookingSchema = new mongoose.Schema(
       ref: "Lesson",
       required: [true, "Lesson id is required"],
     },
-    time: {
-      type: String,
+    startDateTime: {
+      type: Date,
+      required: true,
+    },
+    endDateTime: {
+      type: Date,
       required: true,
     },
     lessonCompletedStudent: {
