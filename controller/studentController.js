@@ -8,19 +8,18 @@ const Loggers = require("../utils/Logger");
 const mongoose = require("mongoose");
 
 exports.paymentget = catchAsync(async (req, res) => {
-
     try {
         const UserId = req.user.id;
-        const payment = await Payment.findById({
-            _id: UserId
-        });
+        console.log("req.user.id", req.user.id)
+        const payment = await Payment.find({UserId :UserId}).populate("LessonId");
 
+        console.log("_id:", payment)
         if (!payment) {
             Loggers.warn("Payment Not Found.");
             return validationErrorResponse(res, "payment Not Updated", 400);
         }
         return successResponse(res, "Payment Get successfully!", 201, {
-            user: payment,
+            payment,
         });
 
     } catch (error) {
@@ -172,3 +171,38 @@ exports.studentDashboard = catchAsync(async (req, res) => {
 
     }
 })
+
+exports.teachergetByID = catchAsync(async (req, res) => {
+    try {
+        const _id =  req.params._id
+        const teachers = await Teacher.findOne({_id}).populate("userId").select("-password");
+        console.log("teachers" ,teachers)
+        const wishlistResult = await Wishlist.find({ student: req.user.id }).populate("teacher");
+        if (!teachers) {
+            return validationErrorResponse(res, "No teacher found", 400);
+        }
+
+        // Extract wishlist emails
+        const wishlistEmails = wishlistResult.map(w => w.teacher?.email);
+
+        // Add isLiked to each teacher
+        const updatedTeachers = teachers.map(t => {
+            const isLiked = wishlistEmails.includes(t.userId?.email);
+            return {
+                ...t.toObject(),
+                isLiked
+            };
+        });
+
+        return successResponse(res, "Teachers retrieved successfully!", 200, updatedTeachers);
+
+    } catch (error) {
+        console.log("error", error);
+        Loggers.error(error);
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(el => el.message);
+            return validationErrorResponse(res, errors.join(", "), 400, "error");
+        }
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
