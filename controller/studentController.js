@@ -10,10 +10,10 @@ const mongoose = require("mongoose");
 exports.paymentget = catchAsync(async (req, res) => {
     try {
         const UserId = req.user.id;
-        console.log("req.user.id", req.user.id)
+        // console.log("req.user.id", req.user.id)
         const payment = await Payment.find({UserId :UserId}).populate("LessonId");
 
-        console.log("_id:", payment)
+        // console.log("_id:", payment)
         if (!payment) {
             Loggers.warn("Payment Not Found.");
             return validationErrorResponse(res, "payment Not Updated", 400);
@@ -176,7 +176,7 @@ exports.teachergetByID = catchAsync(async (req, res) => {
     try {
         const _id =  req.params._id
         const teachers = await Teacher.findOne({_id}).populate("userId").select("-password");
-        console.log("teachers" ,teachers)
+        // console.log("teachers" ,teachers)
         const wishlistResult = await Wishlist.find({ student: req.user.id }).populate("teacher");
         if (!teachers) {
             return validationErrorResponse(res, "No teacher found", 400);
