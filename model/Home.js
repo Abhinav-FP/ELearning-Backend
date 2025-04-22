@@ -45,4 +45,4 @@ const homeSchema = mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model("home", homeSchema);
+module.exports = mongoose.model("homes", homeSchema);

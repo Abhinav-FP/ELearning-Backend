@@ -32,7 +32,7 @@ const generateAccessToken = async () => {
 };
 
 
-exports.createOrder = CatchAsync(
+exports.createOrder = catchAsync(
   async (req, res) => {
     try {
       const { amount, currency } = req.body
@@ -84,7 +84,7 @@ exports.createOrder = CatchAsync(
 );
 
 
-exports.PaymentcaptureOrder = CatchAsync(async (req, res) => {
+exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
     const accessToken = await generateAccessToken();
     const { orderID, LessonId, UserId } = req.body;
@@ -125,7 +125,7 @@ exports.PaymentcaptureOrder = CatchAsync(async (req, res) => {
 });
 
 
-exports.PaymentcancelOrder = (
+exports.PaymentcancelOrder = catchAsync(
   async (req, res) => {
     try {
       const { orderID, LessonId, UserId } = req.body;
@@ -135,10 +135,8 @@ exports.PaymentcancelOrder = (
       }
 
       const accessToken = await generateAccessToken();
-
-      let voidResponse;
       try {
-        voidResponse = await axios.post(
+        const voidResponse = await axios.post(
           `${paypalApiUrl}/v2/checkout/orders/${orderID}/void`,
           {},
           {
