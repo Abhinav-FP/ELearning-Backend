@@ -75,7 +75,7 @@ exports.homeupdate = catchAsync(async (req, res, next) => {
     }
 });
 
-exports.GetTeachersData = catchAsync(async (req, res, next) => {
+exports.GetTeachers = catchAsync(async (req, res, next) => {
     try {
         const record = await Teacher.find({}).populate({
             path: "userId",
@@ -101,7 +101,7 @@ exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
             select: "-password"
         }).limit(2).sort({
             createdAt: -1
-        }).select("name intro_video average_duration average_price");
+        }).select("name intro_video average_duration average_price profile_photo");
         if (record.length === 0) {
             return validationErrorResponse(res, "Teacher Data Not Found", 400);
         }
