@@ -202,7 +202,7 @@ exports.resetPassword = catchAsync(async (req, res) => {
       return errorResponse(res, "Existing password and new password are required", 400);
     }
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("+password");
 
     if (!user) {
       return errorResponse(res, "User not found", 404);
