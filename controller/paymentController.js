@@ -1,7 +1,11 @@
+const Stripe = require("stripe");
+const stripe = new Stripe(process.env.STRIPE_TEST_KEY);
 const catchAsync = require("../utils/catchAsync");
 const axios = require("axios");
 const qs = require('qs');
 const Payment = require("../model/Payment");
+const StripePayment = require("../model/StripePayment");
+
 
 
 const clientId = process.env.PAYPAL_CLIENT_ID;
@@ -171,4 +175,143 @@ exports.PaymentcancelOrder = catchAsync(
     }
   }
 );
+
+
+// Stripe Checkout Sytem 
+const fetchPaymentId = async (sessionId, srNo) => {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const paymentId = session.payment_intent;
+    if (!srNo) {
+      return;
+    }
+    const data = await StripePayment.findOne({ srNo: srNo });
+    if (!data) {
+      return null;
+    }
+    data.payment_id = paymentId;
+    await data.save();
+    return paymentId;
+  } catch (error) {
+    console.error("Error fetching payment ID:", error);
+    logger.error("Error fetching payment ID:", error);
+    return null;
+  }
+};
+
+
+exports.createCheckout = catchAsync(async (req, res) => {
+  try {
+    const { amount, email, userId, LessonId, currency } = req?.body;
+    const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
+    const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
+    const amountInCents = Math.round(amount * 100);
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment', // Correct mode value
+      success_url: `http://localhost:3000/stripe/success/${srNo}`,
+      cancel_url: `http://localhost:3000/stripe/cancel/${srNo}`,
+      submit_type: "pay",
+      customer_email: "ankitjain@gmail.com",
+      billing_address_collection: "auto",
+      line_items: [
+        {
+          price_data: {
+            currency: currency,
+            product_data: {
+              name: "Booking Payment",
+            },
+            unit_amount: amountInCents,
+          },
+          quantity: 1,
+        },
+      ],
+    });
+
+
+    const newPayment = new StripePayment({
+      srNo,
+      payment_type: "card",
+      payment_id: null,
+      session_id: session?.id,
+      currency,
+      amount,
+      srNo
+    });
+    await newPayment.save();
+    res.status(200).json({ url: session.url, status: "true" });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+
+exports.PaymentSuccess = catchAsync(async (req, res) => {
+  try {
+    const { srNo } = req.params;
+    if (!srNo) {
+      return res.status(400).json({
+        message: "srNo is required.",
+        status: false,
+      });
+    }
+    const data = await StripePayment.findOne({ srNo: srNo });
+    if (!data) {
+      return res.status(404).json({
+        message: "Data not found",
+        status: false,
+      });
+    }
+    data.payment_status = "success";
+    await data.save();
+    const Payment_ID = await fetchPaymentId(data?.session_id, srNo, "success");
+    res.status(200).json({
+      message: `Payment status updated`,
+      status: true,
+      data: data,
+    });
+  } catch (error) {
+    console.error("Error updating booking status:", error);
+    logger.error("Error updating booking status:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      status: false,
+    });
+  }
+});
+
+
+exports.PaymentCancel = catchAsync(async (req, res) => {
+  try {
+    const { srNo } = req.params;
+    if (!srNo) {
+      return res.status(400).json({
+        message: "srNo is required.",
+        status: false,
+      });
+    }
+    const data = await StripePayment.findOne({ srNo: srNo });
+    if (!data) {
+      return res.status(404).json({
+        message: "Data not found",
+        status: false,
+      });
+    }
+    data.payment_status = "failed";
+    await data.save();
+    fetchPaymentId(data?.session_id, srNo, "cancel");
+    res.status(200).json({
+      message: `Payment status updated`,
+      status: true,
+      data: data,
+    });
+  } catch (error) {
+    console.error("Error updating booking status:", error);
+    logger.error("Error updating booking status:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      status: false,
+    });
+  }
+});
 

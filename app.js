@@ -31,7 +31,7 @@ app.use("/api", require("./route/adminRoutes"));
 app.use("/api", require("./route/bookingRoutes"));
 
 
-app.use("/api/paypal", require("./route/paymentRoutes"));
+app.use("/api/payment", require("./route/paymentRoutes"));
 
 app.get("/", (req, res) => {
   res.json({
