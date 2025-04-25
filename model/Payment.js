@@ -10,9 +10,6 @@ const orderSchema = new mongoose.Schema({
     default: 0
   },
   currency: { type: String },
-
-
-
   payer: {
     name: {
       given_name: String,
@@ -28,9 +25,7 @@ const orderSchema = new mongoose.Schema({
       country_code: String,
     },
   },
-
   payment_source: mongoose.Schema.Types.Mixed,
-
   capturedAt: { type: Date },
   LessonId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -45,4 +40,4 @@ const orderSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model('payments', orderSchema);
+module.exports = mongoose.model('paypalpayments', orderSchema);
