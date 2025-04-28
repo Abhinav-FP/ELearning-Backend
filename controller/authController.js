@@ -147,7 +147,7 @@ exports.GetUser = catchAsync(async (req, res) => {
       Loggers.error("Invalid User");
       return errorResponse(res, "Invalid User", 401);
     }
-    const user = await User.findById({ _id: userId }).select("email name role phone");
+    const user = await User.findById({ _id: userId }).select("email name role phone time_zone");
     if (!user) {
       Loggers.error("Invalid User");
       return errorResponse(res, "Invalid User", 401);

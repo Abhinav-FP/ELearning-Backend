@@ -3,11 +3,7 @@ const review = require("../model/review");
 const Teacher = require("../model/teacher");
 const Wishlist = require("../model/wishlist");
 const catchAsync = require("../utils/catchAsync");
-const {
-  successResponse,
-  errorResponse,
-  validationErrorResponse,
-} = require("../utils/ErrorHandling");
+const {successResponse,errorResponse,validationErrorResponse} = require("../utils/ErrorHandling");
 const Loggers = require("../utils/Logger");
 const mongoose = require("mongoose");
 
