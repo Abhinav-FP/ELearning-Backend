@@ -29,6 +29,7 @@ app.use("/api", require("./route/reviewroute"));
 app.use("/api", require("./route/studentRoutes"));
 app.use("/api", require("./route/adminRoutes"));
 app.use("/api", require("./route/bookingRoutes"));
+app.use("/api", require("./route/teacherRoutes"));
 
 
 app.use("/api/payment", require("./route/paymentRoutes"));
