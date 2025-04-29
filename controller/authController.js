@@ -9,7 +9,7 @@ exports.signup = catchAsync(async (req, res) => {
   try {
     const { name, email, password, role, gender, nationality, time_zone } = req.body;
     // teacher  field 
-    const { description, experience, city, intro_video, qualifications, languages_spoken, ais_trained, payment_method } = req.body;
+    // const { description, experience, city, intro_video, qualifications, languages_spoken, ais_trained, payment_method } = req.body;
 
     if ((!email, !password, !role, !name, !time_zone)) {
       return errorResponse(res, "All fields are required", 401, "false");
@@ -28,11 +28,11 @@ exports.signup = catchAsync(async (req, res) => {
       return errorResponse(res, "Failed to create user.", 500);
     }
     // Teacher Register
-    if (role === "teacher") {
-      if ((!description, !experience, !city, !intro_video, !qualifications, !languages_spoken, !ais_trained, !payment_method)) {
-        return errorResponse(res, "All fields are required", 401, "false");
-      }
-    }
+    // if (role === "teacher") {
+    //   if ((!description, !experience, !city, !intro_video, !qualifications, !languages_spoken, !ais_trained, !payment_method)) {
+    //     return errorResponse(res, "All fields are required", 401, "false");
+    //   }
+    // }
 
     if (role !== "teacher") {
       return successResponse(res, "User created successfully!", 201, {
@@ -45,15 +45,15 @@ exports.signup = catchAsync(async (req, res) => {
 
     const teacherRecord = new Teacher({
       userId: userResult._id,
-      description: description,
-      experience,
-      city,
-      intro_video,
-      qualifications,
-      languages_spoken,
-      ais_trained,
-      payment_method,
-      profile_photo: req.file?.location || null,
+      // description: description,
+      // experience,
+      // city,
+      // intro_video,
+      // qualifications,
+      // languages_spoken,
+      // ais_trained,
+      // payment_method,
+      // profile_photo: req.file?.location || null,
     });
 
     const teacherResult = await teacherRecord.save();
