@@ -8,7 +8,8 @@ const teacherSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: [true, "Description is required"],
+    default: null,
+    // required: [true, "Description is required"],
   },
   gender: {
     type: String,
@@ -53,11 +54,6 @@ const teacherSchema = new mongoose.Schema({
   admin_approved: {
     type: Boolean,
     default: false,
-  },
-  payment_method: {
-    type: String,
-    enum: ['PayPal', 'Stripe'],
-    default: 'PayPal',
   },
   profile_photo: {
     type: String,

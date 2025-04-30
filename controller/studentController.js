@@ -3,11 +3,7 @@ const review = require("../model/review");
 const Teacher = require("../model/teacher");
 const Wishlist = require("../model/wishlist");
 const catchAsync = require("../utils/catchAsync");
-const {
-  successResponse,
-  errorResponse,
-  validationErrorResponse,
-} = require("../utils/ErrorHandling");
+const {successResponse,errorResponse,validationErrorResponse} = require("../utils/ErrorHandling");
 const Loggers = require("../utils/Logger");
 const mongoose = require("mongoose");
 
@@ -49,6 +45,7 @@ exports.teacherget = catchAsync(async (req, res) => {
     if (!teachers) {
       return validationErrorResponse(res, "No teacher found", 400);
     }
+    const size= wishlistResult.length === 0 ? 0 : wishlistResult.length;
 
     // Extract wishlist emails
     const wishlistEmails = wishlistResult.map((w) => w.teacher?.email);
@@ -66,7 +63,7 @@ exports.teacherget = catchAsync(async (req, res) => {
       res,
       "Teachers retrieved successfully!",
       200,
-      updatedTeachers
+      {teacher:updatedTeachers, favouriteSize:size}
     );
   } catch (error) {
     console.log("error", error);

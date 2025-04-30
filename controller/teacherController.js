@@ -1,5 +1,6 @@
 const TeacherAvailability = require("../model/TeacherAvailability");
 const Bookings = require("../model/booking");
+const Lesson = require("../model/lesson");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const logger = require("../utils/Logger");
@@ -150,4 +151,21 @@ exports.GetAvailability = catchAsync(async (req, res) => {
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
+});
+
+// This route is used when teacher want to get all the lessons in their panel
+exports.GetLessons = catchAsync(async (req, res) => {
+    try {
+      // console.log("req.user",req.user);
+        const teacherId  = req.user.id;
+        console.log("teacherId",teacherId);
+        const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
+        console.log("lessons",lessons);
+        if (!lessons || lessons.length === 0) {
+            return errorResponse(res, "No lessons found", 404);
+        }
+        return successResponse(res, "Lessons retrieved successfully", 200, lessons);
+    } catch (error) {
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
 });
