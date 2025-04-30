@@ -97,15 +97,12 @@ exports.GetAvailability = catchAsync(async (req, res) => {
       const aStart = new Date(availability.startDateTime);
       const aEnd = new Date(availability.endDateTime);
 
-      // Get bookings that intersect with this availability block
       const matchingBookings = bookings.filter(booking =>
         new Date(booking.endDateTime) > aStart && new Date(booking.startDateTime) < aEnd
       );
 
-      // Sort by start time
       matchingBookings.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
 
-      // ---- PART 1: Get remaining free time slots ----
       let cursor = aStart;
       for (const booking of matchingBookings) {
         const bStart = new Date(booking.startDateTime);
@@ -119,11 +116,11 @@ exports.GetAvailability = catchAsync(async (req, res) => {
           });
         }
 
-        // Move cursor forward
-        cursor = bEnd > cursor ? bEnd : cursor;
+        // Move cursor 5 minutes ahead of booking end
+        const nextStart = new Date(bEnd.getTime() + 5 * 60000); // 5 minutes = 5 * 60 * 1000 ms
+        cursor = nextStart > cursor ? nextStart : cursor;
       }
 
-      // Final free slot after the last booking
       if (cursor < aEnd) {
         availableSlots.push({
           teacher: id,
@@ -132,7 +129,6 @@ exports.GetAvailability = catchAsync(async (req, res) => {
         });
       }
 
-      // ---- PART 2: Booked slots ----
       bookedSlots.push(
         ...matchingBookings.map(b => ({
           teacher: id,
