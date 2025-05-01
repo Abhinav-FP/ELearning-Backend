@@ -16,9 +16,10 @@ exports.AddAvailability = catchAsync(async (req, res) => {
         400
       );
     }
+    console.log("req.user._id" ,req.user)
 
     const booking = await TeacherAvailability.create({
-      teacher: req.user._id,
+      teacher: req.user.id,
       startDateTime,
       endDateTime,
     });
@@ -31,7 +32,7 @@ exports.AddAvailability = catchAsync(async (req, res) => {
 
 exports.UpdateAvailability = catchAsync(async (req, res) => {
   try {
-    const { startDateTime, endDateTime } = req.body;
+    const { startDateTime, endDateTime  } = req.body;
     const { id } = req.params;
 
     if (!id) {
@@ -81,18 +82,14 @@ exports.RemoveAvailability = catchAsync(async (req, res) => {
 
 exports.GetAvailability = catchAsync(async (req, res) => {
   try {
-    const { id } = req.params;
-
+    const  id  = req.user.id;
     const availabilityBlocks = await TeacherAvailability.find({ teacher: id });
     if (!availabilityBlocks || availabilityBlocks.length === 0) {
-      return errorResponse(res, "No Data found", 404);
+      return errorResponse(res, "No Data found", 200);
     }
-
     const bookings = await Bookings.find({ teacher: id, cancelled: false }).lean();
-
     let availableSlots = [];
     let bookedSlots = [];
-
     for (const availability of availabilityBlocks) {
       const aStart = new Date(availability.startDateTime);
       const aEnd = new Date(availability.endDateTime);
