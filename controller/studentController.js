@@ -3,6 +3,7 @@ const Payment = require("../model/Payment");
 const review = require("../model/review");
 const Teacher = require("../model/teacher");
 const TeacherAvailability = require("../model/TeacherAvailability");
+const Lesson = require("../model/lesson");
 const Wishlist = require("../model/wishlist");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
@@ -302,5 +303,23 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
     });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
+  try {
+      const teacherId = req.params.id;
+      console.log("teacherId",teacherId);
+      
+      if (!teacherId) {
+          return errorResponse(res, "Teacher ID is required", 400);
+      } 
+      const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
+      if (!lessons || lessons.length === 0) {
+          return errorResponse(res, "No lessons found", 404);
+      }
+      return successResponse(res, "Lessons retrieved successfully", 200, lessons);
+  } catch (error) {
+      return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
