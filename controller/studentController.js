@@ -1,9 +1,11 @@
+const Bookings = require("../model/booking");
 const Payment = require("../model/Payment");
 const review = require("../model/review");
 const Teacher = require("../model/teacher");
+const TeacherAvailability = require("../model/TeacherAvailability");
 const Wishlist = require("../model/wishlist");
 const catchAsync = require("../utils/catchAsync");
-const {successResponse,errorResponse,validationErrorResponse} = require("../utils/ErrorHandling");
+const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const Loggers = require("../utils/Logger");
 const mongoose = require("mongoose");
 
@@ -45,7 +47,7 @@ exports.teacherget = catchAsync(async (req, res) => {
     if (!teachers) {
       return validationErrorResponse(res, "No teacher found", 400);
     }
-    const size= wishlistResult.length === 0 ? 0 : wishlistResult.length;
+    const size = wishlistResult.length === 0 ? 0 : wishlistResult.length;
 
     // Extract wishlist emails
     const wishlistEmails = wishlistResult.map((w) => w.teacher?.email);
@@ -63,7 +65,7 @@ exports.teacherget = catchAsync(async (req, res) => {
       res,
       "Teachers retrieved successfully!",
       200,
-      {teacher:updatedTeachers, favouriteSize:size}
+      { teacher: updatedTeachers, favouriteSize: size }
     );
   } catch (error) {
     console.log("error", error);
@@ -222,6 +224,83 @@ exports.teachergetByID = catchAsync(async (req, res) => {
       const errors = Object.values(error.errors).map((el) => el.message);
       return validationErrorResponse(res, errors.join(", "), 400, "error");
     }
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.GetTeacherAvailability = catchAsync(async (req, res) => {
+  try {
+    const id = req.params.id;
+    const availabilityBlocks = await TeacherAvailability.find({ teacher: id });
+    if (!availabilityBlocks || availabilityBlocks.length === 0) {
+      return errorResponse(res, "No Data found", 200);
+    }
+
+    const bookings = await Bookings.find({ teacher: id, cancelled: false }).lean();
+
+    if (!bookings || bookings.length === 0) {
+      return successResponse(res, "Availability processed", 200, {
+        availabilityBlocks,
+        bookedSlots: [],
+      });
+    }
+
+    let availableSlots = [];
+    let bookedSlots = [];
+
+    for (const availability of availabilityBlocks) {
+      const aStart = new Date(availability.startDateTime);
+      const aEnd = new Date(availability.endDateTime);
+
+      const matchingBookings = bookings.filter(booking =>
+        new Date(booking.endDateTime) > aStart && new Date(booking.startDateTime) < aEnd
+      );
+
+      matchingBookings.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
+
+      let cursor = aStart;
+
+      for (const booking of matchingBookings) {
+        const bStart = new Date(booking.startDateTime);
+        const bEnd = new Date(booking.endDateTime);
+
+        if (cursor < bStart) {
+          availableSlots.push({
+            teacher: id,
+            start: new Date(cursor),
+            end: new Date(bStart),
+          });
+        }
+
+        // Move cursor 5 minutes ahead of booking end
+        const nextStart = new Date(bEnd.getTime() + 5 * 60000);
+        cursor = nextStart > cursor ? nextStart : cursor;
+      }
+
+      if (cursor < aEnd) {
+        availableSlots.push({
+          teacher: id,
+          start: new Date(cursor),
+          end: new Date(aEnd),
+        });
+      }
+
+      bookedSlots.push(
+        ...matchingBookings.map(b => ({
+          teacher: id,
+          start: new Date(b.startDateTime),
+          end: new Date(b.endDateTime),
+          student: b.student,
+          lesson: b.lesson,
+        }))
+      );
+    }
+
+    return successResponse(res, "Availability processed", 200, {
+      availableSlots,
+      bookedSlots,
+    });
+  } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });

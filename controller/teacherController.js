@@ -16,7 +16,6 @@ exports.AddAvailability = catchAsync(async (req, res) => {
         400
       );
     }
-    console.log("req.user._id" ,req.user)
 
     const booking = await TeacherAvailability.create({
       teacher: req.user.id,
@@ -61,7 +60,7 @@ exports.UpdateAvailability = catchAsync(async (req, res) => {
 
 exports.RemoveAvailability = catchAsync(async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params;
 
     if (!id) {
       return errorResponse(res, "ID is required", 400);
@@ -83,17 +82,11 @@ exports.RemoveAvailability = catchAsync(async (req, res) => {
 exports.GetAvailability = catchAsync(async (req, res) => {
   try {
     const id = req.user.id;
-    console.log("id", id);
-
     const availabilityBlocks = await TeacherAvailability.find({ teacher: id });
     if (!availabilityBlocks || availabilityBlocks.length === 0) {
       return errorResponse(res, "No Data found", 200);
     }
-    console.log("availabilityBlocks", availabilityBlocks);
-
     const bookings = await Bookings.find({ teacher: id, cancelled: false }).lean();
-    console.log("bookings", bookings);
-
     if (!bookings || bookings.length === 0) {
       return successResponse(res, "Availability processed", 200, {
         availabilityBlocks,
@@ -164,11 +157,8 @@ exports.GetAvailability = catchAsync(async (req, res) => {
 // This route is used when teacher want to get all the lessons in their panel
 exports.GetLessons = catchAsync(async (req, res) => {
     try {
-      // console.log("req.user",req.user);
         const teacherId  = req.user.id;
-        console.log("teacherId",teacherId);
         const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
-        console.log("lessons",lessons);
         if (!lessons || lessons.length === 0) {
             return errorResponse(res, "No lessons found", 404);
         }
