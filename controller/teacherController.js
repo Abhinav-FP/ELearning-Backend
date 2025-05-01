@@ -82,14 +82,28 @@ exports.RemoveAvailability = catchAsync(async (req, res) => {
 
 exports.GetAvailability = catchAsync(async (req, res) => {
   try {
-    const  id  = req.user.id;
+    const id = req.user.id;
+    console.log("id", id);
+
     const availabilityBlocks = await TeacherAvailability.find({ teacher: id });
     if (!availabilityBlocks || availabilityBlocks.length === 0) {
       return errorResponse(res, "No Data found", 200);
     }
+    console.log("availabilityBlocks", availabilityBlocks);
+
     const bookings = await Bookings.find({ teacher: id, cancelled: false }).lean();
+    console.log("bookings", bookings);
+
+    if (!bookings || bookings.length === 0) {
+      return successResponse(res, "Availability processed", 200, {
+        availabilityBlocks,
+        bookedSlots: [],
+      });
+    }
+
     let availableSlots = [];
     let bookedSlots = [];
+
     for (const availability of availabilityBlocks) {
       const aStart = new Date(availability.startDateTime);
       const aEnd = new Date(availability.endDateTime);
@@ -101,6 +115,7 @@ exports.GetAvailability = catchAsync(async (req, res) => {
       matchingBookings.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
 
       let cursor = aStart;
+
       for (const booking of matchingBookings) {
         const bStart = new Date(booking.startDateTime);
         const bEnd = new Date(booking.endDateTime);
@@ -114,7 +129,7 @@ exports.GetAvailability = catchAsync(async (req, res) => {
         }
 
         // Move cursor 5 minutes ahead of booking end
-        const nextStart = new Date(bEnd.getTime() + 5 * 60000); // 5 minutes = 5 * 60 * 1000 ms
+        const nextStart = new Date(bEnd.getTime() + 5 * 60000);
         cursor = nextStart > cursor ? nextStart : cursor;
       }
 
