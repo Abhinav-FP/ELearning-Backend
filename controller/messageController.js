@@ -3,6 +3,7 @@ const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
 const Message = require("../model/message");
 const User = require("../model/user");
+const { createNotification } = require("./NotificationController");
 
 exports.AddMessage = catchAsync(async (req, res) => {
   try {
@@ -32,6 +33,12 @@ exports.AddMessage = catchAsync(async (req, res) => {
     });
 
     const messageResult = await messageRecord.save();
+    await createNotification({
+      body: {
+        ReceiverId: receiver,
+        text: `You have received a new message from ${req.user.name || ""}`
+      },
+    });
 
     if (!messageResult) {
       return errorResponse(res, "Failed to send message.", 500);

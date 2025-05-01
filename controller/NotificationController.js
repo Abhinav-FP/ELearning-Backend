@@ -21,7 +21,7 @@ exports.NotificationGet = catchAsync(async (req, res) => {
   const UserId = req.user.id;
 
   try {
-    const notifications = await NotificationModel.fine({ReceiverId: UserId});
+    const notifications = await NotificationModel.find({ReceiverId: UserId});
     if(!notifications){
         return errorResponse(res, "No noification found", 404); 
     }
