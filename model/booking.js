@@ -2,20 +2,22 @@ const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
-    teacher: {
+    teacherId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Teacher id is required"],
     },
-    student: {
+    UserId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Student id is required"],
+         default: "67f8eb8224daa0005ae23291"
     },
-    lesson: {
+    LessonId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lesson",
       required: [true, "Lesson id is required"],
+       default: "67ff410ea8e3ad25440e5161"
     },
     paypalpaymentId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -23,7 +25,7 @@ const bookingSchema = new mongoose.Schema(
     },
     StripepaymentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Stripe",
+      ref: "stripepayments",
     },
     startDateTime: {
       type: Date,

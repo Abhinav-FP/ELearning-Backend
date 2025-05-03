@@ -3,8 +3,10 @@ const stripe = new Stripe(process.env.STRIPE_TEST_KEY);
 const catchAsync = require("../utils/catchAsync");
 const axios = require("axios");
 const qs = require('qs');
-const Payment = require("../model/Payment");
+const Payment = require("../model/PaypalPayment");
 const StripePayment = require("../model/StripePayment");
+const Bookings = require("../model/booking");
+const Loggers = require("../utils/Logger");
 
 
 
@@ -36,10 +38,9 @@ const generateAccessToken = async () => {
 };
 
 
-exports.createOrder = catchAsync(
-  async (req, res) => {
+exports.createOrder = catchAsync(async (req, res) => {
     try {
-      const { amount, currency } = req.body
+      const { amount, currency ,  } = req.body
       const accessToken = await generateAccessToken();
       const paypalApiUrl = process.env.PAYPAL_API;
 
@@ -77,8 +78,6 @@ exports.createOrder = catchAsync(
           },
         }
       );
-
-
       res.status(201).json(response.data);
     } catch (error) {
       console.error('Error in createOrder controller:', error);
@@ -90,10 +89,9 @@ exports.createOrder = catchAsync(
 
 exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
+    const UserId = req.user.id;
+    const { orderID, teacherId, startDateTime, endDateTime  ,LessonId  } = req.body;
     const accessToken = await generateAccessToken();
-    const { orderID, LessonId, UserId } = req.body;
-
-
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
       {},
@@ -119,7 +117,20 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       amount: captureData.purchase_units[0].payments.captures[0].amount.value, // "100.00"
       currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
     });
+
+
+
     const savedPayment = await newPayment.save();
+
+    const Bookingsave = new Bookings({
+      teacherId,
+      UserId: UserId,
+      LessonId,
+      paypalpaymentId: savedPayment?._id ,
+      startDateTime: startDateTime,
+      endDateTime: endDateTime,
+    });
+    await Bookingsave.save();
 
     res.status(200).json(savedPayment);
   } catch (error) {
@@ -129,10 +140,10 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 });
 
 
-exports.PaymentcancelOrder = catchAsync(
-  async (req, res) => {
+exports.PaymentcancelOrder = catchAsync(  async (req, res) => {
     try {
-      const { orderID, LessonId, UserId } = req.body;
+      const userId = req.user.id;
+      const { orderID,  LessonId  } = req.body;
 
       if (!orderID) {
         return res.status(400).json({ error: "orderID is required" });
@@ -150,6 +161,7 @@ exports.PaymentcancelOrder = catchAsync(
             },
           }
         );
+        Loggers.wran("voidResponse" ,voidResponse)
       } catch (paypalErr) {
         console.warn("Could not void PayPal order (maybe already captured?):", paypalErr.response?.data || paypalErr.message);
       }
@@ -163,11 +175,10 @@ exports.PaymentcancelOrder = catchAsync(
         status: "CANCELLED",
         capturedAt: new Date(),
         LessonId: LessonId || undefined,
-        UserId: UserId || undefined,
+        UserId: userId || undefined,
       });
 
-      await newPayment.save();
-
+      const record = await newPayment.save();
       res.status(200).json({ status: "CANCELLED", message: "Order cancelled successfully" });
     } catch (error) {
       console.error("Error saving cancelled order:", error.message);
@@ -202,7 +213,8 @@ const fetchPaymentId = async (sessionId, srNo) => {
 
 exports.createCheckout = catchAsync(async (req, res) => {
   try {
-    const { amount, email, userId, LessonId, currency } = req?.body;
+    const userId = req.user.id;
+    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime } = req?.body;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
@@ -235,11 +247,25 @@ exports.createCheckout = catchAsync(async (req, res) => {
       payment_id: null,
       session_id: session?.id,
       currency,
+      LessonId,
       amount,
       srNo
     });
-    await newPayment.save();
-    
+    const record = await newPayment.save();
+
+    const Bookingsave = new Bookings({
+      teacherId,
+      UserId: userId,
+      LessonId,
+      StripepaymentId: record?._id,
+      startDateTime: startDateTime,
+      endDateTime: endDateTime,
+      currency,
+      amount,
+      srNo
+    });
+    await Bookingsave.save();
+
     res.status(200).json({ url: session.url, status: "true" });
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
