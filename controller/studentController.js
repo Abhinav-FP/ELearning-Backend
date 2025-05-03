@@ -1,5 +1,6 @@
 const Bookings = require("../model/booking");
 const Payment = require("../model/PaypalPayment");
+const stripePayments = require("../model/StripePayment");
 const review = require("../model/review");
 const Teacher = require("../model/teacher");
 const TeacherAvailability = require("../model/TeacherAvailability");
@@ -15,14 +16,16 @@ exports.paymentget = catchAsync(async (req, res) => {
     const UserId = req.user.id;
     // console.log("req.user.id", req.user.id)
     const payment = await Payment.find({ UserId: UserId }).populate("LessonId");
+    const stripeData= await stripePayments.find({ UserId: UserId }).populate("LessonId");
 
     // console.log("_id:", payment)
-    if (!payment) {
+    if (!payment && !stripeData) {
       Loggers.warn("Payment Not Found.");
       return validationErrorResponse(res, "payment Not Updated", 400);
     }
     return successResponse(res, "Payment Get successfully!", 201, {
       payment,
+      stripeData
     });
   } catch (error) {
     console.log("error", error);

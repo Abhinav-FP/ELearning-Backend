@@ -72,9 +72,9 @@ exports.GetBookings = catchAsync(async (req, res) => {
 
     let data;
     if (role === "teacher") {
-      data = await Bookings.find({ teacher: id }).populate('teacher').populate('student').populate('lesson');
+      data = await Bookings.find({ teacherId: id }).populate('teacherId').populate('UserId').populate('LessonId');
     } else if (role === "student") {
-      data = await Bookings.find({ student: id }).populate('teacher').populate('student').populate('lesson');
+      data = await Bookings.find({ UserId: id }).populate('teacherId').populate('UserId').populate('LessonId');
     }
     else {
       // Case when role is admin
@@ -82,7 +82,7 @@ exports.GetBookings = catchAsync(async (req, res) => {
     }
 
     if (!data || data.length === 0) {
-      return errorResponse(res, "No bookings found", 404);
+      return errorResponse(res, "No bookings found", 200);
     }
 
     return successResponse(res, "Bookings retrieved successfully", 200, data);
