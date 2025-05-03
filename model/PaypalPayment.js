@@ -30,7 +30,6 @@ const orderSchema = new mongoose.Schema({
   LessonId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Lesson',
-    default: "67ff410ea8e3ad25440e5161"
   },
   UserId: {
     type: mongoose.Schema.Types.ObjectId,

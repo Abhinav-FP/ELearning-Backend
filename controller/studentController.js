@@ -1,5 +1,5 @@
 const Bookings = require("../model/booking");
-const Payment = require("../model/Payment");
+const Payment = require("../model/PaypalPayment");
 const review = require("../model/review");
 const Teacher = require("../model/teacher");
 const TeacherAvailability = require("../model/TeacherAvailability");
