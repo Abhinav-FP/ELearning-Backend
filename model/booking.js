@@ -17,6 +17,14 @@ const bookingSchema = new mongoose.Schema(
       ref: "Lesson",
       required: [true, "Lesson id is required"],
     },
+    paypalpaymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "paypalpayment"
+    },
+    StripepaymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Stripe",
+    },
     startDateTime: {
       type: Date,
       required: true,
