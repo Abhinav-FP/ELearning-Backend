@@ -3,11 +3,13 @@ const Bookings = require("../model/booking");
 const Lesson = require("../model/lesson");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
+const { DateTime } = require("luxon");
 const logger = require("../utils/Logger");
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
     let { startDateTime, endDateTime } = req.body;
+    const time_zone = req.user.time_zone;
 
     if (!startDateTime || !endDateTime) {
       return errorResponse(
@@ -17,19 +19,14 @@ exports.AddAvailability = catchAsync(async (req, res) => {
       );
     }
 
-    // Append 'Z' if missing (assumes input is meant to be in UTC)
-    if (!startDateTime.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(startDateTime)) {
-      startDateTime += 'Z';
-    }
-
-    if (!endDateTime.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(endDateTime)) {
-      endDateTime += 'Z';
-    }
+    // Convert times from user's timezone to UTC
+    const startUTC = DateTime.fromISO(startDateTime, { zone: time_zone }).toUTC().toJSDate();
+    const endUTC = DateTime.fromISO(endDateTime, { zone: time_zone }).toUTC().toJSDate();
 
     const booking = await TeacherAvailability.create({
       teacher: req.user.id,
-      startDateTime: new Date(startDateTime),
-      endDateTime: new Date(endDateTime),
+      startDateTime: startUTC,
+      endDateTime: endUTC,
     });
 
     return successResponse(res, "Availability added successfully", 201, booking);
@@ -40,8 +37,9 @@ exports.AddAvailability = catchAsync(async (req, res) => {
 
 exports.UpdateAvailability = catchAsync(async (req, res) => {
   try {
-    const { startDateTime, endDateTime  } = req.body;
+    const { startDateTime, endDateTime } = req.body;
     const { id } = req.params;
+    const time_zone = req.user.time_zone;
 
     if (!id) {
       return errorResponse(res, "ID is required", 400);
@@ -52,21 +50,12 @@ exports.UpdateAvailability = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid Id. No data found", 404);
     }
 
-     // Append 'Z' if missing (assumes input is meant to be in UTC)
-     if (!startDateTime.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(startDateTime)) {
-      startDateTime += 'Z';
-    }
-
-    if (!endDateTime.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(endDateTime)) {
-      endDateTime += 'Z';
-    }
-
     if (startDateTime != null) {
-      data.startDateTime = startDateTime;
+      data.startDateTime = DateTime.fromISO(startDateTime, { zone: time_zone }).toUTC().toJSDate();
     }
 
     if (endDateTime != null) {
-      data.endDateTime = endDateTime;
+      data.endDateTime = DateTime.fromISO(endDateTime, { zone: time_zone }).toUTC().toJSDate();
     }
 
     await data.save();
