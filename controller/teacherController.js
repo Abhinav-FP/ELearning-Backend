@@ -7,9 +7,9 @@ const logger = require("../utils/Logger");
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
-    const { startDateTime, endDateTime} = req.body;
+    let { startDateTime, endDateTime } = req.body;
 
-    if (!startDateTime, !endDateTime) {
+    if (!startDateTime || !endDateTime) {
       return errorResponse(
         res,
         "Start time and End time are required",
@@ -17,10 +17,19 @@ exports.AddAvailability = catchAsync(async (req, res) => {
       );
     }
 
+    // Append 'Z' if missing (assumes input is meant to be in UTC)
+    if (!startDateTime.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(startDateTime)) {
+      startDateTime += 'Z';
+    }
+
+    if (!endDateTime.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(endDateTime)) {
+      endDateTime += 'Z';
+    }
+
     const booking = await TeacherAvailability.create({
       teacher: req.user.id,
-      startDateTime,
-      endDateTime,
+      startDateTime: new Date(startDateTime),
+      endDateTime: new Date(endDateTime),
     });
 
     return successResponse(res, "Availability added successfully", 201, booking);
@@ -41,6 +50,15 @@ exports.UpdateAvailability = catchAsync(async (req, res) => {
     const data = await TeacherAvailability.findById(id);
     if (!data) {
       return errorResponse(res, "Invalid Id. No data found", 404);
+    }
+
+     // Append 'Z' if missing (assumes input is meant to be in UTC)
+     if (!startDateTime.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(startDateTime)) {
+      startDateTime += 'Z';
+    }
+
+    if (!endDateTime.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(endDateTime)) {
+      endDateTime += 'Z';
     }
 
     if (startDateTime != null) {
@@ -77,7 +95,6 @@ exports.RemoveAvailability = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
-
 
 exports.GetAvailability = catchAsync(async (req, res) => {
   try {
