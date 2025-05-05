@@ -271,8 +271,8 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
         if (cursor < bStart) {
           availableSlots.push({
             teacher: id,
-            start: new Date(cursor),
-            end: new Date(bStart),
+            startDateTime: new Date(cursor),
+            endDateTime: new Date(bStart),
           });
         }
 
@@ -284,16 +284,16 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
       if (cursor < aEnd) {
         availableSlots.push({
           teacher: id,
-          start: new Date(cursor),
-          end: new Date(aEnd),
+          startDateTime: new Date(cursor),
+          endDateTime: new Date(aEnd),
         });
       }
 
       bookedSlots.push(
         ...matchingBookings.map(b => ({
           teacher: id,
-          start: new Date(b.startDateTime),
-          end: new Date(b.endDateTime),
+          startDateTime: new Date(b.startDateTime),
+          endDateTime: new Date(b.endDateTime),
           student: b.student,
           lesson: b.lesson,
         }))
@@ -301,7 +301,7 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
     }
 
     return successResponse(res, "Availability processed", 200, {
-      availableSlots,
+      availabilityBlocks:availableSlots,
       bookedSlots,
     });
   } catch (error) {
