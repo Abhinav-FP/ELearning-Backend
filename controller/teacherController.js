@@ -92,7 +92,9 @@ exports.GetAvailability = catchAsync(async (req, res) => {
     if (!availabilityBlocks || availabilityBlocks.length === 0) {
       return errorResponse(res, "No Data found", 200);
     }
-    const bookings = await Bookings.find({ teacher: id, cancelled: false }).lean();
+    // console.log("availabilityBlocks",availabilityBlocks);
+    const bookings = await Bookings.find({ teacherId: id, cancelled: false }).lean();
+    // console.log("bookings",bookings);
     if (!bookings || bookings.length === 0) {
       return successResponse(res, "Availability processed", 200, {
         availabilityBlocks,
