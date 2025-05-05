@@ -221,8 +221,10 @@ exports.createCheckout = catchAsync(async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment', // Correct mode value
-      success_url: `http://localhost:3000/stripe/success/${srNo}`,
-      cancel_url: `http://localhost:3000/stripe/cancel/${srNo}`,
+      // success_url: `http://localhost:3000/stripe/success/${srNo}`,
+      success_url: `https://e-learning-seven-ashy.vercel.app/stripe/success/${srNo}`,
+      // cancel_url: `http://localhost:3000/stripe/cancel/${srNo}`,
+      cancel_url: `https://e-learning-seven-ashy.vercel.app/stripe/cancel/${srNo}`,
       submit_type: "pay",
       customer_email: "ankitjain@gmail.com",
       billing_address_collection: "auto",
