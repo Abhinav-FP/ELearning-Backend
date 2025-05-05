@@ -7,8 +7,7 @@ const Payment = require("../model/PaypalPayment");
 const StripePayment = require("../model/StripePayment");
 const Bookings = require("../model/booking");
 const Loggers = require("../utils/Logger");
-
-
+const { DateTime } = require("luxon");
 
 const clientId = process.env.PAYPAL_CLIENT_ID;
 const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -36,7 +35,6 @@ const generateAccessToken = async () => {
     console.error("PayPal Token Error:", error.response?.data || error.message);
   }
 };
-
 
 exports.createOrder = catchAsync(async (req, res) => {
     try {
@@ -90,7 +88,7 @@ exports.createOrder = catchAsync(async (req, res) => {
 exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
-    const { orderID, teacherId, startDateTime, endDateTime  ,LessonId  } = req.body;
+    const { orderID, teacherId, startDateTime, endDateTime  ,LessonId, timezone} = req.body;
     const accessToken = await generateAccessToken();
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
@@ -122,13 +120,17 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 
     const savedPayment = await newPayment.save();
 
+    // Convert times from user's timezone to UTC
+    const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+    const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+
     const Bookingsave = new Bookings({
       teacherId,
       UserId: UserId,
       LessonId,
       paypalpaymentId: savedPayment?._id ,
-      startDateTime: startDateTime,
-      endDateTime: endDateTime,
+      startDateTime: startUTC,
+      endDateTime: endUTC,
     });
     await Bookingsave.save();
 
@@ -214,7 +216,7 @@ const fetchPaymentId = async (sessionId, srNo) => {
 exports.createCheckout = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime } = req?.body;
+    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone } = req?.body;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
@@ -255,13 +257,17 @@ exports.createCheckout = catchAsync(async (req, res) => {
     });
     const record = await newPayment.save();
 
+    // Convert times from user's timezone to UTC
+    const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+    const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+
     const Bookingsave = new Bookings({
       teacherId,
       UserId: userId,
       LessonId,
       StripepaymentId: record?._id,
-      startDateTime: startDateTime,
-      endDateTime: endDateTime,
+      startDateTime: startUTC,
+      endDateTime: endUTC,
       currency,
       amount,
       srNo
@@ -343,4 +349,3 @@ exports.PaymentCancel = catchAsync(async (req, res) => {
     });
   }
 });
-
