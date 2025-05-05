@@ -240,7 +240,7 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
       return errorResponse(res, "No Data found", 200);
     }
 
-    const bookings = await Bookings.find({ teacher: id, cancelled: false }).lean();
+    const bookings = await Bookings.find({ teacherId: id, cancelled: false }).lean();
 
     if (!bookings || bookings.length === 0) {
       return successResponse(res, "Availability processed", 200, {
