@@ -35,7 +35,7 @@ exports.paymentget = catchAsync(async (req, res) => {
       console.log("errors", errors);
       return validationErrorResponse(res, errors.join(", "), 400, "error");
     }
-    return errorResponse(res, error.message || "Internal Server Error", 500);
+    return errorResponse(res, error.message || "Internal Server Error", 500); 
   }
 });
 
