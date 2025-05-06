@@ -10,10 +10,14 @@ const catchAsync = require("../utils/catchAsync");
 const Loggers = require("../utils/Logger");
 const sendEmail = require("../utils/EmailMailler");
 const Welcome = require("../EmailTemplate/Welcome");
-const {
-  uploadFileToSpaces,
-  deleteFileFromSpaces,
-} = require("../utils/FileUploader");
+const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
+
+const signEmail = async (id) => {
+  const token = jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
+    expiresIn: "15m",
+  });
+  return token;
+};
 
 exports.signup = catchAsync(async (req, res) => {
   try {
@@ -22,7 +26,7 @@ exports.signup = catchAsync(async (req, res) => {
     // teacher  field
     // const { description, experience, city, intro_video, qualifications, languages_spoken, ais_trained, payment_method } = req.body;
 
-    if ((!email, !password, !role, !name, !time_zone)) {
+    if (!email || !password || !role || !name || !time_zone) {
       return errorResponse(res, "All fields are required", 401, "false");
     }
     const userRecord = new User({
@@ -35,15 +39,6 @@ exports.signup = catchAsync(async (req, res) => {
       time_zone,
     });
 
-    const registrationSubject =
-      "Welcome to E-learning! 🎉 Your account has been created.";
-    const emailHtml = Welcome(name);
-    await sendEmail({
-      email: email,
-      message: "Welcome to E-learning! 🎉 Your account has been created.",
-      subject: registrationSubject,
-      emailHtml: emailHtml,
-    });
     const userResult = await userRecord.save();
 
     if (!userResult) {
@@ -55,8 +50,20 @@ exports.signup = catchAsync(async (req, res) => {
     //     return errorResponse(res, "All fields are required", 401, "false");
     //   }
     // }
+    const token = await signEmail(userResult._id);
+    const link = `https://e-learning-seven-ashy.vercel.app/verify/${token}`;
 
     if (role !== "teacher") {
+      // Send email logic for student
+      const registrationSubject =
+      "Welcome to E-learning! 🎉 Your account has been created.";
+    const emailHtml = Welcome(name, link);
+    await sendEmail({
+      email: email,
+      subject: registrationSubject,
+      emailHtml: emailHtml,
+    });
+
       return successResponse(res, "User created successfully!", 201, {
         user: userResult,
       });
@@ -79,17 +86,24 @@ exports.signup = catchAsync(async (req, res) => {
 
     const teacherResult = await teacherRecord.save();
 
-    if (teacherResult) {
-      successResponse(res, "Teacher created successfully!", 201, {
-        user: userResult,
-        carrier: teacherResult,
-      });
-    } else {
-      // Rollback user creation if carrier creatison fails
+    if (!teacherResult) {
       await User.findByIdAndDelete(userResult._id);
-
-      errorResponse(res, "Failed to create carrier.", 500);
+      return errorResponse(res, "Failed to create carrier.", 500);
     }
+
+    const registrationSubject =
+      "Welcome to E-learning! 🎉 Your account has been created.";
+    const emailHtml = Welcome(name, link);
+    await sendEmail({
+      email: email,
+      subject: registrationSubject,
+      emailHtml: emailHtml,
+    });
+    successResponse(res, "Teacher created successfully!", 201, {
+      user: userResult,
+      carrier: teacherResult,
+    });
+
   } catch (error) {
     console.log("error", error);
     Loggers.error(error);

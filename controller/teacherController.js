@@ -179,7 +179,7 @@ exports.GetLessons = catchAsync(async (req, res) => {
 exports.UploadCheck = catchAsync(async (req, res) => {
   try {
     if(!req.file){
-      return res.status(500).json({ error: 'File toh bhejo bhai' });
+      return res.status(500).json({ error: 'File toh bhej bhai' });
     }
     const fileKey = await uploadFileToSpaces(req.file);
     if (fileKey) {

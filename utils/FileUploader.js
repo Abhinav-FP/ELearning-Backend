@@ -4,11 +4,11 @@ const { v4: uuidv4 } = require('uuid');
 
 // Configure AWS SDK for DigitalOcean Spaces (SDK v3)
 const s3Client = new S3Client({
-  region: 'sgp1',
-  endpoint: 'https://sgp1.digitaloceanspaces.com', // Endpoint for your DigitalOcean Space
+  region: process.env.region,
+  endpoint: `https://${process.env.endpoint}`, // Endpoint for your DigitalOcean Space
   credentials: {
-    accessKeyId: 'DO801LNHZNY3BRCGZV4N', // Your DigitalOcean Space Access Key
-    secretAccessKey: 'uZBLMvjl48TjPBV7m8LVPBSTTwT3jStXUKxgdUtkpMA', // Your DigitalOcean Space Secret Key
+    accessKeyId: process.env.accesskeyId, // Your DigitalOcean Space Access Key
+    secretAccessKey: process.env.secretAccess, // Your DigitalOcean Space Secret Key
   },
 });
 
@@ -19,7 +19,7 @@ const uploadFileToSpaces = async (file) => {
     const fileName = `${uuidv4()}-${file.originalname}`; // Unique filename
 
     const uploadParams = {
-      Bucket: 'student-teacher-platform', // Your Space Name
+      Bucket: process.env.bucketName, // Your Space Name
       Key: `uploads/${fileName}`, // Path within the Space
       Body: file.buffer,
       ContentType: file.mimetype,
@@ -31,7 +31,7 @@ const uploadFileToSpaces = async (file) => {
     await s3Client.send(command);
 
     // Construct and return the complete public URL
-    const fileUrl = `https://student-teacher-platform.sgp1.digitaloceanspaces.com/uploads/${fileName}`;
+    const fileUrl = `https://${process.env.bucketName}.${process.env.endpoint}/uploads/${fileName}`;
     return fileUrl; // Full public URL
   } catch (err) {
     console.error('Upload error:', err.message);
@@ -48,7 +48,7 @@ const deleteFileFromSpaces = async (fileUrl) => {
 
     // Prepare the delete parameters
     const deleteParams = {
-      Bucket: 'student-teacher-platform', // Your Space Name
+      Bucket: process.env.bucketName, // Your Space Name
       Key: fileKey, // File key from the URL
     };
 

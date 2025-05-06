@@ -1,5 +1,5 @@
 
-module.exports = (userName) => {
+module.exports = (userName,link) => {
     console.log("userName" ,userName)
     return `
   <div id="email" style="background: #444;padding: 20px 0;">
