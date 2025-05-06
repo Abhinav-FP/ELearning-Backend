@@ -8,6 +8,9 @@ const StripePayment = require("../model/StripePayment");
 const Bookings = require("../model/booking");
 const Loggers = require("../utils/Logger");
 const { DateTime } = require("luxon");
+const BookingSuccess = require("../EmailTemplate/BookingSuccess");
+const sendEmail = require("../utils/EmailMailler");
+const User = require("../model/user");
 
 const clientId = process.env.PAYPAL_CLIENT_ID;
 const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -133,6 +136,18 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       endDateTime: endUTC,
     });
     await Bookingsave.save();
+
+    const user = await User.findById({ _id: req.user.id });
+    console.log("UserId:", user);
+    
+      const registrationSubject ="Booking Confirmed 🎉";
+      const  Username =  user.name
+        const emailHtml = BookingSuccess(startDateTime ,Username );
+        await sendEmail({
+          email: user.email,
+          subject: registrationSubject,
+          emailHtml: emailHtml,
+        });
 
     res.status(200).json(savedPayment);
   } catch (error) {
@@ -273,8 +288,15 @@ exports.createCheckout = catchAsync(async (req, res) => {
       srNo
     });
     await Bookingsave.save();
-
-    
+    const user = await User.findById({ _id: req.user.id });
+    const registrationSubject ="Booking Confirmed 🎉";
+      const  Username =  user.name
+        const emailHtml = BookingSuccess(startDateTime ,Username );
+        await sendEmail({
+          email: user.email,
+          subject: registrationSubject,
+          emailHtml: emailHtml,
+        });
 
     res.status(200).json({ url: session.url, status: "true" });
   } catch (err) {
