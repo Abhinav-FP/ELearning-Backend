@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ email: 1 }, { unique: [true, 'Unique email is required!'] });
 
 const User = mongoose.model('User', userSchema);
 
