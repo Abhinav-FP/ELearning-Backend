@@ -1,6 +1,7 @@
 const router = require("express").Router();
-const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability } = require("../controller/teacherController");
+const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck } = require("../controller/teacherController");
 const { verifyToken } = require("../middleware/tokenVerify");
+const { upload } = require("../utils/FileUploader");
 
 router.post("/teacher/availability/add" , verifyToken , AddAvailability);
 
@@ -11,5 +12,7 @@ router.delete("/teacher/availability/delete/:id", verifyToken, RemoveAvailabilit
 router.get("/teacher/availability/get", verifyToken, GetAvailability);
 
 router.get("/teacher/lesson/get", verifyToken, GetLessons);
+
+router.post("/teacher/upload/check",upload.single('file'), UploadCheck);
 
 module.exports = router;
