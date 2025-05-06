@@ -2,20 +2,19 @@ const nodemailer = require('nodemailer');
 const logger = require('./Logger');
 
 const sendEmail = async (data) => {
-    const { email, name, message, package, payment_id, Otp, subject, emailTemplate } = data;
+    const { email, subject, emailHtml } = data;
 
     let transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
         port: 465,
-        secure: false,
+        secure: true,
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
+            user: process.env.MAIL_USERNAME,
+            pass: process.env.MAIL_PASSWORD,
         },
     });
-    const emailHtml = emailTemplate({ name, message, package, payment_id, Otp });
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: process.env.MAIL_USERNAME,
         to: email,
         subject: subject,
         html: emailHtml,

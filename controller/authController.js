@@ -4,6 +4,8 @@ const jwt = require("jsonwebtoken");
 const { errorResponse, successResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
 const Loggers = require("../utils/Logger");
+const sendEmail = require("../utils/EmailMailler");
+const Welcome = require("../EmailTemplate/Welcome");
 
 exports.signup = catchAsync(async (req, res) => {
   try {
@@ -23,7 +25,18 @@ exports.signup = catchAsync(async (req, res) => {
       nationality,
       time_zone
     });
+
+    const registrationSubject = "Welcome to E-learning! 🎉 Your account has been created.";
+    const emailHtml = Welcome(name);
+      await sendEmail({
+        email: email,
+        message: "Welcome to E-learning! 🎉 Your account has been created.",
+        subject: registrationSubject,
+        emailHtml: emailHtml,
+      });
     const userResult = await userRecord.save();
+
+    
     if (!userResult) {
       return errorResponse(res, "Failed to create user.", 500);
     }
@@ -85,7 +98,7 @@ exports.login = catchAsync(async (req, res) => {
   // Code to sync indexes, just replace Ranks with your model name
   // (async () => {
   //   try {
-  //     await Ranks.syncIndexes(); // Ensures missing indexes are created
+  //     await User.syncIndexes(); // Ensures missing indexes are created
   //     console.log("Indexes synced successfully!");
   //     res.status(200).json({
   //       status:true,

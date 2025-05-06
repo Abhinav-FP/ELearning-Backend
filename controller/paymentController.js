@@ -274,6 +274,8 @@ exports.createCheckout = catchAsync(async (req, res) => {
     });
     await Bookingsave.save();
 
+    
+
     res.status(200).json({ url: session.url, status: "true" });
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
