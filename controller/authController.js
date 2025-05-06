@@ -116,6 +116,25 @@ exports.signup = catchAsync(async (req, res) => {
   }
 });
 
+exports.verifyEmail = catchAsync(async (req, res) => {
+  try{
+  const { token } = req.body;
+  const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY);
+  if (!id) {
+    return errorResponse(res, "Invalid or expired token", 400);
+  }
+  const user = await User.findById(id);
+  if (!user) {
+    return errorResponse(res, "User not found", 404);
+  }
+  user.email_verify = true;
+  await user.save();
+  return successResponse(res, "Email verified successfully!", 200);
+} catch (error) {
+  return errorResponse(res, error.message || "Internal Server Error", 500);
+}
+});
+
 exports.login = catchAsync(async (req, res) => {
   // Code to sync indexes, just replace Ranks with your model name
   // (async () => {
