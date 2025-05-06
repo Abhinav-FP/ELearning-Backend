@@ -169,7 +169,7 @@ exports.GetUser = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid User", 401);
     }
     const user = await User.findById({ _id: userId }).select(
-      "email name role phone time_zone"
+      "email name role time_zone profile_photo"
     );
     if (!user) {
       Loggers.error("Invalid User");
@@ -189,6 +189,8 @@ exports.GetUser = catchAsync(async (req, res) => {
 exports.updateProfile = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
+    // console.log("req.body",req.body);
+    // console.log("req.file",req.file);
 
     if (!userId) {
       return errorResponse(res, "Invalid User", 401);
@@ -207,7 +209,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
     let photo = null;
     if (req.file) {
       if (user.profile_photo) {
-        console.log("Old profile photo to delete:", user.profile_photo);
+        // console.log("Old profile photo to delete:", user.profile_photo);
         const isDeleted = await deleteFileFromSpaces(user.profile_photo);
         if (!isDeleted) {
           return res.status(500).json({

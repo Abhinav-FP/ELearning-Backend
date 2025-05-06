@@ -44,7 +44,7 @@ const deleteFileFromSpaces = async (fileUrl) => {
     // Extract the file key from the URL
     const urlParts = fileUrl.split('/');
     const fileKey = urlParts.slice(urlParts.indexOf('uploads')).join('/'); // Extracting 'uploads/filename'
-    console.log("fileKey",fileKey);
+    // console.log("fileKey",fileKey);
 
     // Prepare the delete parameters
     const deleteParams = {
