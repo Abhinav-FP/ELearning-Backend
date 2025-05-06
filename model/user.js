@@ -22,7 +22,6 @@ const userSchema = new mongoose.Schema({
     required: [true, "Role is required"],
     enum: ['student', 'teacher', "admin"],
   },
-
   nationality: {
     type: String,
     default: null,
@@ -35,10 +34,13 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  profile_photo: {
+    type: String,
+    default: null
+  },
 }, { timestamps: true });
 
 userSchema.index({ email: 1 }, { unique: true });
-
 
 const User = mongoose.model('User', userSchema);
 

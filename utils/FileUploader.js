@@ -39,17 +39,22 @@ const uploadFileToSpaces = async (file) => {
   }
 };
 
-const deleteFileFromSpaces = async (fileKey) => {
+const deleteFileFromSpaces = async (fileUrl) => {
   try {
+    // Extract the file key from the URL
+    const urlParts = fileUrl.split('/');
+    const fileKey = urlParts.slice(urlParts.indexOf('uploads')).join('/'); // Extracting 'uploads/filename'
+    console.log("fileKey",fileKey);
+
+    // Prepare the delete parameters
     const deleteParams = {
-      Bucket: 'student-teacher-platform', // Bucket Name
-      Key: fileKey,
+      Bucket: 'student-teacher-platform', // Your Space Name
+      Key: fileKey, // File key from the URL
     };
 
     // Using DeleteObjectCommand to delete the file
     const command = new DeleteObjectCommand(deleteParams);
     await s3Client.send(command);
-
     return true;
   } catch (err) {
     console.error('Delete error:', err.message);

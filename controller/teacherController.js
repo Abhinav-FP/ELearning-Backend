@@ -5,7 +5,7 @@ const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const { DateTime } = require("luxon");
 const logger = require("../utils/Logger");
-const { uploadFileToSpaces } = require("../utils/FileUploader");
+const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
@@ -176,7 +176,6 @@ exports.GetLessons = catchAsync(async (req, res) => {
     }
 });
 
-
 exports.UploadCheck = catchAsync(async (req, res) => {
   try {
     if(!req.file){
@@ -188,6 +187,32 @@ exports.UploadCheck = catchAsync(async (req, res) => {
     } else {
       res.status(500).json({ error: 'Upload failed' });
     }
+  } catch (error) {
+      return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.DeleteCheck = catchAsync(async (req, res) => {
+  try {
+    // console.log("req.body",req.body);
+    const { url }= req.body;
+    if(!url){
+      return res.status(400).json({
+        status:false,
+        message: "Please provide url"
+      })
+    }
+    const isDeleted = await deleteFileFromSpaces(url);
+    if(!isDeleted){
+      return res.status(500).json({
+        status:false,
+        message: "Unable to delete file"
+      })
+    }
+    res.status(200).json({
+      status:false,
+      message: "File deleted successfully!"
+    })
   } catch (error) {
       return errorResponse(res, error.message || "Internal Server Error", 500);
   }

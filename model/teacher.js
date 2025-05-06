@@ -55,11 +55,11 @@ const teacherSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  profile_photo: {
-    type: String,
-    default: null
-    // required: [true, "Profile Photo is required"],  
-  },
+  // profile_photo: {
+  //   type: String,
+  //   default: null
+  //   // required: [true, "Profile Photo is required"],  
+  // },
 }, { timestamps: true });
 
 const Teacher = mongoose.model('Teacher', teacherSchema);

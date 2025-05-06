@@ -1,16 +1,25 @@
 const User = require("../model/user");
 const Teacher = require("../model/teacher");
 const jwt = require("jsonwebtoken");
-const { errorResponse, successResponse, validationErrorResponse } = require("../utils/ErrorHandling");
+const {
+  errorResponse,
+  successResponse,
+  validationErrorResponse,
+} = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
 const Loggers = require("../utils/Logger");
 const sendEmail = require("../utils/EmailMailler");
 const Welcome = require("../EmailTemplate/Welcome");
+const {
+  uploadFileToSpaces,
+  deleteFileFromSpaces,
+} = require("../utils/FileUploader");
 
 exports.signup = catchAsync(async (req, res) => {
   try {
-    const { name, email, password, role, gender, nationality, time_zone } = req.body;
-    // teacher  field 
+    const { name, email, password, role, gender, nationality, time_zone } =
+      req.body;
+    // teacher  field
     // const { description, experience, city, intro_video, qualifications, languages_spoken, ais_trained, payment_method } = req.body;
 
     if ((!email, !password, !role, !name, !time_zone)) {
@@ -23,20 +32,20 @@ exports.signup = catchAsync(async (req, res) => {
       role,
       gender,
       nationality,
-      time_zone
+      time_zone,
     });
 
-    const registrationSubject = "Welcome to E-learning! 🎉 Your account has been created.";
+    const registrationSubject =
+      "Welcome to E-learning! 🎉 Your account has been created.";
     const emailHtml = Welcome(name);
-      await sendEmail({
-        email: email,
-        message: "Welcome to E-learning! 🎉 Your account has been created.",
-        subject: registrationSubject,
-        emailHtml: emailHtml,
-      });
+    await sendEmail({
+      email: email,
+      message: "Welcome to E-learning! 🎉 Your account has been created.",
+      subject: registrationSubject,
+      emailHtml: emailHtml,
+    });
     const userResult = await userRecord.save();
 
-    
     if (!userResult) {
       return errorResponse(res, "Failed to create user.", 500);
     }
@@ -54,7 +63,6 @@ exports.signup = catchAsync(async (req, res) => {
     }
 
     // Save remaining data to Carrier table with reference to User
-
 
     const teacherRecord = new Teacher({
       userId: userResult._id,
@@ -83,11 +91,11 @@ exports.signup = catchAsync(async (req, res) => {
       errorResponse(res, "Failed to create carrier.", 500);
     }
   } catch (error) {
-    console.log("error", error)
+    console.log("error", error);
     Loggers.error(error);
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(el => el.message);
-      console.log("errors", errors)
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((el) => el.message);
+      console.log("errors", errors);
       return validationErrorResponse(res, errors.join(", "), 400, "error");
     }
     return errorResponse(res, error.message || "Internal Server Error", 500);
@@ -160,7 +168,9 @@ exports.GetUser = catchAsync(async (req, res) => {
       Loggers.error("Invalid User");
       return errorResponse(res, "Invalid User", 401);
     }
-    const user = await User.findById({ _id: userId }).select("email name role phone time_zone");
+    const user = await User.findById({ _id: userId }).select(
+      "email name role phone time_zone"
+    );
     if (!user) {
       Loggers.error("Invalid User");
       return errorResponse(res, "Invalid User", 401);
@@ -174,7 +184,7 @@ exports.GetUser = catchAsync(async (req, res) => {
     console.log(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
-})
+});
 
 exports.updateProfile = catchAsync(async (req, res) => {
   try {
@@ -183,22 +193,48 @@ exports.updateProfile = catchAsync(async (req, res) => {
     if (!userId) {
       return errorResponse(res, "Invalid User", 401);
     }
-    const updates = req.body;
-    if (updates.password) {
-      return errorResponse(res, "Pasword cannot be updated", 401);
-    }
-    if (Object.keys(updates).length === 0) {
-      return errorResponse(res, "No fields to update", 400);
-    }
-    const user = await User.findByIdAndUpdate(userId, updates, {
-      new: true,
-      runValidators: true,
-    });
+
+    const user = await User.findById(userId);
     if (!user) {
       return errorResponse(res, "User not found", 404);
     }
+
+    const updates = req.body;
+    if (updates.password) {
+      return errorResponse(res, "Password cannot be updated", 401);
+    }
+
+    let photo = null;
+    if (req.file) {
+      if (user.profile_photo) {
+        console.log("Old profile photo to delete:", user.profile_photo);
+        const isDeleted = await deleteFileFromSpaces(user.profile_photo);
+        if (!isDeleted) {
+          return res.status(500).json({
+            status: false,
+            message: "Unable to delete old profile photo",
+          });
+        }
+      }
+      const fileKey = await uploadFileToSpaces(req.file);
+      photo = fileKey;
+    }
+
+    if (photo) {
+      updates.profile_photo = photo;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return errorResponse(res, "No fields to update", 400);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    });
+
     return successResponse(res, "Profile updated successfully!", 200, {
-      user,
+      user: updatedUser,
     });
   } catch (error) {
     console.log(error);
@@ -212,7 +248,11 @@ exports.resetPassword = catchAsync(async (req, res) => {
     const { existingPassword, newPassword } = req.body;
 
     if (!existingPassword || !newPassword) {
-      return errorResponse(res, "Existing password and new password are required", 400);
+      return errorResponse(
+        res,
+        "Existing password and new password are required",
+        400
+      );
     }
 
     const user = await User.findById(userId).select("+password");
