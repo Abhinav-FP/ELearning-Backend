@@ -40,59 +40,59 @@ const generateAccessToken = async () => {
 };
 
 exports.createOrder = catchAsync(async (req, res) => {
-    try {
-      const { amount, currency ,  } = req.body
-      const accessToken = await generateAccessToken();
-      const paypalApiUrl = process.env.PAYPAL_API;
+  try {
+    const { amount, currency, } = req.body
+    const accessToken = await generateAccessToken();
+    const paypalApiUrl = process.env.PAYPAL_API;
 
-      const orderData = {
-        intent: 'CAPTURE',
-        purchase_units: [
-          {
-            amount: {
-              currency_code: currency,
-              value: amount,
-            },
-          },
-        ],
-        payment_source: {
-          paypal: {
-            experience_context: {
-              payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
-              payment_method_selected: "PAYPAL",
-              brand_name: "DekayHub - Volatility Grid",
-              shipping_preference: "NO_SHIPPING",
-              locale: "en-US",
-              user_action: "PAY_NOW",
-            },
+    const orderData = {
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          amount: {
+            currency_code: currency,
+            value: amount,
           },
         },
-      };
-
-      const response = await axios.post(
-        `${paypalApiUrl}/v2/checkout/orders`,
-        orderData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
+      ],
+      payment_source: {
+        paypal: {
+          experience_context: {
+            payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
+            payment_method_selected: "PAYPAL",
+            brand_name: "DekayHub - Volatility Grid",
+            shipping_preference: "NO_SHIPPING",
+            locale: "en-US",
+            user_action: "PAY_NOW",
           },
-        }
-      );
-      res.status(201).json(response.data);
-    } catch (error) {
-      console.error('Error in createOrder controller:', error);
-      res.status(500).json({ error: 'Failed to create PayPal order' });
-    }
+        },
+      },
+    };
+
+    const response = await axios.post(
+      `${paypalApiUrl}/v2/checkout/orders`,
+      orderData,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    res.status(201).json(response.data);
+  } catch (error) {
+    console.error('Error in createOrder controller:', error);
+    res.status(500).json({ error: 'Failed to create PayPal order' });
   }
+}
 );
 
 
 exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
-    console.log("req.body" ,req.body)
-    const { orderID, teacherId, startDateTime, endDateTime  ,LessonId, timezone} = req.body;
+    console.log("req.body", req.body)
+    const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone } = req.body;
     const accessToken = await generateAccessToken();
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
@@ -127,14 +127,14 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     // Convert times from user's timezone to UTC
     const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
     const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
-    
-console.log("startUTC" ,startUTC )
-console.log("endUTC" ,endUTC)
+
+    console.log("startUTC", startUTC)
+    console.log("endUTC", endUTC)
     const Bookingsave = new Bookings({
       teacherId,
       UserId: UserId,
       LessonId,
-      paypalpaymentId: savedPayment?._id ,
+      paypalpaymentId: savedPayment?._id,
       startDateTime: startUTC,
       endDateTime: endUTC,
     });
@@ -142,15 +142,15 @@ console.log("endUTC" ,endUTC)
 
     const user = await User.findById({ _id: req.user.id });
     console.log("UserId:", user);
-    
-      const registrationSubject ="Booking Confirmed 🎉";
-      const  Username =  user.name
-        const emailHtml = BookingSuccess(startDateTime ,Username );
-        await sendEmail({
-          email: user.email,
-          subject: registrationSubject,
-          emailHtml: emailHtml,
-        });
+
+    const registrationSubject = "Booking Confirmed 🎉";
+    const Username = user.name
+    const emailHtml = BookingSuccess(startDateTime, Username);
+    await sendEmail({
+      email: user.email,
+      subject: registrationSubject,
+      emailHtml: emailHtml,
+    });
 
     res.status(200).json(savedPayment);
   } catch (error) {
@@ -160,51 +160,51 @@ console.log("endUTC" ,endUTC)
 });
 
 
-exports.PaymentcancelOrder = catchAsync(  async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const { orderID,  LessonId  } = req.body;
+exports.PaymentcancelOrder = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { orderID, LessonId } = req.body;
 
-      if (!orderID) {
-        return res.status(400).json({ error: "orderID is required" });
-      }
-
-      const accessToken = await generateAccessToken();
-      try {
-        const voidResponse = await axios.post(
-          `${paypalApiUrl}/v2/checkout/orders/${orderID}/void`,
-          {},
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
-        Loggers.wran("voidResponse" ,voidResponse)
-      } catch (paypalErr) {
-        console.warn("Could not void PayPal order (maybe already captured?):", paypalErr.response?.data || paypalErr.message);
-      }
-      const existing = await Payment.findOne({ orderID });
-      if (existing) {
-        return res.status(200).json({ status: "CANCELLED", message: "Already recorded" });
-      }
-
-      const newPayment = new Payment({
-        orderID,
-        status: "CANCELLED",
-        capturedAt: new Date(),
-        LessonId: LessonId || undefined,
-        UserId: userId || undefined,
-      });
-
-      const record = await newPayment.save();
-      res.status(200).json({ status: "CANCELLED", message: "Order cancelled successfully" });
-    } catch (error) {
-      console.error("Error saving cancelled order:", error.message);
-      res.status(500).json({ error: "Failed to cancel order" });
+    if (!orderID) {
+      return res.status(400).json({ error: "orderID is required" });
     }
+
+    const accessToken = await generateAccessToken();
+    try {
+      const voidResponse = await axios.post(
+        `${paypalApiUrl}/v2/checkout/orders/${orderID}/void`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      Loggers.wran("voidResponse", voidResponse)
+    } catch (paypalErr) {
+      console.warn("Could not void PayPal order (maybe already captured?):", paypalErr.response?.data || paypalErr.message);
+    }
+    const existing = await Payment.findOne({ orderID });
+    if (existing) {
+      return res.status(200).json({ status: "CANCELLED", message: "Already recorded" });
+    }
+
+    const newPayment = new Payment({
+      orderID,
+      status: "CANCELLED",
+      capturedAt: new Date(),
+      LessonId: LessonId || undefined,
+      UserId: userId || undefined,
+    });
+
+    const record = await newPayment.save();
+    res.status(200).json({ status: "CANCELLED", message: "Order cancelled successfully" });
+  } catch (error) {
+    console.error("Error saving cancelled order:", error.message);
+    res.status(500).json({ error: "Failed to cancel order" });
   }
+}
 );
 
 
@@ -292,14 +292,14 @@ exports.createCheckout = catchAsync(async (req, res) => {
     });
     await Bookingsave.save();
     const user = await User.findById({ _id: req.user.id });
-    const registrationSubject ="Booking Confirmed 🎉";
-      const  Username =  user.name
-        const emailHtml = BookingSuccess(startDateTime ,Username );
-        await sendEmail({
-          email: user.email,
-          subject: registrationSubject,
-          emailHtml: emailHtml,
-        });
+    const registrationSubject = "Booking Confirmed 🎉";
+    const Username = user.name
+    const emailHtml = BookingSuccess(startDateTime, Username);
+    await sendEmail({
+      email: user.email,
+      subject: registrationSubject,
+      emailHtml: emailHtml,
+    });
 
     res.status(200).json({ url: session.url, status: "true" });
   } catch (err) {
