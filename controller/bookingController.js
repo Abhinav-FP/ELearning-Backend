@@ -31,6 +31,7 @@ exports.AddBooking = catchAsync(async (req, res) => {
 
 exports.UpdateBooking = catchAsync(async (req, res) => {
   try {
+    console.log("req.body",req.body);
     const { lessonCompletedStudent, lessonCompletedTeacher, startDateTime, endDateTime, timezone } = req.body;
     const { id } = req.params;
 
@@ -39,6 +40,7 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
     }
 
     const booking = await Bookings.findById(id);
+    // console.log("booking",booking);
     if (!booking) {
       return errorResponse(res, "Booking not found", 404);
     }
@@ -66,7 +68,7 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
       booking.endDateTime = endUTC;
       booking.rescheduled = true;
     }
-
+    console.log("booking",booking);mo
     await booking.save();
     return successResponse(res, "Booking updated successfully", 200);
   } catch (error) {
