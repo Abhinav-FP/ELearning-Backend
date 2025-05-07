@@ -91,6 +91,7 @@ exports.createOrder = catchAsync(async (req, res) => {
 exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
+    console.log("req.body" ,req.body)
     const { orderID, teacherId, startDateTime, endDateTime  ,LessonId, timezone} = req.body;
     const accessToken = await generateAccessToken();
     const response = await axios.post(
@@ -126,7 +127,9 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     // Convert times from user's timezone to UTC
     const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
     const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
-
+    
+console.log("startUTC" ,startUTC )
+console.log("endUTC" ,endUTC)
     const Bookingsave = new Bookings({
       teacherId,
       UserId: UserId,
