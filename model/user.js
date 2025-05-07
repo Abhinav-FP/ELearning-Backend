@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  email_verify: {
+    type: Boolean,
+    default: false,
+  }
 }, { timestamps: true });
 
 userSchema.index({ email: 1 }, { unique: [true, 'Unique email is required!'] });
