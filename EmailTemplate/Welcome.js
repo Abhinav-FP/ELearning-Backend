@@ -1,9 +1,8 @@
 
 module.exports = (userName, link) => {
-    console.log("userName", userName, link)
     return `
   <div id="email" style="background: #fdf6f7;padding: 20px 0;">
-    <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">        
+    <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:500px; margin: auto;background-color: #fff;">        
         <tr>
             <td style="padding: .5rem  1rem;text-align: center;"> 
                 <a href="https://e-learning-seven-ashy.vercel.app" style="text-decoration: none;">

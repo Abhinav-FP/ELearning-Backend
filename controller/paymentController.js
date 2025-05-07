@@ -294,7 +294,7 @@ exports.createCheckout = catchAsync(async (req, res) => {
     const user = await User.findById({ _id: req.user.id });
     const registrationSubject = "Booking Confirmed 🎉";
     const Username = user.name
-    const emailHtml = BookingSuccess(startDateTime, Username);
+    const emailHtml = BookingSuccess(startUTC, Username);
     await sendEmail({
       email: user.email,
       subject: registrationSubject,
