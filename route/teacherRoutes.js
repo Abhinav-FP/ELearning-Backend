@@ -1,4 +1,6 @@
 const router = require("express").Router();
+const { BankAddOrEdit } = require("../controller/BankController");
+const { PayoutAdd } = require("../controller/PayoutController");
 const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck } = require("../controller/teacherController");
 const { verifyToken } = require("../middleware/tokenVerify");
 const { upload } = require("../utils/FileUploader");
@@ -16,5 +18,10 @@ router.get("/teacher/lesson/get", verifyToken, GetLessons);
 router.post("/teacher/upload/check",upload.single('file'), UploadCheck);
 
 router.post("/teacher/delete/check", DeleteCheck);
+
+router.post("/teacher/payout", PayoutAdd);
+
+router.post("/teacher/bank", BankAddOrEdit);
+
 
 module.exports = router;
