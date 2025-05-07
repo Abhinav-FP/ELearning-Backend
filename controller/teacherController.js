@@ -13,23 +13,40 @@ exports.AddAvailability = catchAsync(async (req, res) => {
     const time_zone = req.user.time_zone;
 
     if (!startDateTime || !endDateTime) {
-      return errorResponse(
-        res,
-        "Start time and End time are required",
-        400
-      );
+      return errorResponse(res, "Start time and End time are required", 400);
     }
 
-    // Convert times from user's timezone to UTC
-    const startUTC = DateTime.fromISO(startDateTime, { zone: time_zone }).toUTC().toJSDate();
-    const endUTC = DateTime.fromISO(endDateTime, { zone: time_zone }).toUTC().toJSDate();
+    // Convert input to UTC
+    let startUTC = DateTime.fromISO(startDateTime, { zone: time_zone }).toUTC().toJSDate();
+    let endUTC = DateTime.fromISO(endDateTime, { zone: time_zone }).toUTC().toJSDate();
 
+    if (startUTC >= endUTC) {
+      return errorResponse(res, "End time must be after start time", 400);
+    }
+    const existingAvailabilities = await TeacherAvailability.find({ teacher: req.user.id });
+    const hasOverlap = existingAvailabilities.some(avail => {
+      return startUTC < avail.endDateTime && endUTC > avail.startDateTime;
+    });
+    if (hasOverlap) {
+      return errorResponse(res, "Availability overlaps with existing schedule", 400);
+    }
+    const adjacents = existingAvailabilities.filter(avail => 
+      avail.endDateTime.getTime() === startUTC.getTime() || 
+      avail.startDateTime.getTime() === endUTC.getTime()
+    );
+    if (adjacents.length > 0) {
+      for (const avail of adjacents) {
+        startUTC = new Date(Math.min(startUTC.getTime(), avail.startDateTime.getTime()));
+        endUTC = new Date(Math.max(endUTC.getTime(), avail.endDateTime.getTime()));
+      }
+      const adjacentIds = adjacents.map(a => a._id);
+      await TeacherAvailability.deleteMany({ _id: { $in: adjacentIds } });
+    }
     const booking = await TeacherAvailability.create({
       teacher: req.user.id,
       startDateTime: startUTC,
       endDateTime: endUTC,
     });
-
     return successResponse(res, "Availability added successfully", 201, booking);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
