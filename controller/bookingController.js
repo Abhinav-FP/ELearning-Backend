@@ -1,12 +1,13 @@
 const Bookings = require("../model/booking");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
+const { DateTime } = require("luxon");
 
 exports.AddBooking = catchAsync(async (req, res) => {
   try {
-    const { startDateTime, endDateTime, teacher_id, lesson_id, time } = req.body;
+    const { startDateTime, endDateTime, teacher_id, lesson_id } = req.body;
 
-    if (!startDateTime, !endDateTime, !teacher_id || !lesson_id || !time) {
+    if (!startDateTime, !endDateTime, !teacher_id || !lesson_id ) {
       return errorResponse(
         res,
         "Teacher ID, Lesson ID, and time are required",
@@ -30,7 +31,8 @@ exports.AddBooking = catchAsync(async (req, res) => {
 
 exports.UpdateBooking = catchAsync(async (req, res) => {
   try {
-    const { lessonCompletedStudent, lessonCompletedTeacher, time } = req.body;
+    console.log("req.body",req.body);
+    const { lessonCompletedStudent, lessonCompletedTeacher, startDateTime, endDateTime, timezone } = req.body;
     const { id } = req.params;
 
     if (!id) {
@@ -38,6 +40,7 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
     }
 
     const booking = await Bookings.findById(id);
+    // console.log("booking",booking);
     if (!booking) {
       return errorResponse(res, "Booking not found", 404);
     }
@@ -50,15 +53,22 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
       booking.lessonCompletedTeacher = lessonCompletedTeacher;
     }
 
-    if (time != null && booking.rescheduled) {
+    if (startDateTime != null &&  endDateTime != null && booking.rescheduled) {
       return errorResponse(res, "Booking has already been rescheduled once", 404);
     }
 
-    if (time != null && !booking.rescheduled) {
-      booking.time = time;
+    if (startDateTime != null &&  endDateTime != null && !booking.rescheduled) {
+      if(!timezone){
+        return errorResponse(res, "Timezone are required when updating startTIme", 400);
+      }
+      // Convert times from user's timezone to UTC
+      const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+      const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+      booking.startDateTime = startUTC;
+      booking.endDateTime = endUTC;
       booking.rescheduled = true;
     }
-
+    console.log("booking",booking);mo
     await booking.save();
     return successResponse(res, "Booking updated successfully", 200);
   } catch (error) {
