@@ -31,7 +31,7 @@ exports.AddBooking = catchAsync(async (req, res) => {
 
 exports.UpdateBooking = catchAsync(async (req, res) => {
   try {
-    console.log("req.body",req.body);
+    // console.log("req.body",req.body);
     const { lessonCompletedStudent, lessonCompletedTeacher, startDateTime, endDateTime, timezone } = req.body;
     const { id } = req.params;
 
@@ -68,7 +68,7 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
       booking.endDateTime = endUTC;
       booking.rescheduled = true;
     }
-    console.log("booking",booking);mo
+    // console.log("booking",booking);
     await booking.save();
     return successResponse(res, "Booking updated successfully", 200);
   } catch (error) {
