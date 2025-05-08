@@ -6,6 +6,7 @@ const qs = require('qs');
 const Payment = require("../model/PaypalPayment");
 const StripePayment = require("../model/StripePayment");
 const Bookings = require("../model/booking");
+const Teacher = require("../model/teacher");
 const Loggers = require("../utils/Logger");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("../EmailTemplate/BookingSuccess");
@@ -141,11 +142,12 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     await Bookingsave.save();
 
     const user = await User.findById({ _id: req.user.id });
+    const teacher = await User.findById({ _id: teacherId });
     console.log("UserId:", user);
 
     const registrationSubject = "Booking Confirmed 🎉";
     const Username = user.name
-    const emailHtml = BookingSuccess(startDateTime, Username);
+    const emailHtml = BookingSuccess(startDateTime, Username, teacher?.name);
     await sendEmail({
       email: user.email,
       subject: registrationSubject,

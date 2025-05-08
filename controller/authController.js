@@ -56,7 +56,7 @@ exports.signup = catchAsync(async (req, res) => {
     if (role !== "teacher") {
       // Send email logic for student
       const registrationSubject =
-      "Welcome to E-learning! 🎉 Your account has been created.";
+      "Welcome to Japanese for Me!🎉 Your account has been created.";
     const emailHtml = Welcome(name, link);
     await sendEmail({
       email: email,
