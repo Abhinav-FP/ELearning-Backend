@@ -51,6 +51,27 @@ const bookingSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    totalAmount: {
+      type: Number,
+      required: [true, "Amount is required"],
+    },
+    teacherEarning: {
+      type: Number,
+      required: [true, "Teacher Earning is required"],
+    },
+    adminCommission: {
+      type: Number,
+      required: [true, "Admin Commission is required"],
+    },
+    payoutCreationDate: {
+      type: Date,
+      default: null,
+    },
+    payoutStatus: { 
+      type: String, 
+      enum: ['pending', 'approved', 'rejected'], 
+      default: 'pending' 
+    },
   },
   { timestamps: true }
 );

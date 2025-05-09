@@ -93,7 +93,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
     console.log("req.body", req.body)
-    const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone } = req.body;
+    const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone, totalAmount, adminCommission } = req.body;
     const accessToken = await generateAccessToken();
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
@@ -131,8 +131,12 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 
     console.log("startUTC", startUTC)
     console.log("endUTC", endUTC)
+    const teacherEarning = totalAmount - adminCommission;
     const Bookingsave = new Bookings({
       teacherId,
+      totalAmount,
+      adminCommission,
+      teacherEarning,
       UserId: UserId,
       LessonId,
       paypalpaymentId: savedPayment?._id,
@@ -236,17 +240,17 @@ const fetchPaymentId = async (sessionId, srNo) => {
 exports.createCheckout = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone } = req?.body;
+    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission} = req?.body;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment', // Correct mode value
-      success_url: `${process.env.stripe_link}/stripe/success/${srNo}`,
-      // success_url: `https://e-learning-seven-ashy.vercel.app/stripe/success/${srNo}`,
-      cancel_url: `${process.env.stripe_link}/stripe/cancel/${srNo}`,
-      // cancel_url: `https://e-learning-seven-ashy.vercel.app/stripe/cancel/${srNo}`,
+      // success_url: `${process.env.stripe_link}/stripe/success/${srNo}`,
+      success_url: `http://localhost:3000/stripe/success/${srNo}`,
+      // cancel_url: `${process.env.stripe_link}/stripe/cancel/${srNo}`,
+      cancel_url: `http://localhost:3000/stripe/cancel/${srNo}`,
       submit_type: "pay",
       customer_email: "ankitjain@gmail.com",
       billing_address_collection: "auto",
@@ -281,15 +285,18 @@ exports.createCheckout = catchAsync(async (req, res) => {
     const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
     const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
 
+    const teacherEarning = amount - adminCommission;
     const Bookingsave = new Bookings({
       teacherId,
       UserId: userId,
+      teacherEarning,
+      adminCommission,
       LessonId,
       StripepaymentId: record?._id,
       startDateTime: startUTC,
       endDateTime: endUTC,
       currency,
-      amount,
+      totalAmount:amount,
       srNo
     });
     await Bookingsave.save();
