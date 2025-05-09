@@ -6,6 +6,7 @@ const qs = require('qs');
 const Payment = require("../model/PaypalPayment");
 const StripePayment = require("../model/StripePayment");
 const Bookings = require("../model/booking");
+const Teacher = require("../model/teacher");
 const Loggers = require("../utils/Logger");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("../EmailTemplate/BookingSuccess");
@@ -141,11 +142,12 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     await Bookingsave.save();
 
     const user = await User.findById({ _id: req.user.id });
+    const teacher = await User.findById({ _id: teacherId });
     console.log("UserId:", user);
 
     const registrationSubject = "Booking Confirmed 🎉";
     const Username = user.name
-    const emailHtml = BookingSuccess(startDateTime, Username);
+    const emailHtml = BookingSuccess(startDateTime, Username, teacher?.name);
     await sendEmail({
       email: user.email,
       subject: registrationSubject,
@@ -241,9 +243,9 @@ exports.createCheckout = catchAsync(async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment', // Correct mode value
-      success_url: `http://localhost:3000/stripe/success/${srNo}`,
+      success_url: `${process.env.stripe_link}/stripe/success/${srNo}`,
       // success_url: `https://e-learning-seven-ashy.vercel.app/stripe/success/${srNo}`,
-      cancel_url: `http://localhost:3000/stripe/cancel/${srNo}`,
+      cancel_url: `${process.env.stripe_link}/stripe/cancel/${srNo}`,
       // cancel_url: `https://e-learning-seven-ashy.vercel.app/stripe/cancel/${srNo}`,
       submit_type: "pay",
       customer_email: "ankitjain@gmail.com",

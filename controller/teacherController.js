@@ -107,76 +107,77 @@ exports.GetAvailability = catchAsync(async (req, res) => {
   try {
     const id = req.user.id;
     const availabilityBlocks = await TeacherAvailability.find({ teacher: id });
-    if (!availabilityBlocks || availabilityBlocks.length === 0) {
-      return errorResponse(res, "No Data found", 200);
-    }
-    // console.log("availabilityBlocks",availabilityBlocks);
-    const bookings = await Bookings.find({ teacherId: id, cancelled: false }).lean();
-    // console.log("bookings",bookings);
-    if (!bookings || bookings.length === 0) {
-      return successResponse(res, "Availability processed", 200, {
-        availabilityBlocks,
-        bookedSlots: [],
-      });
-    }
-
-    let availableSlots = [];
-    let bookedSlots = [];
-
-    for (const availability of availabilityBlocks) {
-      const aStart = new Date(availability.startDateTime);
-      const aEnd = new Date(availability.endDateTime);
-
-      const matchingBookings = bookings.filter(booking =>
-        new Date(booking.endDateTime) > aStart && new Date(booking.startDateTime) < aEnd
-      );
-
-      matchingBookings.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
-
-      let cursor = aStart;
-
-      for (const booking of matchingBookings) {
-        const bStart = new Date(booking.startDateTime);
-        const bEnd = new Date(booking.endDateTime);
-
-        if (cursor < bStart) {
-          availableSlots.push({
-            teacher: id,
-            start: new Date(cursor),
-            end: new Date(bStart),
+        if (!availabilityBlocks || availabilityBlocks.length === 0) {
+          return errorResponse(res, "No Data found", 200);
+        }
+    
+        const bookings = await Bookings.find({ teacherId: id, cancelled: false }).lean();
+    
+        if (!bookings || bookings.length === 0) {
+          return successResponse(res, "Availability processed", 200, {
+            availabilityBlocks,
+            bookedSlots: [],
           });
         }
-
-        // Move cursor 5 minutes ahead of booking end
-        const nextStart = new Date(bEnd.getTime() + 5 * 60000);
-        cursor = nextStart > cursor ? nextStart : cursor;
-      }
-
-      if (cursor < aEnd) {
-        availableSlots.push({
-          teacher: id,
-          start: new Date(cursor),
-          end: new Date(aEnd),
+    
+        let availableSlots = [];
+        let bookedSlots = [];
+    
+        for (const availability of availabilityBlocks) {
+          const aStart = new Date(availability.startDateTime);
+          const aEnd = new Date(availability.endDateTime);
+    
+          const matchingBookings = bookings.filter(booking =>
+            new Date(booking.endDateTime) > aStart && new Date(booking.startDateTime) < aEnd
+          );
+    
+          matchingBookings.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
+    
+          let cursor = aStart;
+    
+          for (const booking of matchingBookings) {
+            const bStart = new Date(booking.startDateTime);
+            const bEnd = new Date(booking.endDateTime);
+    
+            if (cursor < bStart) {
+              availableSlots.push({
+                teacher: id,
+                startDateTime: new Date(cursor),
+                endDateTime: new Date(bStart),
+              });
+            }
+    
+            // Move cursor 5 minutes ahead of booking end
+            const nextStart = new Date(bEnd.getTime() + 5 * 60000);
+            cursor = nextStart > cursor ? nextStart : cursor;
+          }
+    
+          if (cursor < aEnd) {
+            availableSlots.push({
+              teacher: id,
+              startDateTime: new Date(cursor),
+              endDateTime: new Date(aEnd),
+            });
+          }
+    
+          bookedSlots.push(
+            ...matchingBookings.map(b => ({
+              teacher: id,
+              startDateTime: new Date(b.startDateTime),
+              endDateTime: new Date(b.endDateTime),
+              student: b.student,
+              lesson: b.lesson,
+            }))
+          );
+        }
+    
+        return successResponse(res, "Availability processed", 200, {
+          availabilityBlocks:availableSlots,
+          bookedSlots,
         });
+      } catch (error) {
+        return errorResponse(res, error.message || "Internal Server Error", 500);
       }
-
-      bookedSlots.push(
-        ...matchingBookings.map(b => ({
-          teacher: id,
-          start: new Date(b.startDateTime),
-          end: new Date(b.endDateTime),
-          student: b.student,
-          lesson: b.lesson,
-        }))
-      );
-    }
-    return successResponse(res, "Availability processed", 200, {
-      availableSlots,
-      bookedSlots,
-    });
-  } catch (error) {
-    return errorResponse(res, error.message || "Internal Server Error", 500);
-  }
 });
 
 // This route is used when teacher want to get all the lessons in their panel

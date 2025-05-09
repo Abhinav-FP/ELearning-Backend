@@ -1,5 +1,5 @@
 const moment = require("moment");
-module.exports = (startDateTime, userName) => {
+module.exports = (startDateTime, userName, teacherName) => {
     return `
 <div id="email" style="background: #fdf6f7;padding: 20px 0;">
     <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">        
@@ -17,10 +17,10 @@ module.exports = (startDateTime, userName) => {
         </tr>
         <tr>
             <td style="padding: .1rem 1rem 1rem ;border-bottom: 1px solid rgba(0,0,0,.1)">
-                <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #CC2828;margin: 0 0 .6rem;">Your Lesson with Easter Howard is Confirmed! 📚</p> 
+                <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #CC2828;margin: 0 0 .6rem;">Your Lesson with ${teacherName || "Prem"} is Confirmed! 📚</p> 
                 <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: center;color: #333333;margin: 0.8rem 0 .7rem;">Hi ${userName},</p>
 
-                <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 .5rem;">Your session witheaster howard  has been successfully booked!
+                <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 .5rem;">Your session with ${teacherName || "Prem"}  has been successfully booked!
                 </p>
                 <div style="max-width: 300px; margin: 0 auto 1.2rem;padding-bottom: 15px;background-image: url(https://student-teacher-platform.sgp1.digitaloceanspaces.com/pc-bg.png); background-repeat: no-repeat;background-position: bottom center;    background-size: contain;">
                     <div style="border:6px solid #CC2828;border-radius: 20px;">
