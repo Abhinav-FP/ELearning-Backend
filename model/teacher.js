@@ -47,6 +47,7 @@ const teacherSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  
   japanese_for_me_approved: {
     type: Boolean,
     default: false,
