@@ -222,8 +222,6 @@ exports.GetUser = catchAsync(async (req, res) => {
 exports.updateProfile = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    // console.log("req.body",req.body);
-    // console.log("req.file",req.file);
 
     if (!userId) {
       return errorResponse(res, "Invalid User", 401);

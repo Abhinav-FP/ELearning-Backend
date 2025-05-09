@@ -9,21 +9,18 @@ const BankSchema = mongoose.Schema({
     BankName: {
         type: String,
         required: [true, "Bank name is required."],
-        trim: true,
-        default: "Unknown Bank",
+    },
+    AccountHolderName: {
+        type: String,
+        required: [true, "Account Holder Name is required."],
     },
     BankNumber: {
         type: String,
         required: [true, "Bank account number is required."],
-        unique: true, 
-        trim: true,
-        default: "0000000000", 
     },
     BranchName: {
         type: String,
         required: [true, "Branch name is required."],
-        trim: true,
-        default: "Main Branch", 
     },
     IFSC: {
         type: String,
@@ -31,7 +28,7 @@ const BankSchema = mongoose.Schema({
     },
     createdAt: {
         type: Date,
-        default: Date.now, 
+        default: Date.now,
     }
 });
 

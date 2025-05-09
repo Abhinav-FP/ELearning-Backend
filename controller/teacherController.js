@@ -6,6 +6,9 @@ const { successResponse, errorResponse, validationErrorResponse } = require("../
 const { DateTime } = require("luxon");
 const logger = require("../utils/Logger");
 const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
+const User = require("../model/user");
+const Teacher = require("../model/teacher");
+const Loggers = require("../utils/Logger");
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
@@ -30,8 +33,8 @@ exports.AddAvailability = catchAsync(async (req, res) => {
     if (hasOverlap) {
       return errorResponse(res, "Availability overlaps with existing schedule", 400);
     }
-    const adjacents = existingAvailabilities.filter(avail => 
-      avail.endDateTime.getTime() === startUTC.getTime() || 
+    const adjacents = existingAvailabilities.filter(avail =>
+      avail.endDateTime.getTime() === startUTC.getTime() ||
       avail.startDateTime.getTime() === endUTC.getTime()
     );
     if (adjacents.length > 0) {
@@ -107,96 +110,96 @@ exports.GetAvailability = catchAsync(async (req, res) => {
   try {
     const id = req.user.id;
     const availabilityBlocks = await TeacherAvailability.find({ teacher: id });
-        if (!availabilityBlocks || availabilityBlocks.length === 0) {
-          return errorResponse(res, "No Data found", 200);
-        }
-    
-        const bookings = await Bookings.find({ teacherId: id, cancelled: false }).lean();
-    
-        if (!bookings || bookings.length === 0) {
-          return successResponse(res, "Availability processed", 200, {
-            availabilityBlocks,
-            bookedSlots: [],
+    if (!availabilityBlocks || availabilityBlocks.length === 0) {
+      return errorResponse(res, "No Data found", 200);
+    }
+
+    const bookings = await Bookings.find({ teacherId: id, cancelled: false }).lean();
+
+    if (!bookings || bookings.length === 0) {
+      return successResponse(res, "Availability processed", 200, {
+        availabilityBlocks,
+        bookedSlots: [],
+      });
+    }
+
+    let availableSlots = [];
+    let bookedSlots = [];
+
+    for (const availability of availabilityBlocks) {
+      const aStart = new Date(availability.startDateTime);
+      const aEnd = new Date(availability.endDateTime);
+
+      const matchingBookings = bookings.filter(booking =>
+        new Date(booking.endDateTime) > aStart && new Date(booking.startDateTime) < aEnd
+      );
+
+      matchingBookings.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
+
+      let cursor = aStart;
+
+      for (const booking of matchingBookings) {
+        const bStart = new Date(booking.startDateTime);
+        const bEnd = new Date(booking.endDateTime);
+
+        if (cursor < bStart) {
+          availableSlots.push({
+            teacher: id,
+            startDateTime: new Date(cursor),
+            endDateTime: new Date(bStart),
           });
         }
-    
-        let availableSlots = [];
-        let bookedSlots = [];
-    
-        for (const availability of availabilityBlocks) {
-          const aStart = new Date(availability.startDateTime);
-          const aEnd = new Date(availability.endDateTime);
-    
-          const matchingBookings = bookings.filter(booking =>
-            new Date(booking.endDateTime) > aStart && new Date(booking.startDateTime) < aEnd
-          );
-    
-          matchingBookings.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
-    
-          let cursor = aStart;
-    
-          for (const booking of matchingBookings) {
-            const bStart = new Date(booking.startDateTime);
-            const bEnd = new Date(booking.endDateTime);
-    
-            if (cursor < bStart) {
-              availableSlots.push({
-                teacher: id,
-                startDateTime: new Date(cursor),
-                endDateTime: new Date(bStart),
-              });
-            }
-    
-            // Move cursor 5 minutes ahead of booking end
-            const nextStart = new Date(bEnd.getTime() + 5 * 60000);
-            cursor = nextStart > cursor ? nextStart : cursor;
-          }
-    
-          if (cursor < aEnd) {
-            availableSlots.push({
-              teacher: id,
-              startDateTime: new Date(cursor),
-              endDateTime: new Date(aEnd),
-            });
-          }
-    
-          bookedSlots.push(
-            ...matchingBookings.map(b => ({
-              teacher: id,
-              startDateTime: new Date(b.startDateTime),
-              endDateTime: new Date(b.endDateTime),
-              student: b.student,
-              lesson: b.lesson,
-            }))
-          );
-        }
-    
-        return successResponse(res, "Availability processed", 200, {
-          availabilityBlocks:availableSlots,
-          bookedSlots,
-        });
-      } catch (error) {
-        return errorResponse(res, error.message || "Internal Server Error", 500);
+
+        // Move cursor 5 minutes ahead of booking end
+        const nextStart = new Date(bEnd.getTime() + 5 * 60000);
+        cursor = nextStart > cursor ? nextStart : cursor;
       }
+
+      if (cursor < aEnd) {
+        availableSlots.push({
+          teacher: id,
+          startDateTime: new Date(cursor),
+          endDateTime: new Date(aEnd),
+        });
+      }
+
+      bookedSlots.push(
+        ...matchingBookings.map(b => ({
+          teacher: id,
+          startDateTime: new Date(b.startDateTime),
+          endDateTime: new Date(b.endDateTime),
+          student: b.student,
+          lesson: b.lesson,
+        }))
+      );
+    }
+
+    return successResponse(res, "Availability processed", 200, {
+      availabilityBlocks: availableSlots,
+      bookedSlots,
+    });
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
 });
 
 // This route is used when teacher want to get all the lessons in their panel
 exports.GetLessons = catchAsync(async (req, res) => {
-    try {
-        const teacherId  = req.user.id;
-        const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
-        if (!lessons || lessons.length === 0) {
-            return errorResponse(res, "No lessons found", 404);
-        }
-        return successResponse(res, "Lessons retrieved successfully", 200, lessons);
-    } catch (error) {
-        return errorResponse(res, error.message || "Internal Server Error", 500);
+  try {
+    const teacherId = req.user.id;
+    const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
+    if (!lessons || lessons.length === 0) {
+      return errorResponse(res, "No lessons found", 404);
     }
+    return successResponse(res, "Lessons retrieved successfully", 200, lessons);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
 });
 
 exports.UploadCheck = catchAsync(async (req, res) => {
   try {
-    if(!req.file){
+    if (!req.file) {
       return res.status(500).json({ error: 'File toh bhej bhai' });
     }
     const fileKey = await uploadFileToSpaces(req.file);
@@ -206,32 +209,125 @@ exports.UploadCheck = catchAsync(async (req, res) => {
       res.status(500).json({ error: 'Upload failed' });
     }
   } catch (error) {
-      return errorResponse(res, error.message || "Internal Server Error", 500);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
 
 exports.DeleteCheck = catchAsync(async (req, res) => {
   try {
     // console.log("req.body",req.body);
-    const { url }= req.body;
-    if(!url){
+    const { url } = req.body;
+    if (!url) {
       return res.status(400).json({
-        status:false,
+        status: false,
         message: "Please provide url"
       })
     }
     const isDeleted = await deleteFileFromSpaces(url);
-    if(!isDeleted){
+    if (!isDeleted) {
       return res.status(500).json({
-        status:false,
+        status: false,
         message: "Unable to delete file"
       })
     }
     res.status(200).json({
-      status:false,
+      status: false,
       message: "File deleted successfully!"
     })
   } catch (error) {
-      return errorResponse(res, error.message || "Internal Server Error", 500);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+
+
+
+exports.updateProfile = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!userId) {
+      return errorResponse(res, "Invalid User", 401);
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return errorResponse(res, "User not found", 404);
+    }
+
+    const updates = req.body;
+    if (updates.password) {
+      return errorResponse(res, "Password cannot be updated", 401);
+    }
+
+    let photo = null;
+    if (req.file) {
+      if (user.profile_photo) {
+        const isDeleted = await deleteFileFromSpaces(user.profile_photo);
+        if (!isDeleted) {
+          return res.status(500).json({
+            status: false,
+            message: "Unable to delete old profile photo",
+          });
+        }
+      }
+      const fileKey = await uploadFileToSpaces(req.file);
+      photo = fileKey;
+    }
+
+    if (photo) {
+      updates.profile_photo = photo;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return errorResponse(res, "No fields to update", 400);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    const updatedUsers = await Teacher.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    return successResponse(res, "Profile updated successfully!", 200, {
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+
+
+exports.TeacherGet = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    console.log("userId" ,userId)
+    if (!userId) {
+      return errorResponse(res, "Invalid User", 401);
+    }
+    const user = await Teacher.findOne({ userId: userId }).populate(
+      {
+        path: "userId",
+        select: "-password",
+      }
+    );
+    if (!user) {
+      return errorResponse(res, "Teacher not Found", 401);
+    }
+    if (user) {
+      return successResponse(res, "User Get successfully!", 201, {
+        user,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });

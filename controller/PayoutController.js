@@ -4,20 +4,16 @@ const catchAsync = require("../utils/catchAsync");
 const Loggers = require("../utils/Logger");
 
 exports.PayoutAdd = catchAsync(async (req, res) => {
-
     const userId = req?.user?.id;
-
-    const Bank  = Bank.findOne({ userId: userId });
+    const { amount } = req.body;
+    const Banks = await Bank.findOne({ userId: userId });
     if (!userId) {
         return res.status(400).json({
             status: false,
             message: "User ID is missing.",
         });
     }
-    const {  amount} = req.body;
-
-
-    if ( !amount) {
+    if (!amount) {
         return res.status(400).json({
             status: false,
             message: "Amount are required.",
@@ -25,7 +21,7 @@ exports.PayoutAdd = catchAsync(async (req, res) => {
     }
     try {
         const record = new Payout({
-            BankId : Bank._id,
+            BankId: Banks._id,
             amount,
             userId,
         });
@@ -38,10 +34,42 @@ exports.PayoutAdd = catchAsync(async (req, res) => {
             data: result,
         });
     } catch (error) {
+        console.log("error", error)
         Loggers.error("Error in PayoutAddOrEdit:", error);
         return res.status(500).json({
             status: false,
-            message: "Internal server error.",
+            message: error,
         });
     }
 })
+
+exports.payoutList = catchAsync(async (req, res) => {
+    const userId = req?.user?.id;
+    if (!userId) {
+        return res.status(400).json({
+            status: false,
+            message: "User ID is missing.",
+        });
+    }
+    try {
+        const result = await Payout.find({ userId }).sort({ createdAt: -1 }).populate('BankId');
+        if (result.length === 0) {
+            return res.status(404).json({
+                status: false,
+                message: "No bank records found.",
+            });
+        }
+        return res.status(200).json({
+            status: true,
+            message: "Bank records retrieved successfully.",
+            data: result,
+        });
+    } catch (error) {
+        Loggers.error(error)
+        return res.status(500).json({
+            status: false,
+            message: "Failed to retrieve bank records.",
+            error: error.message,
+        });
+    }
+});

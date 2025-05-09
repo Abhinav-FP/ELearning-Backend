@@ -4,19 +4,19 @@ const Loggers = require("../utils/Logger");
 
 
 exports.BankAddOrEdit = catchAsync(async (req, res) => {
-    const userId = req?.User?._id;
+    const userId = req?.user?.id;
     if (!userId) {
         return res.status(400).json({
             status: false,
             message: "User ID is missing.",
         });
     }
-    const { BankName, BankNumber, BranchName, IFSC, _id } = req.body;
+    const { BankName, BankNumber, BranchName, IFSC, _id  ,AccountHolderName} = req.body;
 
-    if (!BankName || !BankNumber || !BranchName || !IFSC) {
+    if (!BankName || !BankNumber || !BranchName || !IFSC  || !AccountHolderName) {
         return res.status(400).json({
             status: false,
-            message: "All fields (BankName, BankNumber, BranchName, IFSC) are required.",
+            message: "All fields (BankName, BankNumber, BranchName, IFSC ,AccountHolderName) are required.",
         });
     }
     try {
@@ -25,7 +25,7 @@ exports.BankAddOrEdit = catchAsync(async (req, res) => {
             // Edit existing record
             result = await Bank.findByIdAndUpdate(
                 _id,
-                { BankName, BankNumber, BranchName, IFSC, userId },
+                { BankName, BankNumber, BranchName, IFSC, userId , AccountHolderName },
                 { new: true, runValidators: true }
             );
 
@@ -49,6 +49,7 @@ exports.BankAddOrEdit = catchAsync(async (req, res) => {
                 BranchName,
                 IFSC,
                 userId,
+                AccountHolderName
             });
 
             result = await record.save();
@@ -70,7 +71,7 @@ exports.BankAddOrEdit = catchAsync(async (req, res) => {
 });
 
 exports.BankList = catchAsync(async (req, res) => {
-    const userId = req?.User?.id;
+    const userId = req?.user?.id;
     if (!userId) {
         return res.status(400).json({
             status: false,
@@ -78,8 +79,7 @@ exports.BankList = catchAsync(async (req, res) => {
         });
     }
     try {
-        const result = await Bank.find({ userId }).sort({ createdAt: -1 });
-
+        const result = await Bank.findOne({ userId }).sort({ createdAt: -1 });
         if (result.length === 0) {
             return res.status(404).json({
                 status: false,
