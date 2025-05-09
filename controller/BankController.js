@@ -92,7 +92,7 @@ exports.BankList = catchAsync(async (req, res) => {
             data: result,
         });
     } catch (error) {
-        logger.error(error)
+        Loggers.error(error)
         return res.status(500).json({
             status: false,
             message: "Failed to retrieve bank records.",
