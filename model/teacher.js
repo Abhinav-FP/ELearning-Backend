@@ -61,6 +61,20 @@ const teacherSchema = new mongoose.Schema({
   //   default: null
   //   // required: [true, "Profile Photo is required"],  
   // },
+  documentlink : {
+    type :String ,
+    default :""
+  },
+  average_time : {
+    type :String ,
+    default :"",
+
+  },
+  average_price :{
+    type :String ,
+    default : ""
+  },
+  
 }, { timestamps: true });
 
 const Teacher = mongoose.model('Teacher', teacherSchema);
