@@ -14,17 +14,19 @@ const PayoutSchema = mongoose.Schema({
     amount: {
         type: Number,
         required: [true, "amount is required."],
-        default: 0
     },
     Status: {
         type: String,
-        enum: ["Approved", "Rejected"],
+        enum: ["approved", "rejected", "pending"],
+        default: "pending",
     },
     Reasons: {
         type: String,
+        default: null,
     },
     TranscationId: {
         type: String,
+        default: null,
     },
     createdAt: {
         type: Date,

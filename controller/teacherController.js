@@ -8,7 +8,7 @@ const logger = require("../utils/Logger");
 const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
 const User = require("../model/user");
 const Teacher = require("../model/teacher");
-const Loggers = require("../utils/Logger");
+const mongoose = require('mongoose');
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
@@ -239,9 +239,6 @@ exports.DeleteCheck = catchAsync(async (req, res) => {
   }
 });
 
-
-
-
 exports.updateProfile = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
@@ -302,8 +299,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
   }
 });
 
-
-
 exports.TeacherGet = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
@@ -326,6 +321,112 @@ exports.TeacherGet = catchAsync(async (req, res) => {
         user,
       });
     }
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.EarningsGet = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!userId) {
+      return errorResponse(res, "Invalid User", 401);
+    }
+
+    // Get detailed booking data
+    const data = await Bookings.find({ teacherId: userId, lessonCompletedStudent:true, lessonCompletedTeacher:true })
+      .populate('StripepaymentId')
+      .populate('paypalpaymentId')
+      .populate('UserId')
+      .populate('LessonId');
+
+    if (!data) {
+      return errorResponse(res, "Data not Found", 401);
+    }
+
+    // Cast userId to ObjectId
+    const objectId = new mongoose.Types.ObjectId(userId);
+
+    // Aggregate the earnings
+    const earnings = await Bookings.aggregate([
+      { $match: { teacherId: objectId, lessonCompletedStudent:true, lessonCompletedTeacher:true } },
+      {
+        $group: {
+          _id: null,
+          totalEarnings: { $sum: "$teacherEarning" },
+          pendingEarnings: {
+            $sum: {
+              $cond: [
+                { $eq: ["$payoutCreationDate", null] },
+                "$teacherEarning",
+                0
+              ]
+            }
+          },
+          requestedEarnings: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ["$payoutCreationDate", null] },
+                    { $eq: ["$payoutDoneAt", null] }
+                  ]
+                },
+                "$teacherEarning",
+                0
+              ]
+            }
+          },
+          approvedEarnings: {
+            $sum: {
+              $cond: [
+                { $ne: ["$payoutDoneAt", null] },
+                "$teacherEarning",
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    const earningsSummary = earnings[0] || {
+      totalEarnings: 0,
+      pendingEarnings: 0,
+      approvedEarnings: 0
+    };
+
+    successResponse(res, "User Get successfully!", 200, {
+      bookings: data,
+      earningsSummary
+    });
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.BookingsGet = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!userId) {
+      return errorResponse(res, "Invalid User", 401);
+    }
+
+    // Get detailed booking data
+    const data = await Bookings.find({ teacherId: userId })
+      .populate('StripepaymentId')
+      .populate('paypalpaymentId')
+      .populate('UserId')
+      .populate('LessonId');
+
+    if (!data) {
+      return errorResponse(res, "Bookings not Found", 401);
+    }
+    successResponse(res, "Bookings retrieved successfully!", 200, data);
   } catch (error) {
     console.log(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);

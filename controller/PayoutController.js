@@ -1,4 +1,5 @@
 const Bank = require("../model/Bank");
+const Bookings = require("../model/booking");
 const Payout = require("../model/Payout");
 const catchAsync = require("../utils/catchAsync");
 const Loggers = require("../utils/Logger");
@@ -13,6 +14,15 @@ exports.PayoutAdd = catchAsync(async (req, res) => {
             message: "User ID is missing.",
         });
     }
+    const time = Date.now();
+    const bookings = await Bookings.updateMany(
+        { teacherId: userId },
+        { $set: { payoutCreationDate: time } }, 
+        {
+            new: true, // Not needed in updateMany, only works in findOneAndUpdate
+            runValidators: true,
+        }
+    );
     if (!amount) {
         return res.status(400).json({
             status: false,
@@ -24,6 +34,7 @@ exports.PayoutAdd = catchAsync(async (req, res) => {
             BankId: Banks._id,
             amount,
             userId,
+            createdAt:time,
         });
 
         const result = await record.save();
@@ -41,7 +52,7 @@ exports.PayoutAdd = catchAsync(async (req, res) => {
             message: error,
         });
     }
-})
+});
 
 exports.payoutList = catchAsync(async (req, res) => {
     const userId = req?.user?.id;

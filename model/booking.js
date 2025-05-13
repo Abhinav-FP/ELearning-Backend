@@ -67,10 +67,9 @@ const bookingSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    payoutStatus: { 
-      type: String, 
-      enum: ['pending', 'approved', 'rejected'], 
-      default: 'pending' 
+    payoutDoneAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true }
