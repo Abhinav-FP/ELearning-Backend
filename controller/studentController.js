@@ -9,14 +9,13 @@ const Wishlist = require("../model/wishlist");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const Loggers = require("../utils/Logger");
-const mongoose = require("mongoose");
 
 exports.paymentget = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
     // console.log("req.user.id", req.user.id)
-    const payment = await Payment.find({ UserId: UserId }).populate("LessonId");
-    const stripeData= await stripePayments.find({ UserId: UserId }).populate("LessonId");
+    const payment = await Payment.find({ UserId: UserId }).populate("LessonId").sort({createdAt: -1});
+    const stripeData= await stripePayments.find({ UserId: UserId }).populate("LessonId").sort({createdAt: -1});
 
     // console.log("_id:", payment)
     if (!payment && !stripeData) {
@@ -176,11 +175,23 @@ exports.studentDashboard = catchAsync(async (req, res) => {
       teacherMap[teacher.userId.toString()] = teacher.toObject();
     });
 
-    res.json({
-      message: "Dashboard retrieved successfully",
-      reviews: reviews,
-      wishlistResult: wishlistResult,
+    const data = await Bookings.findOne({
+      UserId: userId,
+      startDateTime: { $gt: new Date() } 
+    })
+    .sort({ startDateTime: 1 })
+    // .limit(1)
+    .populate('StripepaymentId')
+    .populate('paypalpaymentId')
+    .populate('teacherId')
+    .populate('LessonId');
+
+    return successResponse(res, "Dashboard retrieved successfully", 200, {
+    reviews: reviews,
+    wishlistResult: wishlistResult,
+    booking: data,
     });
+
   } catch (error) {
     console.log("error", error);
     return errorResponse(res, "Failed to retrieve reviews", 500);

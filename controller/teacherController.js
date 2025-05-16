@@ -417,7 +417,7 @@ exports.BookingsGet = catchAsync(async (req, res) => {
     }
 
     // Get detailed booking data
-    const data = await Bookings.find({ teacherId: userId })
+    const data = await Bookings.find({ teacherId: userId }).sort({startDateTime: -1})
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
