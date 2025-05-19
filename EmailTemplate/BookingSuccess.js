@@ -1,11 +1,11 @@
 const moment = require("moment");
 module.exports = (startDateTime, userName, teacherName) => {
     return `
-<div id="email" style="background: #fdf6f7;padding: 20px 0;">
-    <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">        
+    <div id="email" style="background: #fdf6f7;padding: 20px 0;">
+     <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">        
         <tr>
             <td style="padding: .5rem  1rem;text-align: center;"> 
-                <a href="https://e-learning-seven-ashy.vercel.app" style="text-decoration: none;">
+                <a href="https://www.japaneseforme.com/" style="text-decoration: none;">
                   <img style="logo.png" src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="">
                 </a>
              </td> 
@@ -33,14 +33,7 @@ module.exports = (startDateTime, userName, teacherName) => {
                             <td width="30%" style="font-size: 1rem; font-weight: 600; line-height: 18px;text-align: left;color: #333333;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;">Time:</td> 
                             <td width="70%" style="font-size: 1rem; font-weight: 400; line-height: 1.3rem;text-align: left;color: #CC2828;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/time.png" style="max-width:100%;vertical-align: text-bottom;"> ${moment(startDateTime).format("hh:mm A")} UTC</td> 
                         </tr>
-                         <tr>
-                            <td width="30%" style="font-size: 1rem; font-weight: 600; line-height: 18px;text-align: left;color: #333333;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;">Language:</td> 
-                            <td width="70%" style="font-size: 1rem; font-weight: 400; line-height: 1.3rem;text-align: left;color: #CC2828;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/globe.png" style="max-width:100%;vertical-align: text-bottom;"> English</td> 
-                        </tr>
-                         <tr>
-                            <td width="30%" style="font-size: 1rem; font-weight: 600; line-height: 18px;text-align: left;color: #333333;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;">Mode:</td> 
-                            <td width="70%" style="font-size: 1rem; font-weight: 400; line-height: 1.3rem;text-align: left;color: #CC2828;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/online.png" style="max-width:100%;vertical-align: text-bottom;"> Online</td> 
-                        </tr>                     
+                                          
                     </table>
                     </div>
                 </div>
@@ -48,25 +41,17 @@ module.exports = (startDateTime, userName, teacherName) => {
                 <p style="margin: 0 0 1.3rem;text-align: center;"><a href="https://e-learning-seven-ashy.vercel.app/student/lessons" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">View Your Booking</a></p> 
                 <p style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: center;color: #333333;margin: 0 0 1.5rem;">We're excited for you! Get ready for a great learning experience.</p>  
               </td>
-                      </tr>
-                      <tr>
-                    <td style="padding: .1rem 0rem 1rem ;">
+              </tr>
+              <tr>
+            <td style="padding: .1rem 0rem 1rem ;">
                 <div style="padding: 1.3rem  0rem;background: #EFD1D1;">
-                    <div style="text-align: center;">                        
-                        <a href="#" style="text-decoration: none;margin-right: 10px;vertical-align: middle;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/facebook_icon.png" alt="facebook"></a>
-                        <a href="#" style="text-decoration: none;margin-right: 10px;vertical-align: middle;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/twitter_icon.png" alt="twitter"></a>
-                        <a href="#" style="text-decoration: none;margin-right: 10px;vertical-align: middle;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/instagram_icon.png" alt="instagram"></a>
-                    </div> 
-                    <div style="text-align: center; padding: 1.1em 0 ;">
-                        <a href="tel:(123) 456-7890" style="font-size: 12px; font-weight: 400; line-height: 18px;color: #CC2828;text-decoration: none;margin: 0 .5em;"><img style="margin-right: .2em; vertical-align: middle;" src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/phone.png" alt="" /> (123) 456-7890</a>
-                        <a href="mailto:Algora Publishing@gmail.com" style="font-size: 12px; font-weight: 400; line-height: 18px;color: #CC2828; text-decoration: none;margin: 0 .5em;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/email.png" alt="img" style="margin-right: .2em; vertical-align: middle;" /> Japaneseforme@gmail.com</a>
-                    </div>
+          
                     <p style="font-size: 12px; font-weight: 400; line-height: 18px;  text-align: center;color: #CC2828;margin: 0 auto; max-width: 260px;">© 2025 Japanese for Me. All Rights Reserved.</p>
                 </div>
             </td>
-                      </tr>
+         </tr>
         </tr> 
-    </table>
-</div>
+     </table>
+    </div>
   `;
 };

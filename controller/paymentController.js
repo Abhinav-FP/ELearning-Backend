@@ -240,7 +240,7 @@ const fetchPaymentId = async (sessionId, srNo) => {
 exports.createCheckout = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission} = req?.body;
+    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission } = req?.body;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
@@ -248,11 +248,11 @@ exports.createCheckout = catchAsync(async (req, res) => {
       payment_method_types: ['card'],
       mode: 'payment', // Correct mode value
       // success_url: `${process.env.stripe_link}/stripe/success/${srNo}`,
-      success_url: `http://localhost:3000/stripe/success/${srNo}`,
+      success_url: `https://japaneseforme.com/stripe/success/${srNo}`,
       // cancel_url: `${process.env.stripe_link}/stripe/cancel/${srNo}`,
-      cancel_url: `http://localhost:3000/stripe/cancel/${srNo}`,
+      cancel_url: `https://japaneseforme.com/stripe/cancel/${srNo}`,
       submit_type: "pay",
-      customer_email: "ankitjain@gmail.com",
+      customer_email: req?.user?.email || "ankitjain@gmail.com",
       billing_address_collection: "auto",
       line_items: [
         {
@@ -296,7 +296,7 @@ exports.createCheckout = catchAsync(async (req, res) => {
       startDateTime: startUTC,
       endDateTime: endUTC,
       currency,
-      totalAmount:amount,
+      totalAmount: amount,
       srNo
     });
     await Bookingsave.save();
