@@ -136,6 +136,17 @@ exports.GetAvailability = catchAsync(async (req, res) => {
 
       matchingBookings.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
 
+      // No overlapping bookings, push as-is (preserve _id)
+      if (matchingBookings.length === 0) {
+        availableSlots.push({
+          _id: availability._id, // preserve
+          teacher: id,
+          startDateTime: aStart,
+          endDateTime: aEnd,
+        });
+        continue;
+      }
+
       let cursor = aStart;
 
       for (const booking of matchingBookings) {
@@ -147,6 +158,7 @@ exports.GetAvailability = catchAsync(async (req, res) => {
             teacher: id,
             startDateTime: new Date(cursor),
             endDateTime: new Date(bStart),
+            // no _id since this is a derived block
           });
         }
 
@@ -160,6 +172,7 @@ exports.GetAvailability = catchAsync(async (req, res) => {
           teacher: id,
           startDateTime: new Date(cursor),
           endDateTime: new Date(aEnd),
+          // no _id since this is a derived block
         });
       }
 
