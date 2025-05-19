@@ -1,5 +1,5 @@
 module.exports = (resetLink, userName) => {
-    return `
+  return `
   <div id="email" style="background: #d9d9d9;padding: 20px 0;">
     <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">        
         <tr>
@@ -23,8 +23,8 @@ module.exports = (resetLink, userName) => {
                 <p style="margin: 0 0 1.3rem;text-align: center;"><a href=${resetLink} style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">Reset Password</a></p> 
                 <p style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: center;color: #333333;margin: 0 0 1.3rem;">If you didn't request this, you can safely ignore this email.</p> 
                 <p style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: center;color: #333333;margin: 0;"> <strong>Stay secure</strong> <br> The Japanese for Me Team</p>  
-              </td>
-            </tr>
+            </td>
+        </tr>
             <tr> 
               <td  style="padding:0;">
                 <div style="padding: 1.3rem  1rem;background: #EFD1D1;">

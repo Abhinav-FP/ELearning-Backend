@@ -1,11 +1,10 @@
-
 module.exports = (userName, link) => {
     return `
    <div id="email" style="background: #d9d9d9;padding: 20px 0;">
     <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">        
         <tr>
             <td style="padding: .5rem  1rem;text-align: center;"> 
-                <a href="#" style="text-decoration: none;">
+                <a href="https://www.japaneseforme.com/" style="text-decoration: none;">
                   <img style="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" src="logo.png" alt="logo">
                 </a>
              </td> 
