@@ -1,4 +1,3 @@
-
 module.exports = (userName, link) => {
     return `
     <div id="email" style="background: #fdf6f7;padding: 20px 0;">
