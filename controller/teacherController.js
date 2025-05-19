@@ -239,80 +239,15 @@ exports.DeleteCheck = catchAsync(async (req, res) => {
   }
 });
 
-exports.updateProfile = catchAsync(async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    if (!userId) {
-      return errorResponse(res, "Invalid User", 401);
-    }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return errorResponse(res, "User not found", 404);
-    }
-
-    const updates = req.body;
-    if (updates.password) {
-      return errorResponse(res, "Password cannot be updated", 401);
-    }
-
-    let photo = null;
-    if (req.file) {
-      if (user.profile_photo) {
-        const isDeleted = await deleteFileFromSpaces(user.profile_photo);
-        if (!isDeleted) {
-          return res.status(500).json({
-            status: false,
-            message: "Unable to delete old profile photo",
-          });
-        }
-      }
-      const fileKey = await uploadFileToSpaces(req.file);
-      photo = fileKey;
-    }
-
-    if (photo) {
-      updates.profile_photo = photo;
-    }
-
-    if (Object.keys(updates).length === 0) {
-      return errorResponse(res, "No fields to update", 400);
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
-      new: true,
-      runValidators: true,
-    });
-
-    const updatedUsers = await Teacher.findByIdAndUpdate(userId, updates, {
-      new: true,
-      runValidators: true,
-    });
-
-    return successResponse(res, "Profile updated successfully!", 200, {
-      user: updatedUser,
-    });
-  } catch (error) {
-    console.log(error);
-    return errorResponse(res, error.message || "Internal Server Error", 500);
-  }
-});
-
 exports.TeacherGet = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
 
     console.log("userId" ,userId)
     if (!userId) {
-      return errorResponse(res, "Invalid User", 401);
+      return errorResponse(res, "No user Id provided", 401);
     }
-    const user = await Teacher.findOne({ userId: userId }).populate(
-      {
-        path: "userId",
-        select: "-password",
-      }
-    );
+    const user = await Teacher.findOne({ userId: userId }).populate("userId");
     if (!user) {
       return errorResponse(res, "Teacher not Found", 401);
     }
@@ -323,6 +258,86 @@ exports.TeacherGet = catchAsync(async (req, res) => {
     }
   } catch (error) {
     console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.updateProfile = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!userId) {
+      return errorResponse(res, "Invalid User", 401);
+    }
+
+    const {
+      name,
+      email,
+      timezone,
+      nationality,
+      profile_photo,
+      languages_spoken,
+      gender,
+      ais_trained,
+      intro_video,
+      interest,
+      experience,
+      description,
+      average_price,
+      average_time,
+      documentlink,
+    } = req.body;
+
+    // Explicit field mapping
+    const userUpdates = {};
+    if (name !== undefined) userUpdates.name = name;
+    if (email !== undefined) userUpdates.email = email;
+    if (timezone !== undefined) userUpdates.timezone = timezone;
+    if (nationality !== undefined) userUpdates.nationality = nationality;
+    if (profile_photo !== undefined) userUpdates.profile_photo = profile_photo;
+
+    const teacherUpdates = {};
+    if (languages_spoken !== undefined) teacherUpdates.languages_spoken = JSON.parse(languages_spoken);
+    if (gender !== undefined) teacherUpdates.gender = gender;
+    if (ais_trained !== undefined) teacherUpdates.ais_trained = ais_trained;
+    if (intro_video !== undefined) teacherUpdates.intro_video = intro_video;
+    if (interest !== undefined) teacherUpdates.interest = interest;
+    if (experience !== undefined) teacherUpdates.experience = experience;
+    if (description !== undefined) teacherUpdates.description = description;
+    if (average_price !== undefined) teacherUpdates.average_price = average_price;
+    if (average_time !== undefined) teacherUpdates.average_duration = average_time;
+    if (documentlink !== undefined) teacherUpdates.documentlink = documentlink;
+
+    // Check if nothing was provided
+    const isUserUpdateEmpty = Object.keys(userUpdates).length === 0;
+    const isTeacherUpdateEmpty = Object.keys(teacherUpdates).length === 0;
+
+    if (isUserUpdateEmpty && isTeacherUpdateEmpty) {
+      return errorResponse(res, "No fields provided to update", 400);
+    }
+
+    // Update User
+    const updatedUser = isUserUpdateEmpty
+      ? await User.findById(userId)
+      : await User.findByIdAndUpdate(userId, userUpdates, {
+          new: true,
+          runValidators: true,
+        });
+
+    // Update Teacher
+    const updatedTeacher = isTeacherUpdateEmpty
+      ? await Teacher.findOne({ userId })
+      : await Teacher.findOneAndUpdate({ userId }, teacherUpdates, {
+          new: true,
+          runValidators: true,
+        });
+
+    return successResponse(res, "Profile updated successfully!", 200, {
+      user: updatedUser,
+      teacher: updatedTeacher,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
@@ -417,7 +432,7 @@ exports.BookingsGet = catchAsync(async (req, res) => {
     }
 
     // Get detailed booking data
-    const data = await Bookings.find({ teacherId: userId })
+    const data = await Bookings.find({ teacherId: userId }).sort({startDateTime: -1})
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')

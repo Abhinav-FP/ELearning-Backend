@@ -21,7 +21,7 @@ const bookingSchema = new mongoose.Schema(
     },
     paypalpaymentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "paypalpayment"
+      ref: "paypalpayments"
     },
     StripepaymentId: {
       type: mongoose.Schema.Types.ObjectId,
