@@ -200,11 +200,15 @@ exports.GetAvailability = catchAsync(async (req, res) => {
 exports.GetLessons = catchAsync(async (req, res) => {
   try {
     const teacherId = req.user.id;
+    const profile = await Teacher.find({ userId: teacherId }).populate("userId");
     const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
     if (!lessons || lessons.length === 0) {
       return errorResponse(res, "No lessons found", 404);
     }
-    return successResponse(res, "Lessons retrieved successfully", 200, lessons);
+    return successResponse(res, "Lessons retrieved successfully", 200, {
+      profile,
+      lessons
+    });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
