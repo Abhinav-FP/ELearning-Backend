@@ -11,7 +11,7 @@ module.exports = (resetLink, userName) => {
         </tr>
          <tr>
             <td style=" padding: 0rem 1rem 1rem;"> 
-                <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/forget-password-img.png" alt="banner" style="max-width:100%;margin: auto;display: block;" />
+                <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/forget-password-img.png" alt="" style="max-width:100%;margin: auto;display: block;" />
            </td>
         </tr>
         <tr>
