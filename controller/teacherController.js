@@ -200,7 +200,7 @@ exports.GetAvailability = catchAsync(async (req, res) => {
 exports.GetLessons = catchAsync(async (req, res) => {
   try {
     const teacherId = req.user.id;
-    const profile = await Teacher.find({ userId: teacherId }).populate("userId");
+    const profile = await Teacher.findOne({ userId: teacherId }).populate("userId");
     const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
     if (!lessons || lessons.length === 0) {
       return errorResponse(res, "No lessons found", 404);
@@ -282,7 +282,8 @@ exports.TeacherGet = catchAsync(async (req, res) => {
 exports.updateProfile = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-
+    const files = req.files || {};
+    // console.log("files",files);
     if (!userId) {
       return errorResponse(res, "Invalid User", 401);
     }
@@ -292,7 +293,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
       email,
       timezone,
       nationality,
-      profile_photo,
+      // profile_photo,
       languages_spoken,
       gender,
       ais_trained,
@@ -302,18 +303,68 @@ exports.updateProfile = catchAsync(async (req, res) => {
       description,
       average_price,
       average_time,
-      documentlink,
+      // documentlink,
     } = req.body;
 
-    // Explicit field mapping
     const userUpdates = {};
+    const teacherUpdates = {};
+
+    const user = await User.findById(userId);
+    const teacher = await Teacher.findOne({ userId });
+    if(!user || !teacher){
+      return errorResponse(res, "User not found", 404);
+    }
+    let profile_photo=null;
+    if (files.profile_photo?.[0]) {
+      if (user?.profile_photo) {
+        // console.log("Old profile photo to delete:", user.profile_photo);
+        const isDeleted = await deleteFileFromSpaces(user.profile_photo);
+        if (!isDeleted) {
+          return res.status(500).json({
+            status: false,
+            message: "Unable to delete old profile photo",
+          });
+        }
+      }
+      const fileKey = await uploadFileToSpaces(files.profile_photo?.[0]);
+      console.log("profile_photo",fileKey);
+      profile_photo = fileKey;
+    }
+
+    // if (profile_photo) {
+    //   userUpdates.profile_photo = profile_photo;
+    // }
+
+    let documentlink=null;
+    if (files.documentlink?.[0]) {
+      if (teacher?.documentlink) {
+        // console.log("Old profile photo to delete:", user.profile_photo);
+        const isDeleted = await deleteFileFromSpaces(teacher.documentlink);
+        if (!isDeleted) {
+          return res.status(500).json({
+            status: false,
+            message: "Unable to delete old document",
+          });
+        }
+      }
+      const fileKey = await uploadFileToSpaces(files.documentlink?.[0]);
+      console.log("documentlink",fileKey);
+      documentlink = fileKey;
+    }
+
+    // if (documentlink) {
+    //   teacherUpdates.documentlink = documentlink;
+    // }
+
+    // Explicit field mapping
     if (name !== undefined) userUpdates.name = name;
     if (email !== undefined) userUpdates.email = email;
     if (timezone !== undefined) userUpdates.timezone = timezone;
     if (nationality !== undefined) userUpdates.nationality = nationality;
-    if (profile_photo !== undefined) userUpdates.profile_photo = profile_photo;
-
-    const teacherUpdates = {};
+    if (profile_photo !== undefined && profile_photo !== null && profile_photo !== "") {
+      userUpdates.profile_photo = profile_photo;
+    }
+   
     if (languages_spoken !== undefined) teacherUpdates.languages_spoken = JSON.parse(languages_spoken);
     if (gender !== undefined) teacherUpdates.gender = gender;
     if (ais_trained !== undefined) teacherUpdates.ais_trained = ais_trained;
@@ -323,7 +374,9 @@ exports.updateProfile = catchAsync(async (req, res) => {
     if (description !== undefined) teacherUpdates.description = description;
     if (average_price !== undefined) teacherUpdates.average_price = average_price;
     if (average_time !== undefined) teacherUpdates.average_duration = average_time;
-    if (documentlink !== undefined) teacherUpdates.documentlink = documentlink;
+    if (documentlink !== undefined && documentlink !== null && documentlink !== "") {
+      teacherUpdates.documentlink = documentlink;
+    }
 
     // Check if nothing was provided
     const isUserUpdateEmpty = Object.keys(userUpdates).length === 0;
@@ -334,6 +387,8 @@ exports.updateProfile = catchAsync(async (req, res) => {
     }
 
     // Update User
+    console.log("userUpdates",userUpdates);
+    console.log("teacherUpdates",teacherUpdates);
     const updatedUser = isUserUpdateEmpty
       ? await User.findById(userId)
       : await User.findByIdAndUpdate(userId, userUpdates, {
