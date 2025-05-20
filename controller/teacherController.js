@@ -8,6 +8,8 @@ const logger = require("../utils/Logger");
 const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
 const User = require("../model/user");
 const Teacher = require("../model/teacher");
+const Review = require("../model/review");
+
 const mongoose = require('mongoose');
 
 exports.AddAvailability = catchAsync(async (req, res) => {
@@ -260,7 +262,7 @@ exports.TeacherGet = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log("userId" ,userId)
+    console.log("userId", userId)
     if (!userId) {
       return errorResponse(res, "No user Id provided", 401);
     }
@@ -337,17 +339,17 @@ exports.updateProfile = catchAsync(async (req, res) => {
     const updatedUser = isUserUpdateEmpty
       ? await User.findById(userId)
       : await User.findByIdAndUpdate(userId, userUpdates, {
-          new: true,
-          runValidators: true,
-        });
+        new: true,
+        runValidators: true,
+      });
 
     // Update Teacher
     const updatedTeacher = isTeacherUpdateEmpty
       ? await Teacher.findOne({ userId })
       : await Teacher.findOneAndUpdate({ userId }, teacherUpdates, {
-          new: true,
-          runValidators: true,
-        });
+        new: true,
+        runValidators: true,
+      });
 
     return successResponse(res, "Profile updated successfully!", 200, {
       user: updatedUser,
@@ -368,7 +370,7 @@ exports.EarningsGet = catchAsync(async (req, res) => {
     }
 
     // Get detailed booking data
-    const data = await Bookings.find({ teacherId: userId, lessonCompletedStudent:true, lessonCompletedTeacher:true })
+    const data = await Bookings.find({ teacherId: userId, lessonCompletedStudent: true, lessonCompletedTeacher: true })
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
@@ -383,7 +385,7 @@ exports.EarningsGet = catchAsync(async (req, res) => {
 
     // Aggregate the earnings
     const earnings = await Bookings.aggregate([
-      { $match: { teacherId: objectId, lessonCompletedStudent:true, lessonCompletedTeacher:true } },
+      { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true } },
       {
         $group: {
           _id: null,
@@ -449,7 +451,7 @@ exports.BookingsGet = catchAsync(async (req, res) => {
     }
 
     // Get detailed booking data
-    const data = await Bookings.find({ teacherId: userId }).sort({startDateTime: -1})
+    const data = await Bookings.find({ teacherId: userId }).sort({ startDateTime: -1 })
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
@@ -464,3 +466,67 @@ exports.BookingsGet = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
+
+
+exports.DashboardApi = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log("UserId", userId)
+
+    const TeacherData = await Teacher.findOne({ userId: userId });
+
+    const lessondata = await Lesson.findOne({ teacher: userId });
+
+    // const Reviewdata = await Review.find({ lessonId: lessondata?._id });
+
+    const ReviewCount = await Review.countDocuments({ lessonId: lessondata?._id });
+
+    const lessonId = lessondata?._id;
+
+    const result = await Bookings.aggregate([
+      {
+        $match: {
+          LessonId: lessonId,
+          lessonCompletedStudent: true,
+          lessonCompletedTeacher: true
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $cond: [
+              { $eq: ['$duration', 30] }, 'duration30',
+              {
+                $cond: [
+                  { $eq: ['$duration', 50] }, 'duration50',
+                  'otherDurations'
+                ]
+              }
+            ]
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Result ko parse karna:
+    const counts = {
+      duration30: 0,
+      duration50: 0,
+      otherDurations: 0
+    };
+
+    result.forEach(r => {
+      counts[r._id] = r.count;
+    });
+
+    console.log(counts);
+
+
+    successResponse(res, "Bookings retrieved successfully!", 200, { TeacherData, ReviewCount, counts });
+
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+})

@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const { BankAddOrEdit, BankList } = require("../controller/BankController");
 const { PayoutAdd, payoutList } = require("../controller/PayoutController");
-const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck, TeacherGet, EarningsGet, BookingsGet, updateProfile } = require("../controller/teacherController");
+const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck, TeacherGet, EarningsGet, BookingsGet, updateProfile, DashboardApi } = require("../controller/teacherController");
 const { verifyToken } = require("../middleware/tokenVerify");
 const { upload } = require("../utils/FileUploader");
 
@@ -37,5 +37,8 @@ router.post("/teacher/profile", verifyToken, upload.fields([
 router.get("/teacher/earning", verifyToken, EarningsGet);
 
 router.get("/teacher/booking", verifyToken, BookingsGet);
+
+router.get("/teacher/dashboard", verifyToken, DashboardApi);
+
 
 module.exports = router;
