@@ -202,7 +202,7 @@ exports.GetAvailability = catchAsync(async (req, res) => {
 exports.GetLessons = catchAsync(async (req, res) => {
   try {
     const teacherId = req.user.id;
-    const profile = await Teacher.findOne({ userId: teacherId }).populate("userId");
+    const profile = await Teacher.find({ userId: teacherId }).populate("userId");
     const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
     if (!lessons || lessons.length === 0) {
       return errorResponse(res, "No lessons found", 404);
@@ -262,7 +262,6 @@ exports.TeacherGet = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log("userId", userId)
     if (!userId) {
       return errorResponse(res, "No user Id provided", 401);
     }
@@ -284,8 +283,7 @@ exports.TeacherGet = catchAsync(async (req, res) => {
 exports.updateProfile = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    const files = req.files || {};
-    // console.log("files",files);
+
     if (!userId) {
       return errorResponse(res, "Invalid User", 401);
     }
@@ -295,7 +293,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
       email,
       timezone,
       nationality,
-      // profile_photo,
+      profile_photo,
       languages_spoken,
       gender,
       ais_trained,
@@ -305,68 +303,18 @@ exports.updateProfile = catchAsync(async (req, res) => {
       description,
       average_price,
       average_time,
-      // documentlink,
+      documentlink,
     } = req.body;
 
-    const userUpdates = {};
-    const teacherUpdates = {};
-
-    const user = await User.findById(userId);
-    const teacher = await Teacher.findOne({ userId });
-    if(!user || !teacher){
-      return errorResponse(res, "User not found", 404);
-    }
-    let profile_photo=null;
-    if (files.profile_photo?.[0]) {
-      if (user?.profile_photo) {
-        // console.log("Old profile photo to delete:", user.profile_photo);
-        const isDeleted = await deleteFileFromSpaces(user.profile_photo);
-        if (!isDeleted) {
-          return res.status(500).json({
-            status: false,
-            message: "Unable to delete old profile photo",
-          });
-        }
-      }
-      const fileKey = await uploadFileToSpaces(files.profile_photo?.[0]);
-      console.log("profile_photo",fileKey);
-      profile_photo = fileKey;
-    }
-
-    // if (profile_photo) {
-    //   userUpdates.profile_photo = profile_photo;
-    // }
-
-    let documentlink=null;
-    if (files.documentlink?.[0]) {
-      if (teacher?.documentlink) {
-        // console.log("Old profile photo to delete:", user.profile_photo);
-        const isDeleted = await deleteFileFromSpaces(teacher.documentlink);
-        if (!isDeleted) {
-          return res.status(500).json({
-            status: false,
-            message: "Unable to delete old document",
-          });
-        }
-      }
-      const fileKey = await uploadFileToSpaces(files.documentlink?.[0]);
-      console.log("documentlink",fileKey);
-      documentlink = fileKey;
-    }
-
-    // if (documentlink) {
-    //   teacherUpdates.documentlink = documentlink;
-    // }
-
     // Explicit field mapping
+    const userUpdates = {};
     if (name !== undefined) userUpdates.name = name;
     if (email !== undefined) userUpdates.email = email;
     if (timezone !== undefined) userUpdates.timezone = timezone;
     if (nationality !== undefined) userUpdates.nationality = nationality;
-    if (profile_photo !== undefined && profile_photo !== null && profile_photo !== "") {
-      userUpdates.profile_photo = profile_photo;
-    }
-   
+    if (profile_photo !== undefined) userUpdates.profile_photo = profile_photo;
+
+    const teacherUpdates = {};
     if (languages_spoken !== undefined) teacherUpdates.languages_spoken = JSON.parse(languages_spoken);
     if (gender !== undefined) teacherUpdates.gender = gender;
     if (ais_trained !== undefined) teacherUpdates.ais_trained = ais_trained;
@@ -376,9 +324,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
     if (description !== undefined) teacherUpdates.description = description;
     if (average_price !== undefined) teacherUpdates.average_price = average_price;
     if (average_time !== undefined) teacherUpdates.average_duration = average_time;
-    if (documentlink !== undefined && documentlink !== null && documentlink !== "") {
-      teacherUpdates.documentlink = documentlink;
-    }
+    if (documentlink !== undefined) teacherUpdates.documentlink = documentlink;
 
     // Check if nothing was provided
     const isUserUpdateEmpty = Object.keys(userUpdates).length === 0;
@@ -389,8 +335,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
     }
 
     // Update User
-    console.log("userUpdates",userUpdates);
-    console.log("teacherUpdates",teacherUpdates);
     const updatedUser = isUserUpdateEmpty
       ? await User.findById(userId)
       : await User.findByIdAndUpdate(userId, userUpdates, {
@@ -526,59 +470,152 @@ exports.BookingsGet = catchAsync(async (req, res) => {
 exports.DashboardApi = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    console.log("UserId", userId)
-
     const TeacherData = await Teacher.findOne({ userId: userId });
 
-    const lessondata = await Lesson.findOne({ teacher: userId });
-
-    // const Reviewdata = await Review.find({ lessonId: lessondata?._id });
-
-    const ReviewCount = await Review.countDocuments({ lessonId: lessondata?._id });
-
-    const lessonId = lessondata?._id;
-
+    const ReviewCount = await Review.aggregate([
+      {
+        $lookup: {
+          from: 'lessons', // ✅ name of the Lessons collection
+          localField: 'lessonId',
+          foreignField: '_id',
+          as: 'lesson'
+        }
+      },
+      {
+        $unwind: '$lesson'
+      },
+      {
+        $group: {
+          _id: '$lesson.teacherId',
+          reviewCount: { $sum: 1 }
+        }
+      }
+    ]);
+    const ReviewesCount = ReviewCount.length > 0 ? ReviewCount[0].reviewCount : 0;
     const result = await Bookings.aggregate([
       {
         $match: {
-          LessonId: lessonId,
           lessonCompletedStudent: true,
           lessonCompletedTeacher: true
         }
       },
       {
+        $lookup: {
+          from: 'lessons',
+          localField: 'LessonId',
+          foreignField: '_id',
+          as: 'lesson'
+        }
+      },
+      {
+        $unwind: '$lesson'
+      },
+      {
         $group: {
-          _id: {
-            $cond: [
-              { $eq: ['$duration', 30] }, 'duration30',
-              {
-                $cond: [
-                  { $eq: ['$duration', 50] }, 'duration50',
-                  'otherDurations'
-                ]
-              }
-            ]
-          },
+          _id: '$lesson.duration',
           count: { $sum: 1 }
         }
       }
     ]);
-
-    // Result ko parse karna:
     const counts = {
       duration30: 0,
       duration50: 0,
-      otherDurations: 0
+      duration60: 0
     };
-
     result.forEach(r => {
-      counts[r._id] = r.count;
+      counts[`duration${r._id}`] = r.count;
     });
+    const objectId = new mongoose.Types.ObjectId(userId);
+    // Aggregate the earnings
+    const earnings = await Bookings.aggregate([
+      { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true } },
+      {
+        $group: {
+          _id: null,
+          totalEarnings: { $sum: "$teacherEarning" },
+          pendingEarnings: {
+            $sum: {
+              $cond: [
+                { $eq: ["$payoutCreationDate", null] },
+                "$teacherEarning",
+                0
+              ]
+            }
+          },
+          requestedEarnings: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ["$payoutCreationDate", null] },
+                    { $eq: ["$payoutDoneAt", null] }
+                  ]
+                },
+                "$teacherEarning",
+                0
+              ]
+            }
+          },
+          approvedEarnings: {
+            $sum: {
+              $cond: [
+                { $ne: ["$payoutDoneAt", null] },
+                "$teacherEarning",
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+    const earningsSummary = earnings[0] || {
+      totalEarnings: 0,
+      pendingEarnings: 0,
+      approvedEarnings: 0
+    };
+    const paypalamount = await Bookings.aggregate([
+      {
+        $match: {
+          teacherId: objectId,
+          paypalpaymentId: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalPaypalAmount: { $sum: '$teacherEarning' }
+        }
+      }
+    ]);
+    const paypalpay = paypalamount.length > 0 ? paypalamount[0].totalPaypalAmount : 0;
+    const stripeamount = await Bookings.aggregate([
+      {
+        $match: {
+          teacherId: objectId,
+          StripepaymentId: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalstripeAmount: { $sum: '$teacherEarning' }
+        }
+      }
+    ]);
+    const stripepay = stripeamount.length > 0 ? stripeamount[0].totalstripeAmount : 0;
 
-    console.log(counts);
+    const today = new Date();
+
+    const upcomingLesson = await Bookings.find({
+      startDateTime: { $gt: today }
+    })
+      .sort({ startDateTime: 1 }).limit(3).select('startDateTime').populate({
+        path: "LessonId",
+        select: "title"
+      });
 
 
-    successResponse(res, "Bookings retrieved successfully!", 200, { TeacherData, ReviewCount, counts });
+    successResponse(res, "Bookings retrieved successfully!", 200, { upcomingLesson, TeacherData, ReviewesCount, counts, earningsSummary, paypalpay, stripepay });
 
   } catch (error) {
     console.log(error);
