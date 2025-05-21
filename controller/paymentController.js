@@ -7,7 +7,7 @@ const Payment = require("../model/PaypalPayment");
 const StripePayment = require("../model/StripePayment");
 const Bookings = require("../model/booking");
 const Teacher = require("../model/teacher");
-const Loggers = require("../utils/Logger");
+const logger = require("../utils/Logger");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("../EmailTemplate/BookingSuccess");
 const sendEmail = require("../utils/EmailMailler");
@@ -187,7 +187,7 @@ exports.PaymentcancelOrder = catchAsync(async (req, res) => {
           },
         }
       );
-      Loggers.wran("voidResponse", voidResponse)
+      logger.wran("voidResponse", voidResponse)
     } catch (paypalErr) {
       console.warn("Could not void PayPal order (maybe already captured?):", paypalErr.response?.data || paypalErr.message);
     }
@@ -385,3 +385,34 @@ exports.PaymentCancel = catchAsync(async (req, res) => {
     });
   }
 });
+
+
+
+exports.handleWebhook = async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const endpointSecret = "whsec_XLPlO18YVB6B0od6DZCxtedV4FBjl4SD";
+
+    try {
+        const event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+        console.log(`Received event: ${event.type}`);
+
+        if (event.type === 'payment_intent.succeeded') {
+            const paymentIntent = event.data.object;
+            console.log("paymentIntent" ,paymentIntent)
+            // const newBooking = new Booking({
+            //     userId: paymentIntent.metadata.userId,
+            //     amount: paymentIntent.amount / 100,
+            //     paymentId: paymentIntent.id,
+            //     status: 'Paid',
+            // });
+
+            // await newBooking.save();
+            console.log('Booking saved successfully!');
+        }
+
+        res.json({ received: true });
+    } catch (err) {
+        console.error('Webhook signature verification failed:', err);
+        res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+};
