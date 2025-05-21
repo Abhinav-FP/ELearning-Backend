@@ -31,7 +31,7 @@ router.get("/teacher/profile", verifyToken, TeacherGet);
 
 router.post("/teacher/profile", verifyToken, upload.fields([
   { name: 'profile_photo', maxCount: 1 },
-  { name: 'documents', maxCount: 1 },
+  { name: 'documentlink', maxCount: 1 },
 ]), updateProfile);
 
 router.get("/teacher/earning", verifyToken, EarningsGet);
