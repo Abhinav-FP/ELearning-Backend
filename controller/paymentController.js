@@ -277,7 +277,8 @@ exports.createCheckout = catchAsync(async (req, res) => {
       currency,
       LessonId,
       amount,
-      srNo
+      srNo ,
+      UserId : userId
     });
     const record = await newPayment.save();
 
@@ -388,31 +389,31 @@ exports.PaymentCancel = catchAsync(async (req, res) => {
 
 
 
-exports.handleWebhook = async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    const endpointSecret = "whsec_XLPlO18YVB6B0od6DZCxtedV4FBjl4SD";
+// exports.handleWebhook = async (req, res) => {
+//     const sig = req.headers['stripe-signature'];
+//     const endpointSecret = "whsec_XLPlO18YVB6B0od6DZCxtedV4FBjl4SD";
 
-    try {
-        const event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-        console.log(`Received event: ${event.type}`);
+//     try {
+//         const event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+//         console.log(`Received event: ${event.type}`);
 
-        if (event.type === 'payment_intent.succeeded') {
-            const paymentIntent = event.data.object;
-            console.log("paymentIntent" ,paymentIntent)
-            // const newBooking = new Booking({
-            //     userId: paymentIntent.metadata.userId,
-            //     amount: paymentIntent.amount / 100,
-            //     paymentId: paymentIntent.id,
-            //     status: 'Paid',
-            // });
+//         if (event.type === 'payment_intent.succeeded') {
+//             const paymentIntent = event.data.object;
+//             console.log("paymentIntent" ,paymentIntent)
+//             // const newBooking = new Booking({
+//             //     userId: paymentIntent.metadata.userId,
+//             //     amount: paymentIntent.amount / 100,
+//             //     paymentId: paymentIntent.id,
+//             //     status: 'Paid',
+//             // });
 
-            // await newBooking.save();
-            console.log('Booking saved successfully!');
-        }
+//             // await newBooking.save();
+//             console.log('Booking saved successfully!');
+//         }
 
-        res.json({ received: true });
-    } catch (err) {
-        console.error('Webhook signature verification failed:', err);
-        res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-};
+//         res.json({ received: true });
+//     } catch (err) {
+//         console.error('Webhook signature verification failed:', err);
+//         res.status(400).send(`Webhook Error: ${err.message}`);
+//     }
+// };

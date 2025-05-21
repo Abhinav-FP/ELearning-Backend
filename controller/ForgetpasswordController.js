@@ -14,7 +14,6 @@ const signEmail = async (id) => {
   return token;
 };
 
-
 exports.forgotlinkrecord = catchAsync(
   async (req, res) => {
     try {

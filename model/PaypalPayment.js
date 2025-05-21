@@ -34,7 +34,6 @@ const orderSchema = new mongoose.Schema({
   UserId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    default: "67f8eb8224daa0005ae23291"
   },
   createdAt: { type: Date, default: Date.now },
 });
