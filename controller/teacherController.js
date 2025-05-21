@@ -9,7 +9,6 @@ const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploa
 const User = require("../model/user");
 const Teacher = require("../model/teacher");
 const Review = require("../model/review");
-
 const mongoose = require('mongoose');
 
 exports.AddAvailability = catchAsync(async (req, res) => {
