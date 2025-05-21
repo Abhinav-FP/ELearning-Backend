@@ -16,7 +16,7 @@ exports.PayoutAdd = catchAsync(async (req, res) => {
     }
     const time = Date.now();
     const bookings = await Bookings.updateMany(
-        { teacherId: userId },
+        { teacherId: userId, lessonCompletedStudent: true, lessonCompletedTeacher: true },
         { $set: { payoutCreationDate: time } }, 
         {
             new: true, // Not needed in updateMany, only works in findOneAndUpdate
@@ -81,6 +81,55 @@ exports.payoutList = catchAsync(async (req, res) => {
             status: false,
             message: "Failed to retrieve bank records.",
             error: error.message,
+        });
+    }
+});
+
+exports.PayoutAcceptorReject = catchAsync(async (req, res) => {
+    const payoutId = req.params.id;
+    if (!payoutId) {
+        return res.status(400).json({
+            status: false,
+            message: "Payout ID is missing.",
+        });
+    }
+    const { Status, Reasons, TranscationId } = req.body;
+    const time = Date.now();
+    const bookings = await Bookings.updateMany(
+        { teacherId: userId },
+        { $set: { payoutCreationDate: time } }, 
+        {
+            new: true, // Not needed in updateMany, only works in findOneAndUpdate
+            runValidators: true,
+        }
+    );
+    if (!amount) {
+        return res.status(400).json({
+            status: false,
+            message: "Amount are required.",
+        });
+    }
+    try {
+        const record = new Payout({
+            BankId: Banks._id,
+            amount,
+            userId,
+            createdAt:time,
+        });
+
+        const result = await record.save();
+
+        return res.status(201).json({
+            status: true,
+            message: "Payout details have been successfully added!",
+            data: result,
+        });
+    } catch (error) {
+        console.log("error", error)
+        Loggers.error("Error in PayoutAddOrEdit:", error);
+        return res.status(500).json({
+            status: false,
+            message: error,
         });
     }
 });

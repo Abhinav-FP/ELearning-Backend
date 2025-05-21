@@ -93,7 +93,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
     console.log("req.body", req.body)
-    const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone, totalAmount, adminCommission } = req.body;
+    const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone, totalAmount, adminCommission, email } = req.body;
     const accessToken = await generateAccessToken();
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
@@ -153,7 +153,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     const Username = user.name
     const emailHtml = BookingSuccess(startDateTime, Username, teacher?.name);
     await sendEmail({
-      email: user.email,
+      email: email,
       subject: registrationSubject,
       emailHtml: emailHtml,
     });
@@ -240,7 +240,7 @@ const fetchPaymentId = async (sessionId, srNo) => {
 exports.createCheckout = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission } = req?.body;
+    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email} = req?.body;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
@@ -252,7 +252,7 @@ exports.createCheckout = catchAsync(async (req, res) => {
       // cancel_url: `${process.env.stripe_link}/stripe/cancel/${srNo}`,
       cancel_url: `https://japaneseforme.com/stripe/cancel/${srNo}`,
       submit_type: "pay",
-      customer_email: req?.user?.email || "ankitjain@gmail.com",
+      customer_email: email || "ankitjain@gmail.com",
       billing_address_collection: "auto",
       line_items: [
         {
@@ -306,11 +306,10 @@ exports.createCheckout = catchAsync(async (req, res) => {
     const Username = user.name
     const emailHtml = BookingSuccess(startUTC, Username);
     await sendEmail({
-      email: user.email,
+      email: email,
       subject: registrationSubject,
       emailHtml: emailHtml,
     });
-
     res.status(200).json({ url: session.url, status: "true" });
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
