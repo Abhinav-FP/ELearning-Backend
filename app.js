@@ -16,7 +16,7 @@ const corsOptions = {
 }
 
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '2000mb' }));
+
 
 app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   console.log("Headers received:", req.headers);
@@ -78,7 +78,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
 
 
 
-
+app.use(express.json({ limit: '2000mb' }));
 
 
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
