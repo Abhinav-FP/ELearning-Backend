@@ -240,7 +240,7 @@ const fetchPaymentId = async (sessionId, srNo) => {
 exports.createCheckout = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email} = req?.body;
+    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email } = req?.body;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
@@ -277,8 +277,8 @@ exports.createCheckout = catchAsync(async (req, res) => {
       currency,
       LessonId,
       amount,
-      srNo ,
-      UserId : userId
+      srNo,
+      UserId: userId
     });
     const record = await newPayment.save();
 
@@ -387,32 +387,86 @@ exports.PaymentCancel = catchAsync(async (req, res) => {
 });
 
 
+exports.createpayment = async (req, res) => {
+  try {
+    const { amount = 2000, currency = 'usd' } = req.body;
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency,
+      metadata: req.body.metadata || {},
+    });
+    console.log("paymentIntent", paymentIntent)
+    return res.json({ clientSecret: paymentIntent.client_secret });;
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+}
 
-// exports.handleWebhook = async (req, res) => {
-//     const sig = req.headers['stripe-signature'];
-//     const endpointSecret = "whsec_XLPlO18YVB6B0od6DZCxtedV4FBjl4SD";
 
-//     try {
-//         const event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-//         console.log(`Received event: ${event.type}`);
+exports.handleWebhook = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email } = req?.body;
+    const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
+    const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
+    const amountInCents = Math.round(amount * 100);
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: 2000,
+      currency: 'usd',
+      payment_method_types: ['card'],
+    });
+    console.log("paymentIntent", paymentIntent)
 
-//         if (event.type === 'payment_intent.succeeded') {
-//             const paymentIntent = event.data.object;
-//             console.log("paymentIntent" ,paymentIntent)
-//             // const newBooking = new Booking({
-//             //     userId: paymentIntent.metadata.userId,
-//             //     amount: paymentIntent.amount / 100,
-//             //     paymentId: paymentIntent.id,
-//             //     status: 'Paid',
-//             // });
+    const newPayment = new StripePayment({
+      srNo,
+      payment_type: "card",
+      payment_id: null,
+      session_id: paymentIntent?.id,
+      currency,
+      LessonId,
+      amount,
+      srNo,
+      UserId: userId,
+      payment_status : paymentIntent?.status
+    });
+    const record = await newPayment.save();
 
-//             // await newBooking.save();
-//             console.log('Booking saved successfully!');
-//         }
+    // Convert times from user's timezone to UTC
+    const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+    const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
 
-//         res.json({ received: true });
-//     } catch (err) {
-//         console.error('Webhook signature verification failed:', err);
-//         res.status(400).send(`Webhook Error: ${err.message}`);
-//     }
-// };
+    const teacherEarning = amount - adminCommission;
+    const Bookingsave = new Bookings({
+      teacherId,
+      UserId: userId,
+      teacherEarning,
+      adminCommission,
+      LessonId,
+      StripepaymentId: record?._id,
+      startDateTime: startUTC,
+      endDateTime: endUTC,
+      currency,
+      totalAmount: amount,
+      srNo
+    });
+    await Bookingsave.save();
+    const user = await User.findById({ _id: req.user.id });
+    const registrationSubject = "Booking Confirmed 🎉";
+    const Username = user.name
+    const emailHtml = BookingSuccess(startUTC, Username);
+    await sendEmail({
+      email: email,
+      subject: registrationSubject,
+      emailHtml: emailHtml,
+    });
+    res.json({ clientSecret: paymentIntent.client_secret });
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+

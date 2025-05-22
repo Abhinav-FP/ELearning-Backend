@@ -16,10 +16,7 @@ router.get("/payment-success/:srNo", verifyToken , paymentController.PaymentSucc
 router.get("/payment-cancel/:srNo", verifyToken , paymentController.PaymentCancel)
 
 
-// router.post("/webhook",  paymentController.handleWebhook)
-
-
-
+router.post("/create-payment-intent",  verifyToken ,  paymentController.handleWebhook)
 
 
 module.exports = router;
