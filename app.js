@@ -6,6 +6,8 @@ require("./dbconfigration");
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const cron = require("node-cron");
+const TeacherAvailability = require("./model/TeacherAvailability");
 
 const corsOptions = {
   origin: "*", // Allowed origins
@@ -96,18 +98,46 @@ app.use("/api", require("./route/studentRoutes"));
 app.use("/api", require("./route/adminRoutes"));
 app.use("/api", require("./route/bookingRoutes"));
 app.use("/api", require("./route/teacherRoutes"));
-
-
 app.use("/api/payment", require("./route/paymentRoutes"));
-
-
-
 
 app.get("/", (req, res) => {
   res.json({
     msg: 'Hello World',
     status: 200,
   });
+});
+
+// cron.schedule('*/1 * * * *', async () => {
+//   try{
+//     console.log(`Running cron job at ${new Date()}`);
+//   }catch(error){
+//     console.log("Error in cron job", error);
+//   }
+// });
+
+// Cron job running at 1 am daily for deleting old availability entries
+cron.schedule('0 1 * * *', async () => {
+  try {
+    console.log(`🕐 Running availability cleanup at ${new Date().toISOString()}`);
+
+    // Always base calculations on UTC
+    const nowUtc = new Date();
+    const yesterdayEndUtc = new Date(Date.UTC(
+      nowUtc.getUTCFullYear(),
+      nowUtc.getUTCMonth(),
+      nowUtc.getUTCDate() - 1,
+      23, 59, 59, 999
+    ));
+
+    const result = await TeacherAvailability.deleteMany({
+      startDateTime: { $lte: yesterdayEndUtc },
+      endDateTime: { $lte: yesterdayEndUtc }
+    });
+
+    console.log(`✅ Deleted ${result.deletedCount} outdated availability entries.`);
+  } catch (error) {
+    console.error('❌ Error in availability cleanup cron job:', error);
+  }
 });
 
 const server = app.listen(PORT, () => console.log("Server is running at port : " + PORT));
