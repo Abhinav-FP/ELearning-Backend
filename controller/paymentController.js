@@ -407,64 +407,29 @@ exports.createpayment = async (req, res) => {
 exports.PaymentCreate = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    console.log("UserId" ,userId)
-    console.log("req?.body" ,req?.body)
-    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email } = req?.body;
+    console.log("UserId", userId)
+    console.log("req?.body", req?.body)
+    const { amount, currency } = req?.body;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
-      currency: 'usd',
+      currency: currency,
       payment_method_types: ['card'],
-    });
-    console.log("paymentIntent", paymentIntent)
-
-    const newPayment = new StripePayment({
-      srNo,
-      payment_type: "card",
-      payment_id: null,
-      session_id: paymentIntent?.id,
-      currency,
-      LessonId,
-      amount,
-      srNo,
-      UserId: userId,
-      payment_status : paymentIntent?.status
-    });
-    const record = await newPayment.save();
-console.log("record" ,record)
-    // Convert times from user's timezone to UTC
-    const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
-    const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
-
-    const teacherEarning = amount - adminCommission;
-    if(paymentIntent?.status === "requires_payment_method"){
-      const Bookingsave = new Bookings({
-        teacherId,
-        UserId: userId,
-        teacherEarning,
-        adminCommission,
+      metadata: {
+        userId,
         LessonId,
-        StripepaymentId: record?._id,
-        startDateTime: startUTC,
-        endDateTime: endUTC,
-        currency,
-        totalAmount: amount,
-        srNo
-      });
-    const  records=   await Bookingsave.save();
-    console.log("records" ,records)
-      const user = await User.findById({ _id: req.user.id });
-      const registrationSubject = "Booking Confirmed 🎉";
-      const Username = user.name
-      const emailHtml = BookingSuccess(startUTC, Username);
-      await sendEmail({
-        email: email,
-        subject: registrationSubject,
-        emailHtml: emailHtml,
-      });
-    }
+        teacherId,
+        startDateTime,
+        endDateTime,
+        timezone,
+        adminCommission,
+        email,
+        notes,
+        srNo: srNo.toString()
+      }
+    });
     res.json({ clientSecret: paymentIntent.client_secret });
   } catch (error) {
     console.error('Error creating payment intent:', error);
