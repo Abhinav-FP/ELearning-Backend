@@ -404,7 +404,7 @@ exports.createpayment = async (req, res) => {
 }
 
 
-exports.handleWebhook = catchAsync(async (req, res) => {
+exports.PaymentCreate = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
     console.log("UserId" ,userId)
@@ -433,7 +433,7 @@ exports.handleWebhook = catchAsync(async (req, res) => {
       payment_status : paymentIntent?.status
     });
     const record = await newPayment.save();
-
+console.log("record" ,record)
     // Convert times from user's timezone to UTC
     const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
     const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
@@ -453,7 +453,8 @@ exports.handleWebhook = catchAsync(async (req, res) => {
         totalAmount: amount,
         srNo
       });
-      await Bookingsave.save();
+    const  records=   await Bookingsave.save();
+    console.log("records" ,records)
       const user = await User.findById({ _id: req.user.id });
       const registrationSubject = "Booking Confirmed 🎉";
       const Username = user.name
