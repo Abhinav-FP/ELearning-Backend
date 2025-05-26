@@ -8,7 +8,6 @@ const app = express();
 const cors = require("cors");
 const cron = require("node-cron");
 const TeacherAvailability = require("./model/TeacherAvailability");
-
 const corsOptions = {
   origin: "*", // Allowed origins
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -18,6 +17,12 @@ const corsOptions = {
 }
 
 app.use(cors(corsOptions));
+
+app.use(express.json({ limit: '2000mb' }));
+
+
+
+app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
 app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   console.log("Headers received:", req.headers);
@@ -78,12 +83,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
 });
 
 
-app.use(express.json({ limit: '2000mb' }));
 
-app.use(express.json({ limit: '2000mb' }));
-
-
-app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
 const PORT = process.env.REACT_APP_SERVER_DOMAIN || 5000;
 
