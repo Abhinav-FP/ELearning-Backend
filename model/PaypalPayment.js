@@ -35,7 +35,7 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
-  createdAt: { type: Date, default: Date.now },
+  created_at: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model('paypalpayments', orderSchema);

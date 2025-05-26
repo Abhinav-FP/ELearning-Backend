@@ -3,7 +3,7 @@ const User = require("../model/user");
 const catchAsync = require("../utils/catchAsync");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 
-exports.aTeacherList = catchAsync(async (req, res) => {
+exports.TeacherList = catchAsync(async (req, res) => {
     try {
         const TeacherApprove = await Teacher.find({
             admin_approved: true
@@ -86,4 +86,3 @@ exports.AdminBlockUser = catchAsync(async (req, res) => {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 })
-

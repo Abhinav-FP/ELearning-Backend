@@ -14,9 +14,8 @@ exports.paymentget = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
     // console.log("req.user.id", req.user.id)
-    const payment = await Payment.find({ UserId: UserId }).populate("LessonId").sort({createdAt: -1});
-    const stripeData= await stripePayments.find({ UserId: UserId }).populate("LessonId").sort({createdAt: -1});
-
+    const payment = await Payment.find({ UserId: UserId }).populate("LessonId").sort({ created_at: -1 });
+    const stripeData = await stripePayments.find({ UserId: UserId, payment_status: "succeeded" }).populate("LessonId").sort({ srNo: -1 });
     // console.log("_id:", payment)
     if (!payment && !stripeData) {
       Loggers.warn("Payment Not Found.");
@@ -34,7 +33,7 @@ exports.paymentget = catchAsync(async (req, res) => {
       console.log("errors", errors);
       return validationErrorResponse(res, errors.join(", "), 400, "error");
     }
-    return errorResponse(res, error.message || "Internal Server Error", 500); 
+    return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
 
@@ -177,19 +176,19 @@ exports.studentDashboard = catchAsync(async (req, res) => {
 
     const data = await Bookings.findOne({
       UserId: userId,
-      startDateTime: { $gt: new Date() } 
+      startDateTime: { $gt: new Date() }
     })
-    .sort({ startDateTime: 1 })
-    // .limit(1)
-    .populate('StripepaymentId')
-    .populate('paypalpaymentId')
-    .populate('teacherId')
-    .populate('LessonId');
+      .sort({ startDateTime: 1 })
+      // .limit(1)
+      .populate('StripepaymentId')
+      .populate('paypalpaymentId')
+      .populate('teacherId')
+      .populate('LessonId');
 
     return successResponse(res, "Dashboard retrieved successfully", 200, {
-    reviews: reviews,
-    wishlistResult: wishlistResult,
-    booking: data,
+      reviews: reviews,
+      wishlistResult: wishlistResult,
+      booking: data,
     });
 
   } catch (error) {
@@ -312,7 +311,7 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
     }
 
     return successResponse(res, "Availability processed", 200, {
-      availabilityBlocks:availableSlots,
+      availabilityBlocks: availableSlots,
       bookedSlots,
     });
   } catch (error) {
@@ -322,18 +321,18 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
 
 exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
   try {
-      const teacherId = req.params.id;
-      console.log("teacherId",teacherId);
-      
-      if (!teacherId) {
-          return errorResponse(res, "Teacher ID is required", 400);
-      } 
-      const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
-      if (!lessons || lessons.length === 0) {
-          return errorResponse(res, "No lessons found", 404);
-      }
-      return successResponse(res, "Lessons retrieved successfully", 200, lessons);
+    const teacherId = req.params.id;
+    console.log("teacherId", teacherId);
+
+    if (!teacherId) {
+      return errorResponse(res, "Teacher ID is required", 400);
+    }
+    const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
+    if (!lessons || lessons.length === 0) {
+      return errorResponse(res, "No lessons found", 404);
+    }
+    return successResponse(res, "Lessons retrieved successfully", 200, lessons);
   } catch (error) {
-      return errorResponse(res, error.message || "Internal Server Error", 500);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });

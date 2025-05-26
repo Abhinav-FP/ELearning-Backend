@@ -131,6 +131,64 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   res.json({ received: true });
 });
 
+app.post('/api/paypal/webhook', async (req, res) => {
+    try {
+        const receivedEvent = req.body;
+
+        const isVerified = verifyPayPalWebhookSignature(receivedEvent, req.headers);
+        if (!isVerified) {
+            return res.status(400).json({ message: 'Invalid webhook signature' });
+        }
+
+        switch (receivedEvent.event_type) {
+            case 'PAYMENT.SALE.COMPLETED':
+               console.log("PAYMENT.SALE.COMPLETED")
+                break;
+
+            case 'BILLING.SUBSCRIPTION.CREATED':
+               console.log("BILLING.SUBSCRIPTION.CREATED")
+
+                break;
+        }
+
+        res.sendStatus(200);
+    } catch (error) {
+        console.error('Error processing PayPal webhook:', error);
+        res.sendStatus(500);
+    }
+});
+
+
+async function verifyPayPalWebhookSignature(headers, rawBody) {
+    const transmissionId = headers['paypal-transmission-id'];
+    const timeStamp = headers['paypal-transmission-time'];
+    const certUrl = headers['paypal-cert-url'];
+    const actualSignature = headers['paypal-transmission-sig'];
+
+    const WEBHOOK_ID = process.env.PAYPAL_WEBHOOK_ID; // Your PayPal webhook ID
+
+    if (!transmissionId || !timeStamp || !certUrl || !actualSignature || !WEBHOOK_ID) {
+        console.error('Missing PayPal webhook headers or WEBHOOK_ID.');
+        return false;
+    }
+
+    try {
+        const certResponse = await fetch(certUrl);
+        if (!certResponse.ok) {
+            throw new Error(`Failed to fetch PayPal certificate: ${certResponse.statusText}`);
+        }
+        const certPem = await certResponse.text();
+        const verifier = crypto.createVerify('SHA256'); // Or 'RSA-SHA256' as per docs
+        verifier.update(message);
+
+        const isValid = verifier.verify(certPem, Buffer.from(actualSignature, 'base64'));
+        return isValid;
+
+    } catch (error) {
+        console.error('Error verifying PayPal webhook signature:', error);
+        return false;
+    }
+}
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
