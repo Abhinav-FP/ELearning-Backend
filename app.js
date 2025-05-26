@@ -18,12 +18,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(express.json({ limit: '2000mb' }));
-
-
-
-app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
-
 app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   console.log("Headers received:", req.headers);
   const sig = req.headers['stripe-signature'];
@@ -82,8 +76,8 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   res.json({ received: true });
 });
 
-
-
+app.use(express.json({ limit: '2000mb' }));
+app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
 const PORT = process.env.REACT_APP_SERVER_DOMAIN || 5000;
 
