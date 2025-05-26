@@ -407,12 +407,14 @@ exports.createpayment = async (req, res) => {
 exports.handleWebhook = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log("UserId" ,userId)
+    console.log("req?.body" ,req?.body)
     const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email } = req?.body;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 2000,
+      amount: amountInCents,
       currency: 'usd',
       payment_method_types: ['card'],
     });
