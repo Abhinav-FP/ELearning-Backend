@@ -7,8 +7,13 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const cron = require("node-cron");
+const StripePayment = require("./model/StripePayment");
 const TeacherAvailability = require("./model/TeacherAvailability");
-
+const Bookings = require("./model/booking");
+const User = require("./model/user");
+const { DateTime } = require("luxon");
+const BookingSuccess = require("./EmailTemplate/BookingSuccess");
+const sendEmail = require("./utils/EmailMailler");
 const corsOptions = {
   origin: "*", // Allowed origins
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -19,13 +24,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   console.log("Headers received:", req.headers);
   const sig = req.headers['stripe-signature'];
-  const endpointSecret = "whsec_XLPlO18YVB6B0od6DZCxtedV4FBjl4SD";
-
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
   let event;
-
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err) {
@@ -36,7 +39,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   console.log(`✅ Webhook event received: ${event.type}`);
 
   // Handle event
-   switch (event.type) {
+  switch (event.type) {
     case 'charge.succeeded': {
       const charge = event.data.object;
       console.log(`💰 Charge succeeded for amount: ${charge.amount}`);
@@ -66,6 +69,57 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
     case 'payment_intent.succeeded': {
       const pi = event.data.object;
       console.log(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
+      const metadata = pi.metadata;
+
+      console.log(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
+      console.log("📦 Metadata:", metadata);
+
+      // Convert times to UTC
+      const startUTC = DateTime.fromISO(metadata.startDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
+      const endUTC = DateTime.fromISO(metadata.endDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
+      // Save payment record
+      const payment = new StripePayment({
+        srNo: parseInt(metadata.srNo),
+        payment_type: "card",
+        payment_id: pi.id,
+        currency: pi.currency,
+        LessonId: metadata.LessonId,
+        amount: pi.amount / 100,
+        UserId: metadata.userId,
+        payment_status: pi.status
+      });
+      const savedPayment = await payment.save();
+      console.log("savedPayment", savedPayment)
+      const teacherEarning = (pi.amount / 100) - metadata.adminCommission;
+      // Save booking record
+      const booking = new Bookings({
+        teacherId: metadata.teacherId,
+        UserId: metadata.userId,
+        teacherEarning,
+        adminCommission: metadata.adminCommission,
+        LessonId: metadata.LessonId,
+        StripepaymentId: savedPayment._id,
+        startDateTime: startUTC,
+        endDateTime: endUTC,
+        currency: pi.currency,
+        totalAmount: pi.amount / 100,
+        srNo: parseInt(metadata.srNo),
+        notes: metadata.notes || ""
+      });
+
+      const record = await booking.save();
+
+      console.log("record", record)
+      // Send confirmation email
+      const user = await User.findById(metadata.userId);
+      const registrationSubject = "Booking Confirmed 🎉";
+      const emailHtml = BookingSuccess(startUTC, user.name);
+      await sendEmail({
+        email: metadata.email,
+        subject: registrationSubject,
+        emailHtml
+      });
+      console.log("Success Payment")
       // Mark order as paid, send email, grant access, etc.
       break;
     }
@@ -77,12 +131,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   res.json({ received: true });
 });
 
-
 app.use(express.json({ limit: '2000mb' }));
-
-app.use(express.json({ limit: '2000mb' }));
-
-
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
 const PORT = process.env.REACT_APP_SERVER_DOMAIN || 5000;
@@ -133,7 +182,6 @@ cron.schedule('0 1 * * *', async () => {
       startDateTime: { $lte: yesterdayEndUtc },
       endDateTime: { $lte: yesterdayEndUtc }
     });
-
     console.log(`✅ Deleted ${result.deletedCount} outdated availability entries.`);
   } catch (error) {
     console.error('❌ Error in availability cleanup cron job:', error);

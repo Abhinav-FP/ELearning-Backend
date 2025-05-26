@@ -3,7 +3,7 @@ const User = require("../model/user");
 const catchAsync = require("../utils/catchAsync");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 
-exports.TeacherList = catchAsync(async (req, res) => {
+exports.aTeacherList = catchAsync(async (req, res) => {
     try {
         const TeacherApprove = await Teacher.find({
             admin_approved: true
@@ -11,11 +11,15 @@ exports.TeacherList = catchAsync(async (req, res) => {
             path: "userId",
             select: "-password",
         });
-        return successResponse(res, "Teacher retrieved successfully", 200, {
-            TeacherApprove
+        const NewTeachers = await Teacher.find({
+            admin_approved: false
+        }).populate({
+            path: "userId",
+            select: "-password"
         });
-
-
+        return successResponse(res, "Teacher retrieved successfully", 200, {
+            TeacherApprove ,NewTeachers
+        });
     } catch (error) {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
