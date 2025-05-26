@@ -77,7 +77,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       // Convert times to UTC
       const startUTC = DateTime.fromISO(metadata.startDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
       const endUTC = DateTime.fromISO(metadata.endDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
-
       // Save payment record
       const payment = new StripePayment({
         srNo: parseInt(metadata.srNo),
@@ -92,7 +91,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const savedPayment = await payment.save();
       console.log("savedPayment", savedPayment)
       const teacherEarning = (pi.amount / 100) - metadata.adminCommission;
-
       // Save booking record
       const booking = new Bookings({
         teacherId: metadata.teacherId,
@@ -121,7 +119,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         subject: registrationSubject,
         emailHtml
       });
-      console.log("Success Paym,ent")
+      console.log("Success Payment")
       // Mark order as paid, send email, grant access, etc.
       break;
     }
@@ -184,7 +182,6 @@ cron.schedule('0 1 * * *', async () => {
       startDateTime: { $lte: yesterdayEndUtc },
       endDateTime: { $lte: yesterdayEndUtc }
     });
-
     console.log(`✅ Deleted ${result.deletedCount} outdated availability entries.`);
   } catch (error) {
     console.error('❌ Error in availability cleanup cron job:', error);
