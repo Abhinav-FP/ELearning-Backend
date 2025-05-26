@@ -426,7 +426,6 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
         timezone,
         adminCommission,
         email,
-        notes,
         srNo: srNo.toString()
       }
     });
