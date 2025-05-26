@@ -21,7 +21,7 @@ app.use(cors(corsOptions));
 app.post('/api/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   console.log("Headers received:", req.headers);
   const sig = req.headers['stripe-signature'];
-  const endpointSecret = "whsec_XLPlO18YVB6B0od6DZCxtedV4FBjl4SD";
+  const endpointSecret =  process.env.STRIPE_WEBHOOK_SECRET;
   let event;
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
