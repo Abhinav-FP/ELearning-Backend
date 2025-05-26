@@ -36,8 +36,8 @@ const teacherSchema = new mongoose.Schema({
     default: null,
   },
   qualifications: {
-    type: [String],
-    default: [],
+    type: String,
+    default: null,
   },
   languages_spoken: {
     type: [String],
@@ -47,7 +47,6 @@ const teacherSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  
   japanese_for_me_approved: {
     type: Boolean,
     default: false,
@@ -67,14 +66,12 @@ const teacherSchema = new mongoose.Schema({
   },
   average_time : {
     type :String ,
-    default :"",
-
+    default :null,
   },
   average_price :{
     type :String ,
-    default : ""
+    default : null,
   },
-  
 }, { timestamps: true });
 
 const Teacher = mongoose.model('Teacher', teacherSchema);

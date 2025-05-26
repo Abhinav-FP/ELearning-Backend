@@ -303,6 +303,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
       description,
       average_price,
       average_time,
+      qualifications,
       // documentlink,
     } = req.body;
 
@@ -373,7 +374,8 @@ exports.updateProfile = catchAsync(async (req, res) => {
     if (experience !== undefined) teacherUpdates.experience = experience;
     if (description !== undefined) teacherUpdates.description = description;
     if (average_price !== undefined) teacherUpdates.average_price = average_price;
-    if (average_time !== undefined) teacherUpdates.average_duration = average_time;
+    if (average_time !== undefined) teacherUpdates.average_time = average_time;
+    if (qualifications !== undefined) teacherUpdates.qualifications = qualifications;
     if (documentlink !== undefined && documentlink !== null && documentlink !== "") {
       teacherUpdates.documentlink = documentlink;
     }
@@ -387,8 +389,8 @@ exports.updateProfile = catchAsync(async (req, res) => {
     }
 
     // Update User
-    console.log("userUpdates",userUpdates);
-    console.log("teacherUpdates",teacherUpdates);
+    // console.log("userUpdates",userUpdates);
+    // console.log("teacherUpdates",teacherUpdates);
     const updatedUser = isUserUpdateEmpty
       ? await User.findById(userId)
       : await User.findByIdAndUpdate(userId, userUpdates, {
@@ -675,4 +677,4 @@ exports.DashboardApi = catchAsync(async (req, res) => {
     console.log(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
-})
+});
