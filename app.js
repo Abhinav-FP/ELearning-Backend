@@ -90,7 +90,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         payment_status: pi.status
       });
       const savedPayment = await payment.save();
-
+      console.log("savedPayment", savedPayment)
       const teacherEarning = (pi.amount / 100) - metadata.adminCommission;
 
       // Save booking record
@@ -109,8 +109,9 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         notes: metadata.notes || ""
       });
 
-      await booking.save();
+      const record = await booking.save();
 
+      console.log("record", record)
       // Send confirmation email
       const user = await User.findById(metadata.userId);
       const registrationSubject = "Booking Confirmed 🎉";
@@ -120,7 +121,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         subject: registrationSubject,
         emailHtml
       });
-
+      console.log("Success Paym,ent")
       // Mark order as paid, send email, grant access, etc.
       break;
     }
