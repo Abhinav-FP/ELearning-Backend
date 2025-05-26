@@ -166,6 +166,7 @@ app.get("/", (req, res) => {
 
 // Cron job running at 1 am daily for deleting old availability entries
 cron.schedule('0 1 * * *', async () => {
+// cron.schedule('*/1 * * * *', async () => {
   try {
     console.log(`🕐 Running availability cleanup at ${new Date().toISOString()}`);
 
