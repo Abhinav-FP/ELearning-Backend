@@ -439,7 +439,7 @@ console.log("record" ,record)
     const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
 
     const teacherEarning = amount - adminCommission;
-    if(paymentIntent?.status === "succeeded"){
+    if(paymentIntent?.status === "requires_payment_method"){
       const Bookingsave = new Bookings({
         teacherId,
         UserId: userId,
