@@ -409,7 +409,7 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
     const userId = req.user.id;
     console.log("UserId", userId)
     console.log("req?.body", req?.body)
-    const { amount, currency } = req?.body;
+    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email } = req?.body;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
