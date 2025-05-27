@@ -1,5 +1,6 @@
-const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = require('../utils/stripe');
+
+
 const catchAsync = require("../utils/catchAsync");
 const axios = require("axios");
 const qs = require('qs');
@@ -17,7 +18,6 @@ const clientId = process.env.PAYPAL_CLIENT_ID;
 const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 const paypalApiUrl = process.env.PAYPAL_API;
 
-console.log("stripe", process.env.STRIPE_SECRET_KEY);
 
 const generateAccessToken = async () => {
   try {
