@@ -215,176 +215,176 @@ exports.PaymentcancelOrder = catchAsync(async (req, res) => {
 
 
 // Stripe Checkout Sytem 
-const fetchPaymentId = async (sessionId, srNo) => {
-  try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    const paymentId = session.payment_intent;
-    if (!srNo) {
-      return;
-    }
-    const data = await StripePayment.findOne({ srNo: srNo });
-    if (!data) {
-      return null;
-    }
-    data.payment_id = paymentId;
-    await data.save();
-    return paymentId;
-  } catch (error) {
-    console.error("Error fetching payment ID:", error);
-    logger.error("Error fetching payment ID:", error);
-    return null;
-  }
-};
+// const fetchPaymentId = async (sessionId, srNo) => {
+//   try {
+//     const session = await stripe.checkout.sessions.retrieve(sessionId);
+//     const paymentId = session.payment_intent;
+//     if (!srNo) {
+//       return;
+//     }
+//     const data = await StripePayment.findOne({ srNo: srNo });
+//     if (!data) {
+//       return null;
+//     }
+//     data.payment_id = paymentId;
+//     await data.save();
+//     return paymentId;
+//   } catch (error) {
+//     console.error("Error fetching payment ID:", error);
+//     logger.error("Error fetching payment ID:", error);
+//     return null;
+//   }
+// };
 
 
-exports.createCheckout = catchAsync(async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email } = req?.body;
-    const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
-    const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
-    const amountInCents = Math.round(amount * 100);
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment', // Correct mode value
-      // success_url: `${process.env.stripe_link}/stripe/success/${srNo}`,
-      success_url: `https://japaneseforme.com/stripe/success/${srNo}`,
-      // cancel_url: `${process.env.stripe_link}/stripe/cancel/${srNo}`,
-      cancel_url: `https://japaneseforme.com/stripe/cancel/${srNo}`,
-      submit_type: "pay",
-      customer_email: email || "ankitjain@gmail.com",
-      billing_address_collection: "auto",
-      line_items: [
-        {
-          price_data: {
-            currency: currency,
-            product_data: {
-              name: "Booking Payment",
-            },
-            unit_amount: amountInCents,
-          },
-          quantity: 1,
-        },
-      ],
-    });
+// exports.createCheckout = catchAsync(async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email } = req?.body;
+//     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
+//     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
+//     const amountInCents = Math.round(amount * 100);
+//     const session = await stripe.checkout.sessions.create({
+//       payment_method_types: ['card'],
+//       mode: 'payment', // Correct mode value
+//       // success_url: `${process.env.stripe_link}/stripe/success/${srNo}`,
+//       success_url: `https://japaneseforme.com/stripe/success/${srNo}`,
+//       // cancel_url: `${process.env.stripe_link}/stripe/cancel/${srNo}`,
+//       cancel_url: `https://japaneseforme.com/stripe/cancel/${srNo}`,
+//       submit_type: "pay",
+//       customer_email: email || "ankitjain@gmail.com",
+//       billing_address_collection: "auto",
+//       line_items: [
+//         {
+//           price_data: {
+//             currency: currency,
+//             product_data: {
+//               name: "Booking Payment",
+//             },
+//             unit_amount: amountInCents,
+//           },
+//           quantity: 1,
+//         },
+//       ],
+//     });
 
 
-    const newPayment = new StripePayment({
-      srNo,
-      payment_type: "card",
-      payment_id: null,
-      session_id: session?.id,
-      currency,
-      LessonId,
-      amount,
-      srNo,
-      UserId: userId
-    });
-    const record = await newPayment.save();
+//     const newPayment = new StripePayment({
+//       srNo,
+//       payment_type: "card",
+//       payment_id: null,
+//       session_id: session?.id,
+//       currency,
+//       LessonId,
+//       amount,
+//       srNo,
+//       UserId: userId
+//     });
+//     const record = await newPayment.save();
 
-    // Convert times from user's timezone to UTC
-    const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
-    const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+//     // Convert times from user's timezone to UTC
+//     const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+//     const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
 
-    const teacherEarning = amount - adminCommission;
-    const Bookingsave = new Bookings({
-      teacherId,
-      UserId: userId,
-      teacherEarning,
-      adminCommission,
-      LessonId,
-      StripepaymentId: record?._id,
-      startDateTime: startUTC,
-      endDateTime: endUTC,
-      currency,
-      totalAmount: amount,
-      srNo
-    });
-    await Bookingsave.save();
-    const user = await User.findById({ _id: req.user.id });
-    const registrationSubject = "Booking Confirmed 🎉";
-    const Username = user.name
-    const emailHtml = BookingSuccess(startUTC, Username);
-    await sendEmail({
-      email: email,
-      subject: registrationSubject,
-      emailHtml: emailHtml,
-    });
-    res.status(200).json({ url: session.url, status: "true" });
-  } catch (err) {
-    res.status(err.statusCode || 500).json({ error: err.message });
-  }
-});
-
-
-exports.PaymentSuccess = catchAsync(async (req, res) => {
-  try {
-    const { srNo } = req.params;
-    if (!srNo) {
-      return res.status(400).json({
-        message: "srNo is required.",
-        status: false,
-      });
-    }
-    const data = await StripePayment.findOne({ srNo: srNo });
-    if (!data) {
-      return res.status(404).json({
-        message: "Data not found",
-        status: false,
-      });
-    }
-    data.payment_status = "success";
-    await data.save();
-    const Payment_ID = await fetchPaymentId(data?.session_id, srNo, "success");
-    res.status(200).json({
-      message: `Payment status updated`,
-      status: true,
-      data: data,
-    });
-  } catch (error) {
-    console.error("Error updating booking status:", error);
-    logger.error("Error updating booking status:", error);
-    res.status(500).json({
-      message: "Internal Server Error",
-      status: false,
-    });
-  }
-});
+//     const teacherEarning = amount - adminCommission;
+//     const Bookingsave = new Bookings({
+//       teacherId,
+//       UserId: userId,
+//       teacherEarning,
+//       adminCommission,
+//       LessonId,
+//       StripepaymentId: record?._id,
+//       startDateTime: startUTC,
+//       endDateTime: endUTC,
+//       currency,
+//       totalAmount: amount,
+//       srNo
+//     });
+//     await Bookingsave.save();
+//     const user = await User.findById({ _id: req.user.id });
+//     const registrationSubject = "Booking Confirmed 🎉";
+//     const Username = user.name
+//     const emailHtml = BookingSuccess(startUTC, Username);
+//     await sendEmail({
+//       email: email,
+//       subject: registrationSubject,
+//       emailHtml: emailHtml,
+//     });
+//     res.status(200).json({ url: session.url, status: "true" });
+//   } catch (err) {
+//     res.status(err.statusCode || 500).json({ error: err.message });
+//   }
+// });
 
 
-exports.PaymentCancel = catchAsync(async (req, res) => {
-  try {
-    const { srNo } = req.params;
-    if (!srNo) {
-      return res.status(400).json({
-        message: "srNo is required.",
-        status: false,
-      });
-    }
-    const data = await StripePayment.findOne({ srNo: srNo });
-    if (!data) {
-      return res.status(404).json({
-        message: "Data not found",
-        status: false,
-      });
-    }
-    data.payment_status = "failed";
-    await data.save();
-    fetchPaymentId(data?.session_id, srNo, "cancel");
-    res.status(200).json({
-      message: `Payment status updated`,
-      status: true,
-      data: data,
-    });
-  } catch (error) {
-    console.error("Error updating booking status:", error);
-    logger.error("Error updating booking status:", error);
-    res.status(500).json({
-      message: "Internal Server Error",
-      status: false,
-    });
-  }
-});
+// exports.PaymentSuccess = catchAsync(async (req, res) => {
+//   try {
+//     const { srNo } = req.params;
+//     if (!srNo) {
+//       return res.status(400).json({
+//         message: "srNo is required.",
+//         status: false,
+//       });
+//     }
+//     const data = await StripePayment.findOne({ srNo: srNo });
+//     if (!data) {
+//       return res.status(404).json({
+//         message: "Data not found",
+//         status: false,
+//       });
+//     }
+//     data.payment_status = "success";
+//     await data.save();
+//     const Payment_ID = await fetchPaymentId(data?.session_id, srNo, "success");
+//     res.status(200).json({
+//       message: `Payment status updated`,
+//       status: true,
+//       data: data,
+//     });
+//   } catch (error) {
+//     console.error("Error updating booking status:", error);
+//     logger.error("Error updating booking status:", error);
+//     res.status(500).json({
+//       message: "Internal Server Error",
+//       status: false,
+//     });
+//   }
+// });
+
+
+// exports.PaymentCancel = catchAsync(async (req, res) => {
+//   try {
+//     const { srNo } = req.params;
+//     if (!srNo) {
+//       return res.status(400).json({
+//         message: "srNo is required.",
+//         status: false,
+//       });
+//     }
+//     const data = await StripePayment.findOne({ srNo: srNo });
+//     if (!data) {
+//       return res.status(404).json({
+//         message: "Data not found",
+//         status: false,
+//       });
+//     }
+//     data.payment_status = "failed";
+//     await data.save();
+//     fetchPaymentId(data?.session_id, srNo, "cancel");
+//     res.status(200).json({
+//       message: `Payment status updated`,
+//       status: true,
+//       data: data,
+//     });
+//   } catch (error) {
+//     console.error("Error updating booking status:", error);
+//     logger.error("Error updating booking status:", error);
+//     res.status(500).json({
+//       message: "Internal Server Error",
+//       status: false,
+//     });
+//   }
+// });
 
 
 // exports.createpayment = async (req, res) => {
