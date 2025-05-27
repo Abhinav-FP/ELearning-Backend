@@ -107,6 +107,13 @@ exports.signup = catchAsync(async (req, res) => {
   } catch (error) {
     console.log("error", error);
     Loggers.error(error);
+     if (error.code === 11000 && error.keyPattern?.email) {
+    return errorResponse(
+      res,
+      "This email is already registered. Please log in or use a different email.",
+      400
+    );
+  }
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((el) => el.message);
       console.log("errors", errors);
