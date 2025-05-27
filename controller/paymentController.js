@@ -17,6 +17,8 @@ const clientId = process.env.PAYPAL_CLIENT_ID;
 const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 const paypalApiUrl = process.env.PAYPAL_API;
 
+console.log("stripe", process.env.STRIPE_SECRET_KEY);
+
 const generateAccessToken = async () => {
   try {
     const auth = Buffer.from(
