@@ -1,5 +1,5 @@
 const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_TEST_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const catchAsync = require("../utils/catchAsync");
 const axios = require("axios");
 const qs = require('qs');
@@ -387,28 +387,26 @@ exports.PaymentCancel = catchAsync(async (req, res) => {
 });
 
 
-exports.createpayment = async (req, res) => {
-  try {
-    const { amount = 2000, currency = 'usd' } = req.body;
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency,
-      metadata: req.body.metadata || {},
-    });
-    console.log("paymentIntent", paymentIntent)
-    return res.json({ clientSecret: paymentIntent.client_secret });;
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
-  }
-}
+// exports.createpayment = async (req, res) => {
+//   try {
+//     const { amount = 2000, currency = 'usd' } = req.body;
+//     const paymentIntent = await stripe.paymentIntents.create({
+//       amount,
+//       currency,
+//       metadata: req.body.metadata || {},
+//     });
+//     console.log("paymentIntent", paymentIntent)
+//     return res.json({ clientSecret: paymentIntent.client_secret });;
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({ error: err.message });
+//   }
+// }
 
 
 exports.PaymentCreate = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    console.log("UserId", userId)
-    console.log("req?.body", req?.body)
     const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email } = req?.body;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
