@@ -37,13 +37,23 @@ exports.TeacherList = catchAsync(async (req, res) => {
 //     }
 // })
 
-exports.ApproveTeacher = catchAsync(async (req, res) => {
+exports.ApproveRejectTeacher = catchAsync(async (req, res) => {
     try {
-        const { _id } = req.body;
-        const teacher = await Teacher.findByIdAndUpdate(_id, {
-            admin_approved: true,
-        });
-        return successResponse(res, "Teacher approved successfully", 200, teacher);
+        const { id, approved } = req.body;
+        const teacher = await Teacher.findByIdAndUpdate(
+             id,
+            { admin_approved: approved },
+            { new: true }
+        );
+        if (!teacher) {
+            return errorResponse(res, "Teacher not found", 404);
+        }
+        if(approved){
+          return successResponse(res, "Teacher approved successfully", 200, teacher);
+        }
+        else{
+          return successResponse(res, "Teacher rejected successfully", 200, teacher);
+        }
     } catch (error) {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
@@ -51,15 +61,8 @@ exports.ApproveTeacher = catchAsync(async (req, res) => {
 
 exports.StudentList = catchAsync(async (req, res) => {
     try {
-        const Student = await User.find({
-            role: "student",
-            block: false
-        });
-        return successResponse(res, "Student retrieved successfully", 200, {
-            Student
-        });
-
-
+        const Student = await User.find({role: "student"});
+        return successResponse(res, "Student retrieved successfully", 200, Student);
     } catch (error) {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
