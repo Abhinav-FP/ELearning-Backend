@@ -1,11 +1,9 @@
 const dotenv = require("dotenv");
 dotenv.config();
-const stripe   = require("./utils/stripe")
+const stripe = require("./utils/stripe")
 require("./dbconfigration");
 const express = require("express");
 const app = express();
-const bodyParser = require('body-parser');
-const crypto = require('crypto');
 const cors = require("cors");
 const cron = require("node-cron");
 const StripePayment = require("./model/StripePayment");
@@ -15,7 +13,8 @@ const User = require("./model/user");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("./EmailTemplate/BookingSuccess");
 const sendEmail = require("./utils/EmailMailler");
-const  axios = require("axios");
+const { updateCurrencyRatesJob } = require("./controller/currencycontroller");
+const currency = require("./EmailTemplate/currency");
 const corsOptions = {
   origin: "*", // Allowed origins
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -243,7 +242,7 @@ app.get("/", (req, res) => {
 
 // Cron job running at 1 am daily for deleting old availability entries
 cron.schedule('0 1 * * *', async () => {
-// cron.schedule('*/1 * * * *', async () => {
+  // cron.schedule('*/1 * * * *', async () => {
   try {
     console.log(`🕐 Running availability cleanup at ${new Date().toISOString()}`);
 
@@ -265,6 +264,30 @@ cron.schedule('0 1 * * *', async () => {
     console.error('❌ Error in availability cleanup cron job:', error);
   }
 });
+
+
+
+
+// cron.schedule('46 16 * * *', async () => {
+//   try {
+//     console.log('⏰ Cron job ran at 11:24 AM!');
+
+//     const emailHtml = currency('Success', true, '', 'May 29, 2025 11:25 AM');
+//     const record = await updateCurrencyRatesJob();
+ //await sendEmail({
+//       email: "ankit.jain@internetbusinesssolutionsindia.com",
+//       subject: 'Currency Rate Update - Success',
+//       emailHtml: emailHtml,
+//     });
+//     if (!record) {
+//       throw error;
+//     }
+//    
+//   } catch (err) {
+//     console.error('❌ Cron job error:', err);
+//   }
+// });
+
 
 const server = app.listen(PORT, () => console.log("Server is running at port : " + PORT));
 server.timeout = 360000; // 6 minutes
