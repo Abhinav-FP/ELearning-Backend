@@ -14,6 +14,7 @@ const { DateTime } = require("luxon");
 const BookingSuccess = require("./EmailTemplate/BookingSuccess");
 const sendEmail = require("./utils/EmailMailler");
 const { updateCurrencyRatesJob } = require("./controller/currencycontroller");
+const currency = require("./EmailTemplate/currency");
 const corsOptions = {
   origin: "*", // Allowed origins
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -267,19 +268,21 @@ cron.schedule('0 1 * * *', async () => {
 
 
 
-// cron.schedule('37 11 * * *', async () => {
+// cron.schedule('46 16 * * *', async () => {
 //   try {
 //     console.log('⏰ Cron job ran at 11:24 AM!');
+
 //     const emailHtml = currency('Success', true, '', 'May 29, 2025 11:25 AM');
 //     const record = await updateCurrencyRatesJob();
-//     if (!record) {
-//       throw error;
-//     }
-//     await sendEmail({
+ //await sendEmail({
 //       email: "ankit.jain@internetbusinesssolutionsindia.com",
 //       subject: 'Currency Rate Update - Success',
 //       emailHtml: emailHtml,
 //     });
+//     if (!record) {
+//       throw error;
+//     }
+//    
 //   } catch (err) {
 //     console.error('❌ Cron job error:', err);
 //   }
