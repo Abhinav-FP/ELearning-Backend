@@ -29,7 +29,7 @@ exports.forgotlinkrecord = catchAsync(
       const resetLink = `https://www.japaneseforme.com/forget-password/${token}`;
       const customerUser = record.name;
       let transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com", port: 465, secure: true,
+        host: "smtpout.secureserver.net", port: 465, secure: true,
         auth: {
           user: process.env.MAIL_USERNAME,
           pass: process.env.MAIL_PASSWORD,

@@ -9,11 +9,11 @@ router.post('/capture-order', verifyToken ,  paymentController.PaymentcaptureOrd
 
 router.post('/cancel-order', verifyToken , paymentController.PaymentcancelOrder);
 
-router.post("/create-checkout-session"  ,verifyToken  ,paymentController.createCheckout);
+// router.post("/create-checkout-session"  ,verifyToken  ,paymentController.createCheckout);
 
-router.get("/payment-success/:srNo", verifyToken , paymentController.PaymentSuccess)
+// router.get("/payment-success/:srNo", verifyToken , paymentController.PaymentSuccess)
 
-router.get("/payment-cancel/:srNo", verifyToken , paymentController.PaymentCancel)
+// router.get("/payment-cancel/:srNo", verifyToken , paymentController.PaymentCancel)
 
 
 router.post("/create-payment-intent",  verifyToken ,  paymentController.PaymentCreate)

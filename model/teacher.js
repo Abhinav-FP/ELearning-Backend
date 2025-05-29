@@ -17,12 +17,6 @@ const teacherSchema = new mongoose.Schema({
     enum: ['M', 'F', "O"],
     default: null
   },
-  average_duration: {
-    type: Number,
-  },
-  average_price: {
-    type: Number,
-  },
   experience: {
     type: Number,
     default: null,
@@ -53,7 +47,7 @@ const teacherSchema = new mongoose.Schema({
   },
   admin_approved: {
     type: Boolean,
-    default: false,
+    default: null,
   },
   // profile_photo: {
   //   type: String,

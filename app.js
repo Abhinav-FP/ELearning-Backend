@@ -1,6 +1,6 @@
 const dotenv = require("dotenv");
 dotenv.config();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe   = require("./utils/stripe")
 require("./dbconfigration");
 const express = require("express");
 const app = express();
@@ -243,6 +243,7 @@ app.get("/", (req, res) => {
 
 // Cron job running at 1 am daily for deleting old availability entries
 cron.schedule('0 1 * * *', async () => {
+// cron.schedule('*/1 * * * *', async () => {
   try {
     console.log(`🕐 Running availability cleanup at ${new Date().toISOString()}`);
 
