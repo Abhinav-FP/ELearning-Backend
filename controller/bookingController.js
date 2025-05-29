@@ -81,15 +81,7 @@ exports.GetBookings = catchAsync(async (req, res) => {
     const { role,id } = req.user;
 
     let data;
-    if (role === "teacher") {
-      data = await Bookings.find({ teacherId: id }).populate('teacherId').populate('UserId').populate('LessonId').sort({startDateTime: 1});
-    } else if (role === "student") {
       data = await Bookings.find({ UserId: id }).populate('teacherId').populate('UserId').populate('LessonId').sort({startDateTime: 1});
-    }
-    else {
-      // Case when role is admin
-      data = await Bookings.find().populate('teacher').populate('student').populate('lesson').sort({startDateTime: 1});
-    }
 
     if (!data || data.length === 0) {
       return errorResponse(res, "No bookings found", 200);

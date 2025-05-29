@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { TeacherList, StudentList, AdminBlockUser, ApproveRejectTeacher, PayoutAcceptorReject, PayoutListing } = require("../controller/AdminController");
+const { TeacherList, StudentList, AdminBlockUser, ApproveRejectTeacher, PayoutAcceptorReject, PayoutListing, AdminBookingsGet } = require("../controller/AdminController");
 const { verifyToken } = require("../middleware/tokenVerify");
 
 router.get("/admin/teachers", verifyToken, TeacherList);
@@ -8,5 +8,6 @@ router.get("/admin/studentlist", verifyToken, StudentList);
 router.post("/admin/blockuser", verifyToken, AdminBlockUser);
 router.get("/admin/payout", verifyToken, PayoutListing);
 router.post("/admin/payoutUpdate/:id", verifyToken, PayoutAcceptorReject);
+router.get("/admin/booking", verifyToken, AdminBookingsGet);
 
 module.exports = router;

@@ -175,3 +175,32 @@ exports.PayoutAcceptorReject = catchAsync(async (req, res) => {
     });
   }
 });
+
+exports.AdminBookingsGet = catchAsync(async (req, res) => {
+  try {
+    // let { category, page, TournamentType, Age, Gender, MatchType } = req.query;
+    // const filter = {};
+    // if (
+    //   Gender &&
+    //   Gender !== "null" &&
+    //   Gender !== "undefined" &&
+    //   Gender !== ""
+    // ) {
+    //   filter.Gender = Gender;
+    // }
+    const data = await Bookings.find({}).sort({ startDateTime: -1 })
+      .populate('StripepaymentId')
+      .populate('paypalpaymentId')
+      .populate('UserId')
+      .populate('teacherId')
+      .populate('LessonId');
+
+    if (!data) {
+      return errorResponse(res, "Bookings not Found", 401);
+    }
+    successResponse(res, "Bookings retrieved successfully!", 200, data);
+  } catch (error) {
+    console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
