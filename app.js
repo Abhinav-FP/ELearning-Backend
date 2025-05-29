@@ -134,79 +134,79 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 });
 
 //paypal Webhook 
-app.use(bodyParser.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
+// app.use(bodyParser.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 
-app.post("/api/paypal/webhook", async (req, res) => {
-  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+// app.post("/api/paypal/webhook", async (req, res) => {
+//   const webhookId = process.env.PAYPAL_WEBHOOK_ID;
 
-  const transmissionId = req.headers["paypal-transmission-id"];
-  const timestamp = req.headers["paypal-transmission-time"];
-  const certUrl = req.headers["paypal-cert-url"];
-  const authAlgo = req.headers["paypal-auth-algo"];
-  const transmissionSig = req.headers["paypal-transmission-sig"];
-  const webhookEvent = req.body;
+//   const transmissionId = req.headers["paypal-transmission-id"];
+//   const timestamp = req.headers["paypal-transmission-time"];
+//   const certUrl = req.headers["paypal-cert-url"];
+//   const authAlgo = req.headers["paypal-auth-algo"];
+//   const transmissionSig = req.headers["paypal-transmission-sig"];
+//   const webhookEvent = req.body;
 
-  try {
-    const accessToken = await getPayPalAccessToken();
+//   try {
+//     const accessToken = await getPayPalAccessToken();
 
-    const response = await axios.post(
-      "https://api.sandbox.paypal.com/v1/notifications/verify-webhook-signature",
-      {
-        auth_algo: authAlgo,
-        cert_url: certUrl,
-        transmission_id: transmissionId,
-        transmission_sig: transmissionSig,
-        transmission_time: timestamp,
-        webhook_id: webhookId,
-        webhook_event: webhookEvent,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+//     const response = await axios.post(
+//       "https://api.sandbox.paypal.com/v1/notifications/verify-webhook-signature",
+//       {
+//         auth_algo: authAlgo,
+//         cert_url: certUrl,
+//         transmission_id: transmissionId,
+//         transmission_sig: transmissionSig,
+//         transmission_time: timestamp,
+//         webhook_id: webhookId,
+//         webhook_event: webhookEvent,
+//       },
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${accessToken}`,
+//         },
+//       }
+//     );
 
-    const verificationStatus = response.data.verification_status;
+//     const verificationStatus = response.data.verification_status;
 
-    if (verificationStatus === "SUCCESS") {
-      console.log("✅ Webhook verified:", webhookEvent.event_type);
-      return res.status(200).json({ success: true, event: webhookEvent.event_type });
-    } else {
-      console.warn("❌ Webhook verification failed.");
-      return res.status(400).json({ success: false, message: "Webhook verification failed" });
-    }
+//     if (verificationStatus === "SUCCESS") {
+//       console.log("✅ Webhook verified:", webhookEvent.event_type);
+//       return res.status(200).json({ success: true, event: webhookEvent.event_type });
+//     } else {
+//       console.warn("❌ Webhook verification failed.");
+//       return res.status(400).json({ success: false, message: "Webhook verification failed" });
+//     }
 
-  } catch (error) {
-    console.log("error" ,error)
-    console.error("⚠️ Error verifying webhook:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Error verifying PayPal webhook",
-      error: error.message,
-    });
-  }
-});
+//   } catch (error) {
+//     console.log("error" ,error)
+//     console.error("⚠️ Error verifying webhook:", error.message);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Error verifying PayPal webhook",
+//       error: error.message,
+//     });
+//   }
+// });
 
-async function getPayPalAccessToken() {
-  const clientId = process.env.PAYPAL_CLIENT_ID;
-  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+// async function getPayPalAccessToken() {
+//   const clientId = process.env.PAYPAL_CLIENT_ID;
+//   const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+//   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
-  const response = await axios.post(
-    "https://api.sandbox.paypal.com/v1/oauth2/token",
-    "grant_type=client_credentials",
-    {
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    }
-  );
+//   const response = await axios.post(
+//     "https://api.sandbox.paypal.com/v1/oauth2/token",
+//     "grant_type=client_credentials",
+//     {
+//       headers: {
+//         Authorization: `Basic ${auth}`,
+//         "Content-Type": "application/x-www-form-urlencoded",
+//       },
+//     }
+//   );
 
-  return response.data.access_token;
-}
+//   return response.data.access_token;
+// }
 
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));

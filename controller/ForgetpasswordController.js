@@ -18,6 +18,7 @@ exports.forgotlinkrecord = catchAsync(
   async (req, res) => {
     try {
       const { email } = req.body;
+      console.log("email" ,email)
       if (!email) {
         return validationErrorResponse(res, { email: 'Email is required' });
       }
