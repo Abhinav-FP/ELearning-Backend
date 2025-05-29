@@ -1,5 +1,7 @@
 const Teacher = require("../model/teacher");
 const User = require("../model/user");
+const Payout = require("../model/Payout");
+const Bookings = require("../model/booking");
 const catchAsync = require("../utils/catchAsync");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 
@@ -67,5 +69,109 @@ exports.AdminBlockUser = catchAsync(async (req, res) => {
     return successResponse(res, "User block status updated successfully", 200, updatedUser);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.PayoutListing = catchAsync(async (req, res) => {
+  try {
+    const result = await Payout.find({ })
+    .sort({ createdAt: -1 })
+    .populate("BankId")
+    .populate("userId");
+    if (result.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: "No payouts found.",
+      });
+    }
+    return res.status(200).json({
+      status: true,
+      message: "Payouts retrieved successfully.",
+      data: result,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: "Failed to retrieve bank records.",
+      error: error.message,
+    });
+  }
+});
+
+exports.PayoutAcceptorReject = catchAsync(async (req, res) => {
+  try {
+    const payoutId = req.params.id;
+    if (!payoutId) {
+      return res.status(400).json({
+        status: false,
+        message: "Payout ID is missing.",
+      });
+    }
+    // console.log("payoutId",payoutId);
+
+    const { status, reason, transactionId } = req.body;
+    // console.log("req.body",req.body);
+
+    if (!status) {
+      return res.status(400).json({
+        status: false,
+        message: "Please send a status.",
+      });
+    }
+
+    if (status === "approved" && !transactionId) {
+      return res.status(400).json({
+        status: false,
+        message: "Transaction id is required.",
+      });
+    }
+
+    if (status === "rejected" && !reason) {
+      return res.status(400).json({
+        status: false,
+        message: "Reason is required for rejection.",
+      });
+    }
+
+    const payout = await Payout.findById(payoutId);
+    if (!payout) {
+      return res.status(404).json({
+        status: false,
+        message: "Payout not found.",
+      });
+    }
+
+    // Update payout
+    payout.Status = status;
+    payout.TransactionId = transactionId || null;
+    payout.Reasons = reason || null;
+    await payout.save();
+
+    let updatedBookings;
+
+    if (status === "approved") {
+      updatedBookings = await Bookings.updateMany(
+        { payoutCreationDate: payout.createdAt },
+        { payoutDoneAt: new Date() }
+      );
+    } else if (status === "rejected") {
+      updatedBookings = await Bookings.updateMany(
+        { payoutCreationDate: payout.createdAt },
+        { payoutCreationDate: null }
+      );
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: `Payout ${status} successfully.`,
+      updatedBookingsCount: updatedBookings?.modifiedCount || 0,
+    });
+  } catch (error) {
+    console.log("error", error);
+    Loggers.error("Error in PayoutAcceptorReject:", error);
+    return res.status(500).json({
+      status: false,
+      message: error.message || "Internal server error",
+    });
   }
 });
