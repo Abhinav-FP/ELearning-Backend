@@ -1,4 +1,4 @@
-module.exports = (userName, link) => {
+module.exports = (userName, link, time) => {
     return `
    <div id="email" style="background: #d9d9d9;padding: 20px 0;">
     <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">        
@@ -16,11 +16,11 @@ module.exports = (userName, link) => {
         </tr>
         <tr>
             <td style="padding: .1rem 1rem 1rem ;border-bottom: 1px solid rgba(0,0,0,.1);max-width: 36px;">
-                <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #CC2828;margin: 0 0 .6rem;">Coming Up: Your Language Lesson in 2 Hours ⏳</p> 
-                <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: center;color: #333333;margin: 0 0 .7rem;">Hi ${username}</p>
+                <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #CC2828;margin: 0 0 .6rem;">Coming Up: Your Language Lesson in ${time} ⏳</p> 
+                <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: center;color: #333333;margin: 0 0 .7rem;">Hi ${userName}</p>
 
-                <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 1.3rem;">You’re just 2 hours away from your session with Easter Howard. Get ready!</p>  
-                <p style="margin: 0 0 .5rem;text-align: center;"><a href="#" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">Join Session</a></p>  
+                <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 1.3rem;">You’re just ${time} away from your session with Easter Howard. Get ready!</p>  
+                <p style="margin: 0 0 .5rem;text-align: center;"><a href="${link}" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">Join Session</a></p>  
                 </td>
             </tr>
 

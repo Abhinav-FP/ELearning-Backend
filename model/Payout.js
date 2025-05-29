@@ -24,7 +24,7 @@ const PayoutSchema = mongoose.Schema({
         type: String,
         default: null,
     },
-    TranscationId: {
+    TransactionId: {
         type: String,
         default: null,
     },
