@@ -63,7 +63,6 @@ exports.signup = catchAsync(async (req, res) => {
       subject: registrationSubject,
       emailHtml: emailHtml,
     });
-
       return successResponse(res, "User created successfully!", 201, {
         user: userResult,
       });
