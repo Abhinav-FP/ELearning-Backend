@@ -1,10 +1,11 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
 require("./dbconfigration");
 const express = require("express");
 const app = express();
+const bodyParser = require('body-parser');
+const crypto = require('crypto');
 const cors = require("cors");
 const cron = require("node-cron");
 const StripePayment = require("./model/StripePayment");
@@ -14,6 +15,7 @@ const User = require("./model/user");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("./EmailTemplate/BookingSuccess");
 const sendEmail = require("./utils/EmailMailler");
+const  axios = require("axios");
 const corsOptions = {
   origin: "*", // Allowed origins
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -21,9 +23,9 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200, // for legacy browsers
 }
-
 app.use(cors(corsOptions));
 
+//stripe Webhook
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   console.log("Headers received:", req.headers);
   const sig = req.headers['stripe-signature'];
@@ -131,64 +133,81 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   res.json({ received: true });
 });
 
-app.post('/api/paypal/webhook', async (req, res) => {
-    try {
-        const receivedEvent = req.body;
+//paypal Webhook 
+app.use(bodyParser.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 
-        const isVerified = verifyPayPalWebhookSignature(receivedEvent, req.headers);
-        if (!isVerified) {
-            return res.status(400).json({ message: 'Invalid webhook signature' });
-        }
+app.post("/api/paypal/webhook", async (req, res) => {
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
 
-        switch (receivedEvent.event_type) {
-            case 'PAYMENT.SALE.COMPLETED':
-               console.log("PAYMENT.SALE.COMPLETED")
-                break;
+  const transmissionId = req.headers["paypal-transmission-id"];
+  const timestamp = req.headers["paypal-transmission-time"];
+  const certUrl = req.headers["paypal-cert-url"];
+  const authAlgo = req.headers["paypal-auth-algo"];
+  const transmissionSig = req.headers["paypal-transmission-sig"];
+  const webhookEvent = req.body;
 
-            case 'BILLING.SUBSCRIPTION.CREATED':
-               console.log("BILLING.SUBSCRIPTION.CREATED")
+  try {
+    const accessToken = await getPayPalAccessToken();
 
-                break;
-        }
+    const response = await axios.post(
+      "https://api.sandbox.paypal.com/v1/notifications/verify-webhook-signature",
+      {
+        auth_algo: authAlgo,
+        cert_url: certUrl,
+        transmission_id: transmissionId,
+        transmission_sig: transmissionSig,
+        transmission_time: timestamp,
+        webhook_id: webhookId,
+        webhook_event: webhookEvent,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
 
-        res.sendStatus(200);
-    } catch (error) {
-        console.error('Error processing PayPal webhook:', error);
-        res.sendStatus(500);
+    const verificationStatus = response.data.verification_status;
+
+    if (verificationStatus === "SUCCESS") {
+      console.log("✅ Webhook verified:", webhookEvent.event_type);
+      return res.status(200).json({ success: true, event: webhookEvent.event_type });
+    } else {
+      console.warn("❌ Webhook verification failed.");
+      return res.status(400).json({ success: false, message: "Webhook verification failed" });
     }
+
+  } catch (error) {
+    console.log("error" ,error)
+    console.error("⚠️ Error verifying webhook:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Error verifying PayPal webhook",
+      error: error.message,
+    });
+  }
 });
 
+async function getPayPalAccessToken() {
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
-async function verifyPayPalWebhookSignature(headers, rawBody) {
-    const transmissionId = headers['paypal-transmission-id'];
-    const timeStamp = headers['paypal-transmission-time'];
-    const certUrl = headers['paypal-cert-url'];
-    const actualSignature = headers['paypal-transmission-sig'];
-
-    const WEBHOOK_ID = process.env.PAYPAL_WEBHOOK_ID; // Your PayPal webhook ID
-
-    if (!transmissionId || !timeStamp || !certUrl || !actualSignature || !WEBHOOK_ID) {
-        console.error('Missing PayPal webhook headers or WEBHOOK_ID.');
-        return false;
+  const response = await axios.post(
+    "https://api.sandbox.paypal.com/v1/oauth2/token",
+    "grant_type=client_credentials",
+    {
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
     }
+  );
 
-    try {
-        const certResponse = await fetch(certUrl);
-        if (!certResponse.ok) {
-            throw new Error(`Failed to fetch PayPal certificate: ${certResponse.statusText}`);
-        }
-        const certPem = await certResponse.text();
-        const verifier = crypto.createVerify('SHA256'); // Or 'RSA-SHA256' as per docs
-        verifier.update(message);
-
-        const isValid = verifier.verify(certPem, Buffer.from(actualSignature, 'base64'));
-        return isValid;
-
-    } catch (error) {
-        console.error('Error verifying PayPal webhook signature:', error);
-        return false;
-    }
+  return response.data.access_token;
 }
+
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
