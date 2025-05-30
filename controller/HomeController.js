@@ -5,6 +5,7 @@ const Loggers = require("../utils/Logger");
 const catchAsync = require("../utils/catchAsync");
 const Faq = require("../model/Faq");
 const Teacher = require("../model/teacher");
+const { deleteFileFromSpaces, uploadFileToSpaces } = require("../utils/FileUploader");
 
 // Home Section
 exports.homeAdd = catchAsync(async (req, res, next) => {
@@ -35,15 +36,11 @@ exports.homeAdd = catchAsync(async (req, res, next) => {
 
 exports.homefind = catchAsync(async (req, res, next) => {
     try {
-        const record = await Home.find({});
-
+        const record = await Home.findOne({});
         if (record.length === 0) {
-            Loggers.warn("Data Not Found");
             return validationErrorResponse(res, "Home Data Not Found", 400);
         }
-
-        Loggers.info("Home Find successfully!");
-        return successResponse(res, "Home Find successfully!", 200, { record });
+        return successResponse(res, "Home Find successfully!", 200, record);
 
     } catch (error) {
         Loggers.error(error);
@@ -54,26 +51,54 @@ exports.homefind = catchAsync(async (req, res, next) => {
 exports.homeupdate = catchAsync(async (req, res, next) => {
     try {
         const { _id, ...updateData } = req.body;
+        const updated = await Home.findOne({ _id });
+        const Files = req.files;
+        if (Files.hero_img_first?.[0]) {
+            if (updated?.hero_img_first) {
+                const isDeleted = await deleteFileFromSpaces(updated.hero_img_first);
+                if (!isDeleted) {
+                    return res.status(500).json({ status: false, message: "Unable to delete old hero_img_first" });
+                }
+            }
+            const fileKey = await uploadFileToSpaces(Files.hero_img_first[0]);
+            updateData.hero_img_first = fileKey; 
+        }
 
-        const updatedRecord = await Home.findByIdAndUpdate(
-            _id,
-            updateData,
-            { new: true }
-        );
+        if (Files.hero_img_second?.[0]) {
+            if (updated?.hero_img_second) {
+                const isDeleted = await deleteFileFromSpaces(updated.hero_img_second);
+                if (!isDeleted) {
+                    return res.status(500).json({ status: false, message: "Unable to delete old hero_img_second" });
+                }
+            }
+            const fileKey = await uploadFileToSpaces(Files.hero_img_second[0]);
+            updateData.hero_img_second = fileKey; // ✅
+        }
+
+        if (Files.course_img?.[0]) {
+            if (updated?.course_img) {
+                const isDeleted = await deleteFileFromSpaces(updated.course_img);
+                if (!isDeleted) {
+                    return res.status(500).json({ status: false, message: "Unable to delete old course_img" });
+                }
+            }
+            const fileKey = await uploadFileToSpaces(Files.course_img[0]);
+            updateData.course_img = fileKey; // ✅
+        }
+
+        const updatedRecord = await Home.findByIdAndUpdate(_id, updateData, { new: true });
 
         if (!updatedRecord) {
-            Loggers.warn("No data found with this ID.");
             return validationErrorResponse(res, "Home Data Not Updated", 400);
         }
 
-        Loggers.info("Home Update successfully!");
-        return successResponse(res, "Home Update successfully!", 200, { updatedRecord });
-
+        return successResponse(res, "Home updated successfully!", 200, { updatedRecord });
     } catch (error) {
         Loggers.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
+
 
 exports.GetTeachers = catchAsync(async (req, res, next) => {
     try {
@@ -167,6 +192,24 @@ exports.faqupdate = catchAsync(async (req, res, next) => {
         }
         Loggers.info("Faq Update successfully!");
         return successResponse(res, "Faq Update successfully!", 200, { updatedRecord });
+    } catch (error) {
+        Loggers.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
+
+exports.faqDelete = catchAsync(async (req, res, next) => {
+    try {
+        const { _id } = req.body;
+        const updatedRecord = await Faq.findByIdAndDelete(
+            _id,
+            { new: true }
+        );
+        if (!updatedRecord) {
+            Loggers.warn("No data found with this ID.");
+            return validationErrorResponse(res, "Faq Data Not Delete", 400);
+        }
+        return successResponse(res, "Faq Delete successfully!", 200, updatedRecord);
     } catch (error) {
         Loggers.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
