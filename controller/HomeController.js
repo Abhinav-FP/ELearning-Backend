@@ -6,6 +6,7 @@ const catchAsync = require("../utils/catchAsync");
 const Faq = require("../model/Faq");
 const Teacher = require("../model/teacher");
 const { deleteFileFromSpaces, uploadFileToSpaces } = require("../utils/FileUploader");
+const teacherfaq = require("../model/teacherfaq");
 
 // Home Section
 exports.homeAdd = catchAsync(async (req, res, next) => {
@@ -61,7 +62,7 @@ exports.homeupdate = catchAsync(async (req, res, next) => {
                 }
             }
             const fileKey = await uploadFileToSpaces(Files.hero_img_first[0]);
-            updateData.hero_img_first = fileKey; 
+            updateData.hero_img_first = fileKey;
         }
 
         if (Files.hero_img_second?.[0]) {
@@ -233,6 +234,86 @@ exports.policycondition = catchAsync(async (req, res, next) => {
         Loggers.info("Home Update successfully!");
         return successResponse(res, "Term & privacy Update successfully!", 200, { updatedRecord });
 
+    } catch (error) {
+        Loggers.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
+
+
+
+
+//Teacher  Faq Section  
+exports.teacherFAQAdd = catchAsync(async (req, res, next) => {
+    try {
+        const { type, question, answer } = req.body;
+        const record = new teacherfaq({
+            type, question, answer
+        })
+        const data = await record.save();
+        Loggers.info("Faq created successfully!");
+        successResponse(res, "Faq created successfully!", 201, {
+            data: data,
+        });
+
+    } catch (error) {
+        Loggers.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+}
+);
+
+exports.teacherfaqfind = catchAsync(async (req, res, next) => {
+    try {
+        const record = await teacherfaq.find({});
+
+        if (record.length === 0) {
+            Loggers.warn("Faq Data Not Found");
+            return validationErrorResponse(res, "Faq Data Not Found", 400);
+        }
+
+        Loggers.info("Faq Find successfully!");
+        return successResponse(res, "Faq Find successfully!", 200, { record });
+
+    } catch (error) {
+        Loggers.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
+
+exports.teacherfaqupdate = catchAsync(async (req, res, next) => {
+    try {
+        const { _id, ...updateData } = req.body;
+
+        const updatedRecord = await teacherfaq.findByIdAndUpdate(
+            _id,
+            updateData,
+            { new: true }
+        );
+        if (!updatedRecord) {
+            Loggers.warn("No data found with this ID.");
+            return validationErrorResponse(res, "Faq Data Not Updated", 400);
+        }
+        Loggers.info("Faq Update successfully!");
+        return successResponse(res, "Faq Update successfully!", 200, { updatedRecord });
+    } catch (error) {
+        Loggers.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
+
+exports.teacherfaqDelete = catchAsync(async (req, res, next) => {
+    try {
+        const { _id } = req.body;
+        const updatedRecord = await teacherfaq.findByIdAndDelete(
+            _id,
+            { new: true }
+        );
+        if (!updatedRecord) {
+            Loggers.warn("No data found with this ID.");
+            return validationErrorResponse(res, "Faq Data Not Delete", 400);
+        }
+        return successResponse(res, "Faq Delete successfully!", 200, updatedRecord);
     } catch (error) {
         Loggers.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
