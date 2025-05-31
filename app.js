@@ -199,6 +199,19 @@ app.post('/api/paypal/webhook', bodyParser.json(), async (req, res) => {
   res.status(200).json();
 });
 
+router.post('/api/payment/save', async (req, res) => {
+  const { orderID, amount, payer, status } = req.body;
+
+  try {
+    console.log('Received payment from:', payer?.email_address);
+    console.log('Amount:', amount, 'Status:', status, 'Order ID:', orderID);
+    return res.status(200).json({ message: 'Payment saved successfully' });
+  } catch (err) {
+    console.error('Error saving payment:', err.message);
+    return res.status(500).json({ error: 'Failed to save payment' });
+  }
+});
+
 
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
