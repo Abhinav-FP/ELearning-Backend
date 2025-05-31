@@ -194,3 +194,17 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
+
+exports.TeacherAllData = catchAsync(async (req, res) => {
+  try {
+    const id = req.params.id;
+    const record = await Teacher.findOne({ userId: id }).populate("userId");
+    const Booking = await Bookings.find({teacherId : id})
+    if (!record) {
+      return errorResponse(res, "Teacher not found", 404);
+    }
+    successResponse(res, "Teacher retrieved successfully!", 200, {record, Booking});
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});

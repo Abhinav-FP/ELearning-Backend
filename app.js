@@ -6,9 +6,11 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const cron = require("node-cron");
+const fetch = require('node-fetch');
+
 const StripePayment = require("./model/StripePayment");
 const TeacherAvailability = require("./model/TeacherAvailability");
-const paypalCommon =  require("./utils/Paypalcommon")
+const paypalCommon = require("./utils/Paypalcommon")
 const Bookings = require("./model/booking");
 const User = require("./model/user");
 const { DateTime } = require("luxon");
@@ -17,6 +19,7 @@ const sendEmail = require("./utils/EmailMailler");
 const { updateCurrencyRatesJob } = require("./controller/currencycontroller");
 const currency = require("./EmailTemplate/currency");
 const bodyParser = require("body-parser");
+const { default: axios } = require("axios");
 const webhookID = process.env.PAYPAL_WEBHOOK_ID;
 const verifyURL = process.env.PAYPAL_VERIFY_URL;
 const corsOptions = {
@@ -27,6 +30,7 @@ const corsOptions = {
   optionsSuccessStatus: 200, // for legacy browsers
 }
 app.use(cors(corsOptions));
+
 
 //stripe Webhook
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -137,82 +141,83 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 });
 
 //paypal Webhook 
-app.post('/api/paypal/webhook', bodyParser.json(), async (req, res) => {
-  const payload = req.body;
-  const transmissionID = req.headers['paypal-transmission-id'];
-  const transmissionTime = req.headers['paypal-transmission-time'];
-  const certURL = req.headers['paypal-cert-url'];
-  const authAlgo = req.headers['paypal-auth-algo'];
-  const transmissionSig = req.headers['paypal-transmission-sig'];
-  let accessToken;
+// app.post('/api/paypal/webhook', bodyParser.json(), async (req, res) => {
+//   const payload = req.body;
+//   const transmissionID = req.headers['paypal-transmission-id'];
+//   const transmissionTime = req.headers['paypal-transmission-time'];
+//   const certURL = req.headers['paypal-cert-url'];
+//   const authAlgo = req.headers['paypal-auth-algo'];
+//   const transmissionSig = req.headers['paypal-transmission-sig'];
+//   let accessToken;
 
-  const body = {
-    webhook_id: webhookID,
-    transmission_id: transmissionID,
-    transmission_time: transmissionTime,
-    cert_url: certURL,
-    auth_algo: authAlgo,
-    transmission_sig: transmissionSig,
-    webhook_event: payload,
-  };
+//   const body = {
+//     webhook_id: webhookID,
+//     transmission_id: transmissionID,
+//     transmission_time: transmissionTime,
+//     cert_url: certURL,
+//     auth_algo: authAlgo,
+//     transmission_sig: transmissionSig,
+//     webhook_event: payload,
+//   };
 
-  if (!webhookID || !verifyURL) {
-    const errorParams =
-      'Paypal Webhook Error: webhookID or verifyURL was found to be empty';
-    console.error(errorParams);
-    return res.status(400).json(errorParams);
-  }
+//   if (!webhookID || !verifyURL) {
+//     const errorParams =
+//       'Paypal Webhook Error: webhookID or verifyURL was found to be empty';
+//     console.error(errorParams);
+//     return res.status(400).json(errorParams);
+//   }
 
-  try {
-    accessToken = await paypalCommon.generateAccessToken();
-  } catch (err) {
-    const errorConstructEvent = 'Paypal Webhook Error in generateAccessToken: ';
-    console.error(errorConstructEvent, err.message);
-    return res.status(400).json(`${errorConstructEvent} ${err.message}`);
-  }
+//   try {
+//     accessToken = await paypalCommon.generateAccessToken();
+//   } catch (err) {
+//     const errorConstructEvent = 'Paypal Webhook Error in generateAccessToken: ';
+//     console.error(errorConstructEvent, err.message);
+//     return res.status(400).json(`${errorConstructEvent} ${err.message}`);
+//   }
 
-  try {
-    // let Paypal verify if this payload was actually sent by them
-    let response = await fetch(verifyURL, {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-    let responseJson = await response.json();
-    if (responseJson.verification_status !== 'SUCCESS') {
-      const errorConstructEvent =
-        'Paypal Webhook Error, payload verification failure.';
-      console.error(errorConstructEvent);
-      return res.status(400).json(errorConstructEvent);
-    }
-  } catch (err) {
-    const errorConstructEvent = 'Paypal Webhook Error in verify: ';
-    console.error(errorConstructEvent, err.message);
-    return res.status(400).json(`${errorConstructEvent} ${err.message}`);
-  }
+//   try {
+//     // let Paypal verify if this payload was actually sent by them
+//     let response = await axios(verifyURL, {
+//       method: 'POST',
+//       body: JSON.stringify(body),
+//       headers: {
+//         'Content-Type': 'application/json',
+//         Authorization: `Bearer ${accessToken}`,
+//       },
+//     });
+//     let responseJson = await response.json();
+//     if (responseJson.verification_status !== 'SUCCESS') {
+//       const errorConstructEvent =
+//         'Paypal Webhook Error, payload verification failure.';
+//       console.error(errorConstructEvent);
+//       return res.status(400).json(errorConstructEvent);
+//     }
+//   } catch (err) {
+//     const errorConstructEvent = 'Paypal Webhook Error in verify: ';
+//     console.error(errorConstructEvent, err.message);
+//     return res.status(400).json(`${errorConstructEvent} ${err.message}`);
+//   }
 
-  if (payload.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
-    // Your business logic here
-  }
+//   if (payload.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
+//     // Your business logic here
+//   }
 
-  res.status(200).json();
-});
+//   res.status(200).json();
+// });
 
-app.post('/api/payment/save', async (req, res) => {
-  const { orderID, amount, payer, status } = req.body;
+// app.post('/api/payment/save', async (req, res) => {
+//   console.log("req.body" ,req.body)
+//   const {  amount, payer, status ,orderID } = req.body;
 
-  try {
-    console.log('Received payment from:', payer?.email_address);
-    console.log('Amount:', amount, 'Status:', status, 'Order ID:', orderID);
-    return res.status(200).json({ message: 'Payment saved successfully' });
-  } catch (err) {
-    console.error('Error saving payment:', err.message);
-    return res.status(500).json({ error: 'Failed to save payment' });
-  }
-});
+//   try {
+//     console.log('Received payment from:', payer?.email_address);
+//     console.log('Amount:', amount, 'Status:', status, );
+//     return res.status(200).json({ message: 'Payment saved successfully' });
+//   } catch (err) {
+//     console.error('Error saving payment:', err.message);
+//     return res.status(500).json({ error: 'Failed to save payment' });
+//   }
+// });
 
 
 app.use(express.json({ limit: '2000mb' }));
@@ -282,7 +287,7 @@ cron.schedule('0 1 * * *', async () => {
 
 //     const emailHtml = currency('Success', true, '', 'May 29, 2025 11:25 AM');
 //     const record = await updateCurrencyRatesJob();
- //await sendEmail({
+//await sendEmail({
 //       email: "ankit.jain@internetbusinesssolutionsindia.com",
 //       subject: 'Currency Rate Update - Success',
 //       emailHtml: emailHtml,
