@@ -199,7 +199,7 @@ app.post('/api/paypal/webhook', bodyParser.json(), async (req, res) => {
   res.status(200).json();
 });
 
-router.post('/api/payment/save', async (req, res) => {
+app.post('/api/payment/save', async (req, res) => {
   const { orderID, amount, payer, status } = req.body;
 
   try {
