@@ -49,11 +49,6 @@ const teacherSchema = new mongoose.Schema({
     type: Boolean,
     default: null,
   },
-  // profile_photo: {
-  //   type: String,
-  //   default: null
-  //   // required: [true, "Profile Photo is required"],  
-  // },
   documentlink : {
     type :String ,
     default :""

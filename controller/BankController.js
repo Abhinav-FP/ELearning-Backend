@@ -2,7 +2,6 @@ const Bank = require("../model/Bank");
 const catchAsync = require("../utils/catchAsync");
 const Loggers = require("../utils/Logger");
 
-
 exports.BankAddOrEdit = catchAsync(async (req, res) => {
     const userId = req?.user?.id;
     if (!userId) {

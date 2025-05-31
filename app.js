@@ -8,6 +8,7 @@ const cors = require("cors");
 const cron = require("node-cron");
 const StripePayment = require("./model/StripePayment");
 const TeacherAvailability = require("./model/TeacherAvailability");
+const paypalCommon =  require("./utils/Paypalcommon")
 const Bookings = require("./model/booking");
 const User = require("./model/user");
 const { DateTime } = require("luxon");
@@ -15,6 +16,7 @@ const BookingSuccess = require("./EmailTemplate/BookingSuccess");
 const sendEmail = require("./utils/EmailMailler");
 const { updateCurrencyRatesJob } = require("./controller/currencycontroller");
 const currency = require("./EmailTemplate/currency");
+const bodyParser = require("body-parser");
 const corsOptions = {
   origin: "*", // Allowed origins
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -34,7 +36,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err) {
     console.error(`❌ Webhook signature verification failed: ${err.message}`);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    return res.status(400).json(`Webhook Error: ${err.message}`);
   }
 
   console.log(`✅ Webhook event received: ${event.type}`);
@@ -133,79 +135,70 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 });
 
 //paypal Webhook 
-// app.use(bodyParser.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
+app.post('/api/paypal/webhook', bodyParser.json(), async (req, res) => {
+  const payload = req.body;
+  const transmissionID = req.headers['paypal-transmission-id'];
+  const transmissionTime = req.headers['paypal-transmission-time'];
+  const certURL = req.headers['paypal-cert-url'];
+  const authAlgo = req.headers['paypal-auth-algo'];
+  const transmissionSig = req.headers['paypal-transmission-sig'];
+  let accessToken;
 
-// app.post("/api/paypal/webhook", async (req, res) => {
-//   const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  const body = {
+    webhook_id: webhookID,
+    transmission_id: transmissionID,
+    transmission_time: transmissionTime,
+    cert_url: certURL,
+    auth_algo: authAlgo,
+    transmission_sig: transmissionSig,
+    webhook_event: payload,
+  };
 
-//   const transmissionId = req.headers["paypal-transmission-id"];
-//   const timestamp = req.headers["paypal-transmission-time"];
-//   const certUrl = req.headers["paypal-cert-url"];
-//   const authAlgo = req.headers["paypal-auth-algo"];
-//   const transmissionSig = req.headers["paypal-transmission-sig"];
-//   const webhookEvent = req.body;
+  if (!webhookID || !verifyURL) {
+    const errorParams =
+      'Paypal Webhook Error: webhookID or verifyURL was found to be empty';
+    console.error(errorParams);
+    return res.status(400).json(errorParams);
+  }
 
-//   try {
-//     const accessToken = await getPayPalAccessToken();
+  try {
+    accessToken = await paypalCommon.generateAccessToken();
+  } catch (err) {
+    const errorConstructEvent = 'Paypal Webhook Error in generateAccessToken: ';
+    console.error(errorConstructEvent, err.message);
+    return res.status(400).json(`${errorConstructEvent} ${err.message}`);
+  }
 
-//     const response = await axios.post(
-//       "https://api.sandbox.paypal.com/v1/notifications/verify-webhook-signature",
-//       {
-//         auth_algo: authAlgo,
-//         cert_url: certUrl,
-//         transmission_id: transmissionId,
-//         transmission_sig: transmissionSig,
-//         transmission_time: timestamp,
-//         webhook_id: webhookId,
-//         webhook_event: webhookEvent,
-//       },
-//       {
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${accessToken}`,
-//         },
-//       }
-//     );
+  try {
+    // let Paypal verify if this payload was actually sent by them
+    let response = await fetch(verifyURL, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    let responseJson = await response.json();
+    if (responseJson.verification_status !== 'SUCCESS') {
+      const errorConstructEvent =
+        'Paypal Webhook Error, payload verification failure.';
+      console.error(errorConstructEvent);
+      return res.status(400).json(errorConstructEvent);
+    }
+  } catch (err) {
+    const errorConstructEvent = 'Paypal Webhook Error in verify: ';
+    console.error(errorConstructEvent, err.message);
+    return res.status(400).json(`${errorConstructEvent} ${err.message}`);
+  }
 
-//     const verificationStatus = response.data.verification_status;
+  if (payload.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
+    // Your business logic here
+  }
 
-//     if (verificationStatus === "SUCCESS") {
-//       console.log("✅ Webhook verified:", webhookEvent.event_type);
-//       return res.status(200).json({ success: true, event: webhookEvent.event_type });
-//     } else {
-//       console.warn("❌ Webhook verification failed.");
-//       return res.status(400).json({ success: false, message: "Webhook verification failed" });
-//     }
+  res.status(200).json();
+});
 
-//   } catch (error) {
-//     console.log("error" ,error)
-//     console.error("⚠️ Error verifying webhook:", error.message);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Error verifying PayPal webhook",
-//       error: error.message,
-//     });
-//   }
-// });
-
-// async function getPayPalAccessToken() {
-//   const clientId = process.env.PAYPAL_CLIENT_ID;
-//   const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-//   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-
-//   const response = await axios.post(
-//     "https://api.sandbox.paypal.com/v1/oauth2/token",
-//     "grant_type=client_credentials",
-//     {
-//       headers: {
-//         Authorization: `Basic ${auth}`,
-//         "Content-Type": "application/x-www-form-urlencoded",
-//       },
-//     }
-//   );
-
-//   return response.data.access_token;
-// }
 
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));

@@ -74,10 +74,10 @@ exports.AdminBlockUser = catchAsync(async (req, res) => {
 
 exports.PayoutListing = catchAsync(async (req, res) => {
   try {
-    const result = await Payout.find({ })
-    .sort({ createdAt: -1 })
-    .populate("BankId")
-    .populate("userId");
+    const result = await Payout.find({})
+      .sort({ createdAt: -1 })
+      .populate("BankId")
+      .populate("userId");
     if (result.length === 0) {
       return res.status(404).json({
         status: false,
@@ -178,16 +178,6 @@ exports.PayoutAcceptorReject = catchAsync(async (req, res) => {
 
 exports.AdminBookingsGet = catchAsync(async (req, res) => {
   try {
-    // let { category, page, TournamentType, Age, Gender, MatchType } = req.query;
-    // const filter = {};
-    // if (
-    //   Gender &&
-    //   Gender !== "null" &&
-    //   Gender !== "undefined" &&
-    //   Gender !== ""
-    // ) {
-    //   filter.Gender = Gender;
-    // }
     const data = await Bookings.find({}).sort({ startDateTime: -1 })
       .populate('StripepaymentId')
       .populate('paypalpaymentId')

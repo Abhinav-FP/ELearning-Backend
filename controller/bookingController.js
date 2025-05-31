@@ -31,16 +31,12 @@ exports.AddBooking = catchAsync(async (req, res) => {
 
 exports.UpdateBooking = catchAsync(async (req, res) => {
   try {
-    // console.log("req.body",req.body);
     const { lessonCompletedStudent, lessonCompletedTeacher, startDateTime, endDateTime, timezone } = req.body;
     const { id } = req.params;
-
     if (!id) {
       return errorResponse(res, "Booking ID is required", 400);
     }
-
     const booking = await Bookings.findById(id);
-    // console.log("booking",booking);
     if (!booking) {
       return errorResponse(res, "Booking not found", 404);
     }

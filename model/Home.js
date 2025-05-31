@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 
 const homeSchema = mongoose.Schema({
-
     hero_img_first: {
         type: String,
         default: ""

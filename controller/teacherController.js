@@ -380,7 +380,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
       teacherUpdates.documentlink = documentlink;
     }
 
-    // Check if nothing was provided
     const isUserUpdateEmpty = Object.keys(userUpdates).length === 0;
     const isTeacherUpdateEmpty = Object.keys(teacherUpdates).length === 0;
 
@@ -388,9 +387,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
       return errorResponse(res, "No fields provided to update", 400);
     }
 
-    // Update User
-    // console.log("userUpdates",userUpdates);
-    // console.log("teacherUpdates",teacherUpdates);
     const updatedUser = isUserUpdateEmpty
       ? await User.findById(userId)
       : await User.findByIdAndUpdate(userId, userUpdates, {

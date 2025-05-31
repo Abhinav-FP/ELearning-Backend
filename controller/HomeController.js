@@ -100,7 +100,6 @@ exports.homeupdate = catchAsync(async (req, res, next) => {
     }
 });
 
-
 exports.GetTeachers = catchAsync(async (req, res, next) => {
     try {
         const record = await Teacher.find({}).populate({
@@ -239,9 +238,6 @@ exports.policycondition = catchAsync(async (req, res, next) => {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
-
-
-
 
 //Teacher  Faq Section  
 exports.teacherFAQAdd = catchAsync(async (req, res, next) => {

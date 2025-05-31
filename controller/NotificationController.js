@@ -4,14 +4,12 @@ const NotificationModel = require("../model/Notification");
 exports.createNotification = catchAsync(async (req, res) => {
   try {
     const { ReceiverId, text } = req.body;
-    // console.log("req.body:", req.body);
     const recordData = {
       ReceiverId,
       text,
     };
     const record = new NotificationModel(recordData);
     const data = await record.save();
-    // console.log("Saved Data:", data);
   } catch (error) {
     console.error("Error saving notification:", error);
   }
@@ -50,8 +48,6 @@ exports.MarkNotificationAsRead = catchAsync(async (req, res) => {
         message: "ID is required",
       });
     }
-
-    // Find notification by ID
     const notification = await NotificationModel.findById(id);
 
     if (!notification) {

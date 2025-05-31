@@ -5,7 +5,6 @@ const qs = require('qs');
 const Payment = require("../model/PaypalPayment");
 const StripePayment = require("../model/StripePayment");
 const Bookings = require("../model/booking");
-const Teacher = require("../model/teacher");
 const logger = require("../utils/Logger");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("../EmailTemplate/BookingSuccess");

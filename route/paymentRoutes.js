@@ -4,9 +4,9 @@ const paymentController = require('../controller/paymentController');
 const { verifyToken } = require('../middleware/tokenVerify');
 const bodyParser = require('body-parser');
 
-router.post('/create-order', verifyToken , paymentController.createOrder);
-router.post('/capture-order', verifyToken ,  paymentController.PaymentcaptureOrder);
-router.post('/cancel-order', verifyToken , paymentController.PaymentcancelOrder);
+router.post('/create-order', verifyToken, paymentController.createOrder);
+router.post('/capture-order', verifyToken, paymentController.PaymentcaptureOrder);
+router.post('/cancel-order', verifyToken, paymentController.PaymentcancelOrder);
 
 // router.post("/create-checkout-session"  ,verifyToken  ,paymentController.createCheckout);
 
@@ -15,7 +15,7 @@ router.post('/cancel-order', verifyToken , paymentController.PaymentcancelOrder)
 // router.get("/payment-cancel/:srNo", verifyToken , paymentController.PaymentCancel)
 
 
-router.post("/create-payment-intent",  verifyToken ,  paymentController.PaymentCreate)
+router.post("/create-payment-intent", verifyToken, paymentController.PaymentCreate)
 
 
 module.exports = router;

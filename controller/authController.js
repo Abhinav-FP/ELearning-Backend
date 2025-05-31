@@ -1,11 +1,7 @@
 const User = require("../model/user");
 const Teacher = require("../model/teacher");
 const jwt = require("jsonwebtoken");
-const {
-  errorResponse,
-  successResponse,
-  validationErrorResponse,
-} = require("../utils/ErrorHandling");
+const {errorResponse, successResponse,validationErrorResponse} = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
 const Loggers = require("../utils/Logger");
 const sendEmail = require("../utils/EmailMailler");
@@ -21,11 +17,7 @@ const signEmail = async (id) => {
 
 exports.signup = catchAsync(async (req, res) => {
   try {
-    const { name, email, password, role, gender, nationality, time_zone } =
-      req.body;
-    // teacher  field
-    // const { description, experience, city, intro_video, qualifications, languages_spoken, ais_trained, payment_method } = req.body;
-
+    const { name, email, password, role, gender, nationality, time_zone } =  req.body;
     if (!email || !password || !role || !name || !time_zone) {
       return errorResponse(res, "All fields are required", 401, "false");
     }

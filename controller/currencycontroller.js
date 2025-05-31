@@ -2,10 +2,6 @@ const Currency = require("../model/Currency");
 const catchAsync = require("../utils/catchAsync");
 const { default: axios } = require("axios");
 const logger = require("../utils/Logger");
-const cron = require('node-cron');
-const sendEmail = require("../utils/EmailMailler");
-const currency = require("../EmailTemplate/currency");
-
 
 exports.GetRate = catchAsync(async (req, res) => {
     try {
