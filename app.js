@@ -17,6 +17,8 @@ const sendEmail = require("./utils/EmailMailler");
 const { updateCurrencyRatesJob } = require("./controller/currencycontroller");
 const currency = require("./EmailTemplate/currency");
 const bodyParser = require("body-parser");
+const webhookID = process.env.PAYPAL_WEBHOOK_ID;
+const verifyURL = process.env.PAYPAL_VERIFY_URL;
 const corsOptions = {
   origin: "*", // Allowed origins
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
