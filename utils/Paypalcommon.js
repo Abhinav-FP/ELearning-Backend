@@ -10,7 +10,6 @@ async function generateAccessToken() {
       'generateAccessToken(): clientID, authURL or clientSecret was found to be empty';
     throw new Error(errorParams);
   }
-
   const auth = Buffer.from(clientID + ':' + clientSecret).toString('base64');
 
   const response = await fetch(authURL, {
