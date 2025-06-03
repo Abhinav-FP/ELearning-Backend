@@ -4,6 +4,8 @@ const Payout = require("../model/Payout");
 const Bookings = require("../model/booking");
 const catchAsync = require("../utils/catchAsync");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
+const Payouts = require("../model/Payout");
+const Lessons = require("../model/lesson")
 
 exports.TeacherList = catchAsync(async (req, res) => {
   try {
@@ -199,11 +201,22 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
   try {
     const id = req.params.id;
     const record = await Teacher.findOne({ userId: id }).populate("userId");
-    const Booking = await Bookings.find({teacherId : id})
+    const Booking = await Bookings.find({
+      teacherId: id,
+      lessonCompletedStudent: true,
+      lessonCompletedTeacher: true
+    }).populate([
+      { path: "teacherId" },
+      { path: "UserId" }
+    ]);
+
+
+    const payoutdata = await Payouts.find({ userId: id });
+    const lessondata = await Lessons.find({ teacher: id });
     if (!record) {
       return errorResponse(res, "Teacher not found", 404);
     }
-    successResponse(res, "Teacher retrieved successfully!", 200, {record, Booking});
+    successResponse(res, "Teacher retrieved successfully!", 200, { record, Booking, lessondata, payoutdata });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
