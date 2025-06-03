@@ -17,9 +17,9 @@ module.exports = (userName, link, time, teacherName, lessonName) => {
         <tr>
             <td style="padding: .1rem 1rem 1rem ;border-bottom: 1px solid rgba(0,0,0,.1);max-width: 36px;">
                 <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #CC2828;margin: 0 0 .6rem;">Coming Up: Your ${lessonName} Lesson starts in ${time} ⏳</p> 
-                <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: center;color: #333333;margin: 0 0 .7rem;">Hi ${userName}</p>
+                <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: center;color: #333333;margin: 0 0 .7rem;">Hi ${teacherName}</p>
 
-                <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 1.3rem;">You’re just ${time} away from your session with ${teacherName}. Get ready!</p>  
+                <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 1.3rem;">You’re just ${time} away from your session with ${userName}. Get ready!</p>  
                 <p style="margin: 0 0 .5rem;text-align: center;"><a href="${link}" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">Join Session</a></p>  
                 </td>
             </tr>

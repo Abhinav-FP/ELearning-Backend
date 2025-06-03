@@ -22,6 +22,7 @@ const bodyParser = require("body-parser");
 const { default: axios } = require("axios");
 const webhookID = process.env.PAYPAL_WEBHOOK_ID;
 const verifyURL = process.env.PAYPAL_VERIFY_URL;
+
 const corsOptions = {
   origin: "*", // Allowed origins
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -245,62 +246,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// cron.schedule('*/1 * * * *', async () => {
-//   try{
-//     console.log(`Running cron job at ${new Date()}`);
-//   }catch(error){
-//     console.log("Error in cron job", error);
-//   }
-// });
-
-// Cron job running at 1 am daily for deleting old availability entries
-cron.schedule('0 1 * * *', async () => {
-  // cron.schedule('*/1 * * * *', async () => {
-  try {
-    console.log(`🕐 Running availability cleanup at ${new Date().toISOString()}`);
-
-    // Always base calculations on UTC
-    const nowUtc = new Date();
-    const yesterdayEndUtc = new Date(Date.UTC(
-      nowUtc.getUTCFullYear(),
-      nowUtc.getUTCMonth(),
-      nowUtc.getUTCDate() - 1,
-      23, 59, 59, 999
-    ));
-
-    const result = await TeacherAvailability.deleteMany({
-      startDateTime: { $lte: yesterdayEndUtc },
-      endDateTime: { $lte: yesterdayEndUtc }
-    });
-    console.log(`✅ Deleted ${result.deletedCount} outdated availability entries.`);
-  } catch (error) {
-    console.error('❌ Error in availability cleanup cron job:', error);
-  }
-});
-
-
-
-
-// cron.schedule('46 16 * * *', async () => {
-//   try {
-//     console.log('⏰ Cron job ran at 11:24 AM!');
-
-//     const emailHtml = currency('Success', true, '', 'May 29, 2025 11:25 AM');
-//     const record = await updateCurrencyRatesJob();
-//await sendEmail({
-//       email: "ankit.jain@internetbusinesssolutionsindia.com",
-//       subject: 'Currency Rate Update - Success',
-//       emailHtml: emailHtml,
-//     });
-//     if (!record) {
-//       throw error;
-//     }
-//    
-//   } catch (err) {
-//     console.error('❌ Cron job error:', err);
-//   }
-// });
-
+require('./cronJobs')();
 
 const server = app.listen(PORT, () => console.log("Server is running at port : " + PORT));
 server.timeout = 360000; // 6 minutes
