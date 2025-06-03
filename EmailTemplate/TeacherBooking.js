@@ -17,10 +17,10 @@ module.exports = (startDateTime, userName, teacherName) => {
         </tr>
         <tr>
             <td style="padding: .1rem 1rem 1rem ;border-bottom: 1px solid rgba(0,0,0,.1)">
-                <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #CC2828;margin: 0 0 .6rem;">Your Lesson with ${teacherName} is Confirmed! 📚</p> 
-                <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: center;color: #333333;margin: 0.8rem 0 .7rem;">Hi ${userName},</p>
+                <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #CC2828;margin: 0 0 .6rem;">You have a new booking with ${userName}📚</p> 
+                <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: center;color: #333333;margin: 0.8rem 0 .7rem;">Hi ${teacherName},</p>
 
-                <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 .5rem;">Your session with ${teacherName}  has been successfully booked!
+                <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 .5rem;">Your session with ${userName}  has been successfully booked!
                 </p>
                 <div style="max-width: 300px; margin: 0 auto 1.2rem;padding-bottom: 15px;background-image: url(https://student-teacher-platform.sgp1.digitaloceanspaces.com/pc-bg.png); background-repeat: no-repeat;background-position: bottom center;    background-size: contain;">
                     <div style="border:6px solid #CC2828;border-radius: 20px;">
@@ -38,8 +38,8 @@ module.exports = (startDateTime, userName, teacherName) => {
                     </div>
                 </div>
 
-                <p style="margin: 0 0 1.3rem;text-align: center;"><a href="https://e-learning-seven-ashy.vercel.app/student/lessons" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">View Your Booking</a></p> 
-                <p style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: center;color: #333333;margin: 0 0 1.5rem;">We're excited for you! Get ready for a great learning experience.</p>  
+                <p style="margin: 0 0 1.3rem;text-align: center;"><a href="https://e-learning-seven-ashy.vercel.app/teacher-dashboard/booking" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">View Your Booking</a></p> 
+                <p style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: center;color: #333333;margin: 0 0 1.5rem;">We're excited for you! Get ready to provide a great learning experience.</p>  
               </td>
               </tr>
               <tr>
