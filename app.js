@@ -139,7 +139,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       await sendEmail({
         email: teacher.email,
         subject: TeacherSubject,
-        TeacheremailHtml
+        emailHtml:TeacheremailHtml
       });
 
       console.log("Success Payment")
@@ -232,7 +232,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 //     return res.status(500).json({ error: 'Failed to save payment' });
 //   }
 // });
-
 
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));

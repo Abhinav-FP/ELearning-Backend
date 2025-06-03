@@ -165,7 +165,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     await sendEmail({
       email: teacher.email,
       subject: TeacherSubject,
-      TeacheremailHtml
+      emailHtml: TeacheremailHtml,
     });
 
     res.status(200).json(savedPayment);
