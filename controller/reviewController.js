@@ -45,13 +45,13 @@ exports.reviewGet = catchAsync(async (req, res) => {
 
 exports.ReviewStatus = catchAsync(async (req, res) => {
     const { _id, review_status } = req.body;
-
-    if (!_id || !review_status) {
-        Loggers.warn("Missing required fields");
-        return validationErrorResponse(res, "All fields are required", 400);
-    }
+    console.log("req.body", req)
     try {
-        const result = await Review.findByIdAndUpdate(_id, { review_status }, { new: true });
+        const result = await Review.findByIdAndUpdate(
+            _id,
+            { review_status },
+            { new: true }
+        );
         if (!result) {
             return validationErrorResponse(res, "Review not found", 404);
         }
@@ -102,5 +102,49 @@ exports.ReviewDelete = catchAsync(async (req, res) => {
     } catch (error) {
         Loggers.error(error.message);
         return errorResponse(res, "Failed to delete review", 500);
+    }
+});
+
+
+exports.ReviewList = catchAsync(async (req, res) => {
+    try {
+        const reviews = await Review.find()
+            .populate({
+                path: "lessonId",
+                select: "teacher title description",
+            })
+            .populate("userId");
+
+        const groupedReviews = reviews.reduce((acc, review) => {
+            const status = review.review_status || "Unknown";
+            if (!acc[status]) {
+                acc[status] = [];
+            }
+            acc[status].push(review);
+            return acc;
+        }, {});
+        successResponse(res, "Grouped reviews", 200, { reviews, groupedReviews });
+    } catch (error) {
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+})
+
+exports.ReviewApporve = catchAsync(async (req, res) => {
+    try {
+        const { _id, review_status, description } = req.body;
+
+        const Record = await Review.findByIdAndUpdate(
+            _id,
+            { review_status, description },
+            { new: true }
+        );
+
+        if (!Record) {
+            return errorResponse(res, "Review not found", 404);
+        }
+
+        successResponse(res, "Review retrieved successfully!", 200, Record);
+    } catch (error) {
+        return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });

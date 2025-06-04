@@ -6,7 +6,7 @@ const catchAsync = require("../utils/catchAsync");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const Payouts = require("../model/Payout");
 const Lessons = require("../model/lesson");
-const review = require("../model/review");
+const Review = require("../model/review");
 
 exports.TeacherList = catchAsync(async (req, res) => {
   try {
@@ -201,6 +201,7 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
 exports.TeacherAllData = catchAsync(async (req, res) => {
   try {
     const id = req.params.id;
+    console.log("id", id)
     const record = await Teacher.findOne({ userId: id }).populate("userId");
     const Booking = await Bookings.find({
       teacherId: id,
@@ -214,22 +215,26 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
 
     const payoutdata = await Payouts.find({ userId: id });
     const lessondata = await Lessons.find({ teacher: id });
-    const reviews = await review.find()
+    const reviews = await Review.find()
       .populate({
-        path: 'lessonId',
-        select: 'teacher title description',
-        populate: {
-          path: 'teacher',
-          select: 'userId name email',
-        }
-      }).populate("userId");
+        path: "lessonId",
+        select: "teacher title description", // teacher here is just { _id, name, email }
+      })
+      .populate("userId"); // reviewer (student)
+
+    // Filter reviews where lessonId.teacher._id === teacher's userId
+    const filteredReviews = reviews.filter(
+      (review) =>
+        review.lessonId?.teacher?._id?.toString() === id
+    );
 
 
-
+    console.log("Total reviews:", reviews.length);
+    console.log("Filtered reviews:", filteredReviews.length);
     if (!record) {
       return errorResponse(res, "Teacher not found", 404);
     }
-    successResponse(res, "Teacher retrieved successfully!", 200, { record, Booking, lessondata, payoutdata, reviews });
+    successResponse(res, "Teacher retrieved successfully!", 200, { record, Booking, lessondata, payoutdata, filteredReviews });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
