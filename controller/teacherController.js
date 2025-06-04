@@ -415,13 +415,44 @@ exports.updateProfile = catchAsync(async (req, res) => {
 exports.EarningsGet = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
+    // console.log("req.query",req.query);
+    const { date } =req.query;
+    // console.log("date",date);
 
     if (!userId) {
       return errorResponse(res, "Invalid User", 401);
     }
+const objectId = new mongoose.Types.ObjectId(userId);
+    const filter = {
+      teacherId: objectId,
+      lessonCompletedStudent: true,
+      lessonCompletedTeacher: true,
+    };
+
+    if (date) {
+      const now = new Date();
+
+      if (date === "last7") {
+        const from = new Date();
+        from.setDate(now.getDate() - 7);
+        filter.startDateTime = { $gte: from, $lte: now };
+
+      } else if (date === "last30") {
+        const from = new Date();
+        from.setDate(now.getDate() - 30);
+        filter.startDateTime = { $gte: from, $lte: now };
+
+      } else if (!isNaN(date)) {
+        // If it's a year like "2024"
+        const year = parseInt(date, 10);
+        const startOfYear = new Date(`${year}-01-01T00:00:00.000Z`);
+        const endOfYear = new Date(`${year}-12-31T23:59:59.999Z`);
+        filter.startDateTime = { $gte: startOfYear, $lte: endOfYear };
+      }
+    }
 
     // Get detailed booking data
-    const data = await Bookings.find({ teacherId: userId, lessonCompletedStudent: true, lessonCompletedTeacher: true })
+    const data = await Bookings.find(filter)
       .sort({startDateTime: -1})
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
@@ -432,12 +463,10 @@ exports.EarningsGet = catchAsync(async (req, res) => {
       return errorResponse(res, "Data not Found", 401);
     }
 
-    // Cast userId to ObjectId
-    const objectId = new mongoose.Types.ObjectId(userId);
-
     // Aggregate the earnings
     const earnings = await Bookings.aggregate([
-      { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true } },
+      // { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true } },
+      { $match: filter },
       {
         $group: {
           _id: null,

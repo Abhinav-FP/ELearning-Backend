@@ -36,7 +36,10 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
     if (!id) {
       return errorResponse(res, "Booking ID is required", 400);
     }
-    const booking = await Bookings.findById(id);
+    const booking = await Bookings.findById(id)
+        .populate('teacherId')
+        .populate('UserId')
+        .populate('LessonId');
     if (!booking) {
       return errorResponse(res, "Booking not found", 404);
     }
