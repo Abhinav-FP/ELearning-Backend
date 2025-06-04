@@ -13,8 +13,10 @@ const TeacherAvailability = require("./model/TeacherAvailability");
 const paypalCommon = require("./utils/Paypalcommon")
 const Bookings = require("./model/booking");
 const User = require("./model/user");
+const Teacher = require("./model/teacher");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("./EmailTemplate/BookingSuccess");
+const TeacherBooking = require("./EmailTemplate/TeacherBooking");
 const sendEmail = require("./utils/EmailMailler");
 const { updateCurrencyRatesJob } = require("./controller/currencycontroller");
 const currency = require("./EmailTemplate/currency");
@@ -120,15 +122,26 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const record = await booking.save();
 
       console.log("record", record)
-      // Send confirmation email
+      // Send confirmation email to student
       const user = await User.findById(metadata.userId);
+      const teacher = await User.findById(metadata.teacherId);
       const registrationSubject = "Booking Confirmed 🎉";
-      const emailHtml = BookingSuccess(startUTC, user.name);
+      const emailHtml = BookingSuccess(startUTC, user?.name, teacher?.name);
       await sendEmail({
         email: metadata.email,
         subject: registrationSubject,
         emailHtml
       });
+
+      // Send Confirmation email to teacher
+      const TeacherSubject = "New Booking 🎉";
+      const TeacheremailHtml = TeacherBooking(startUTC, user?.name, teacher?.name);
+      await sendEmail({
+        email: teacher.email,
+        subject: TeacherSubject,
+        emailHtml:TeacheremailHtml
+      });
+
       console.log("Success Payment")
       // Mark order as paid, send email, grant access, etc.
       break;
@@ -220,7 +233,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 //   }
 // });
 
-
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
@@ -246,7 +258,7 @@ app.get("/", (req, res) => {
   });
 });
 
-require('./cronJobs')();
+// require('./cronJobs')();
 
 const server = app.listen(PORT, () => console.log("Server is running at port : " + PORT));
 server.timeout = 360000; // 6 minutes

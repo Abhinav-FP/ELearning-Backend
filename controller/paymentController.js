@@ -8,6 +8,7 @@ const Bookings = require("../model/booking");
 const logger = require("../utils/Logger");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("../EmailTemplate/BookingSuccess");
+const TeacherBooking = require("../EmailTemplate/TeacherBooking");
 const sendEmail = require("../utils/EmailMailler");
 const User = require("../model/user");
 
@@ -146,15 +147,25 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 
     const user = await User.findById({ _id: req.user.id });
     const teacher = await User.findById({ _id: teacherId });
-    console.log("UserId:", user);
+    // console.log("UserId:", user);
 
+    // Send confirmation email to student
     const registrationSubject = "Booking Confirmed 🎉";
-    const Username = user.name
+    const Username = user?.name;
     const emailHtml = BookingSuccess(startDateTime, Username, teacher?.name);
     await sendEmail({
       email: email,
       subject: registrationSubject,
       emailHtml: emailHtml,
+    });
+
+    // Send Confirmation email to teacher
+    const TeacherSubject = "New Booking 🎉";
+    const TeacheremailHtml = TeacherBooking(startUTC, Username, teacher?.name);
+    await sendEmail({
+      email: teacher.email,
+      subject: TeacherSubject,
+      emailHtml: TeacheremailHtml,
     });
 
     res.status(200).json(savedPayment);
