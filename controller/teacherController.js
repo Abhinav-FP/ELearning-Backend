@@ -416,13 +416,13 @@ exports.EarningsGet = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
     // console.log("req.query",req.query);
-    const { date } =req.query;
-    // console.log("date",date);
+    const { date, search } =req.query;
+    // console.log("search",search);
 
     if (!userId) {
       return errorResponse(res, "Invalid User", 401);
     }
-const objectId = new mongoose.Types.ObjectId(userId);
+    const objectId = new mongoose.Types.ObjectId(userId);
     const filter = {
       teacherId: objectId,
       lessonCompletedStudent: true,
@@ -452,14 +452,30 @@ const objectId = new mongoose.Types.ObjectId(userId);
     }
 
     // Get detailed booking data
-    const data = await Bookings.find(filter)
+    let data = await Bookings.find(filter)
       .sort({startDateTime: -1})
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
       .populate('LessonId');
 
-    if (!data) {
+       if (search && search.trim() !== "") {
+      const regex = new RegExp(search.trim(), "i"); // case-insensitive match
+
+      data = data.filter((item) => {
+        const lessonTitle = item.LessonId?.title || "";
+        const stripeId = item.StripepaymentId?.payment_id || "";
+        const paypalId = item.paypalpaymentId?.orderID || "";
+
+        return (
+          regex.test(lessonTitle) ||
+          regex.test(stripeId) ||
+          regex.test(paypalId)
+        );
+      });
+    }
+    
+      if (!data) {
       return errorResponse(res, "Data not Found", 401);
     }
 

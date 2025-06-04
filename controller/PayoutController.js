@@ -66,8 +66,17 @@ exports.payoutList = catchAsync(async (req, res) => {
       message: "User ID is missing.",
     });
   }
+  // console.log("req.query",req.query);
+  const { status } = req.query;
+  // console.log("status",status);
   try {
-    const result = await Payout.find({ userId })
+    const filter = {
+      userId
+    };
+    if(status && status!=""){
+      filter.Status=status;
+    }
+    const result = await Payout.find( filter )
       .sort({ createdAt: -1 })
       .populate("BankId");
     if (result.length === 0) {
