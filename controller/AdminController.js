@@ -5,7 +5,8 @@ const Bookings = require("../model/booking");
 const catchAsync = require("../utils/catchAsync");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const Payouts = require("../model/Payout");
-const Lessons = require("../model/lesson")
+const Lessons = require("../model/lesson");
+const review = require("../model/review");
 
 exports.TeacherList = catchAsync(async (req, res) => {
   try {
@@ -207,16 +208,28 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
       lessonCompletedTeacher: true
     }).populate([
       { path: "teacherId" },
-      { path: "UserId" }
+      { path: "UserId" },
+      { path: "LessonId" }
     ]);
-
 
     const payoutdata = await Payouts.find({ userId: id });
     const lessondata = await Lessons.find({ teacher: id });
+    const reviews = await review.find()
+      .populate({
+        path: 'lessonId',
+        select: 'teacher title description',
+        populate: {
+          path: 'teacher',
+          select: 'userId name email',
+        }
+      }).populate("userId");
+
+
+
     if (!record) {
       return errorResponse(res, "Teacher not found", 404);
     }
-    successResponse(res, "Teacher retrieved successfully!", 200, { record, Booking, lessondata, payoutdata });
+    successResponse(res, "Teacher retrieved successfully!", 200, { record, Booking, lessondata, payoutdata, reviews });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
