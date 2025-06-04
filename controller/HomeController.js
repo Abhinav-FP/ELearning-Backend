@@ -8,7 +8,6 @@ const { deleteFileFromSpaces, uploadFileToSpaces } = require("../utils/FileUploa
 const teacherfaq = require("../model/teacherfaq");
 
 // Home Section
-
 exports.homeAdd = catchAsync(async (req, res, next) => {
     try {
         const { home_img_first, hero_img_second, hero_heading, best_teacher, learn, course_heading, course_paragraph, course_img } = req.body;
@@ -161,6 +160,7 @@ exports.policycondition = catchAsync(async (req, res, next) => {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
+
 // Faq Section 
 
 exports.FAQAdd = catchAsync(async (req, res, next) => {
@@ -229,8 +229,6 @@ exports.faqDelete = catchAsync(async (req, res, next) => {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
-
-//Teacher  Faq Section
 
 exports.teacherFAQAdd = catchAsync(async (req, res, next) => {
     try {

@@ -9,8 +9,6 @@ router.get("/review/get", reviewGet);
 
 router.post("/review/edit", ReviewEdit);
 
-// router.post("/review/status/:Status", ReviewStatus);
-
 router.post("/review/delete", ReviewDelete);
 
 router.get("/review/list", ReviewList);

@@ -201,7 +201,6 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
 exports.TeacherAllData = catchAsync(async (req, res) => {
   try {
     const id = req.params.id;
-    console.log("id", id)
     const record = await Teacher.findOne({ userId: id }).populate("userId");
     const Booking = await Bookings.find({
       teacherId: id,
@@ -218,19 +217,14 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
     const reviews = await Review.find()
       .populate({
         path: "lessonId",
-        select: "teacher title description", // teacher here is just { _id, name, email }
+        select: "teacher title description",
       })
-      .populate("userId"); // reviewer (student)
+      .populate("userId");
 
-    // Filter reviews where lessonId.teacher._id === teacher's userId
     const filteredReviews = reviews.filter(
       (review) =>
         review.lessonId?.teacher?._id?.toString() === id
     );
-
-
-    console.log("Total reviews:", reviews.length);
-    console.log("Filtered reviews:", filteredReviews.length);
     if (!record) {
       return errorResponse(res, "Teacher not found", 404);
     }

@@ -45,7 +45,6 @@ exports.reviewGet = catchAsync(async (req, res) => {
 
 exports.ReviewStatus = catchAsync(async (req, res) => {
     const { _id, review_status } = req.body;
-    console.log("req.body", req)
     try {
         const result = await Review.findByIdAndUpdate(
             _id,
