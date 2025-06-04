@@ -223,9 +223,6 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
           select: 'userId name email',
         }
       }).populate("userId");
-
-
-
     if (!record) {
       return errorResponse(res, "Teacher not found", 404);
     }
