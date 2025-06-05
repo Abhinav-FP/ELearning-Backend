@@ -25,6 +25,7 @@ const homeSchema = mongoose.Schema({
         type: String,
         default: ""
     },
+    
     course_paragraph: {
         type: String,
         default: ""
