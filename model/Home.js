@@ -13,7 +13,6 @@ const homeSchema = mongoose.Schema({
         type: String,
         default: ""
     },
-
     best_teacher: {
         type: String,
         default: ""
@@ -41,6 +40,10 @@ const homeSchema = mongoose.Schema({
     privcay_policy: {
         type: String,
         default: null
+    },
+    admin_comission: {
+        type: Number,
+        default: 0
     }
 });
 
