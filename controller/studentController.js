@@ -322,7 +322,7 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
 exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
   try {
     const teacherId = req.params.id;
-    console.log("teacherId", teacherId);
+    // console.log("teacherId", teacherId);
 
     if (!teacherId) {
       return errorResponse(res, "Teacher ID is required", 400);
