@@ -20,11 +20,31 @@ const BankSchema = mongoose.Schema({
     },
     BranchName: {
         type: String,
-        required: [true, "Branch name is required."],
+        // required: [true, "Branch name is required."],
     },
     IFSC: {
         type: String,
-        required: [true, "IFSC code is required."],
+    },
+    AccountType: {
+        type: String,
+        enum: [
+            "savings",
+            "current",
+            "fixed",
+            "recurring",
+            "nre",
+            "nro",
+            "business",
+            "joint",
+            "salary"
+        ],
+        default: "savings",
+    },
+    OverseasDetails: {
+        type: String
+    },
+    BranchCode: {
+        type: String,
     },
     createdAt: {
         type: Date,

@@ -1,7 +1,11 @@
 const router = require("express").Router();
 const { BankAddOrEdit, BankList } = require("../controller/BankController");
 const { PayoutAdd, payoutList } = require("../controller/PayoutController");
+<<<<<<< HEAD
 const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck, TeacherGet, EarningsGet, BookingsGet, updateProfile, DashboardApi, SpecialSlotCreate, StudentLessonListing, SpecialSlotList, SpecialSlotData } = require("../controller/teacherController");
+=======
+const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck, TeacherGet, EarningsGet, BookingsGet, updateProfile, DashboardApi, SpecialSlotCreate, StudentLessonListing, DeleteGetLesson } = require("../controller/teacherController");
+>>>>>>> 558a9beb1413fcf728ca23747e86882b7985e4e2
 const { verifyToken } = require("../middleware/tokenVerify");
 const { upload } = require("../utils/FileUploader");
 
@@ -46,5 +50,8 @@ router.get("/teacher/specialSlot", verifyToken, SpecialSlotList);
 router.get("/teacher/specialSlotdata/:token", SpecialSlotData);
 //The below route is used fopr getting student and lessons listing for special slot creation  
 router.get("/teacher/studentLesson", verifyToken, StudentLessonListing);
+
+router.post("/teacher/lesson/delete", verifyToken, DeleteGetLesson);
+
 
 module.exports = router;
