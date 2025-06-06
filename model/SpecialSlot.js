@@ -16,6 +16,10 @@ const SpecialSlotSchema = mongoose.Schema({
         ref: "Lesson",
         required: [true, "Lesson id is required"],
     },
+    amount: {
+        type: Number,
+        required: [true, "Amount is required"],
+    },
     paymentStatus: {
         type: String,
         enum: ["paid", "pending"],
