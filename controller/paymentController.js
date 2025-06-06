@@ -416,7 +416,8 @@ exports.PaymentcancelOrder = catchAsync(async (req, res) => {
 exports.PaymentCreate = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email } = req?.body;
+    const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email, isSpecialSlot } = req?.body;
+    const isSpecial = isSpecialSlot ? true : false;
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
@@ -435,7 +436,8 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
         email,
         amount,
         currency,
-        srNo: srNo.toString()
+        srNo: srNo.toString(),
+        isSpecial
       }
     });
     res.json({ clientSecret: paymentIntent.client_secret });
