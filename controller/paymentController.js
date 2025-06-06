@@ -93,7 +93,9 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
     console.log("req.body", req.body)
-    const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone, totalAmount, adminCommission, email } = req.body;
+    const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone, totalAmount, adminCommission, email,
+      isSpecialSlot
+    } = req.body;
     const accessToken = await generateAccessToken();
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
@@ -124,10 +126,18 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 
 
     const savedPayment = await newPayment.save();
+    let startUTC, endUTC;
 
-    // Convert times from user's timezone to UTC
-    const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
-    const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+    if (isSpecialSlot) {
+      startUTC = startDateTime;
+      endUTC = endDateTime;
+    } else {
+
+      // Convert times from user's timezone to UTC
+      startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+      endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+    }
+
 
     console.log("startUTC", startUTC)
     console.log("endUTC", endUTC)
