@@ -727,7 +727,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
 // Special Slot apis
 exports.SpecialSlotCreate = catchAsync(async (req, res) => {
   try {
-    console.log("req.body",req.body);
+    // console.log("req.body",req.body);
     let { student, lesson, amount, startDateTime, endDateTime } = req.body;
     const time_zone = req.user.time_zone;
 
@@ -741,10 +741,6 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
 
     const startUTC = start.toUTC().toJSDate();
     const endUTC = end.toUTC().toJSDate();
-
-    // Calculate duration in Luxon
-    const duration = end.diff(start, ["hours", "minutes"]).toObject();
-    const readableDuration = `${duration.hours || 0}h ${duration.minutes || 0}m`;
     
     const user= await User.findById(student);
     if (!user) {
@@ -775,7 +771,7 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
     // Email Sending logic
     const teacher = await User.findById(req.user.id);
     const registrationSubject = "Special Slot Created 🎉";
-    const emailHtml = SpecialSlotEmail(user?.name, teacher?.name, startUTC, link, amount, readableDuration);
+    const emailHtml = SpecialSlotEmail(user?.name, teacher?.name, startUTC, link, amount, endUTC);
     await sendEmail({
       email: user.email,
       subject: registrationSubject,
@@ -802,5 +798,42 @@ exports.StudentLessonListing = catchAsync(async (req, res) => {
   }catch(error){
     console.log("error",error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.SpecialSlotList = catchAsync(async (req, res)=>{
+  try{
+    const data= await SpecialSlot.find()
+    .populate("student")
+    .populate("teacher")
+    .populate("lesson")
+    .sort({ createdAt: -1});
+     if (!data) {
+      return errorResponse(res, "Special Slots not Found", 401);
+    }
+    successResponse(res, "Special Slots retrieved successfully!", 200, data);
+  }catch(error){
+    console.log("error",error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);    
+  }
+});
+
+exports.SpecialSlotData = catchAsync(async (req, res)=>{
+  try{
+    const token = req.params.token;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const id = decoded.id;
+    const data= await SpecialSlot.findById(id)
+    .populate("student")
+    .populate("teacher")
+    .populate("lesson")
+    .sort({ createdAt: -1});
+     if (!data) {
+      return errorResponse(res, "Data not Found", 401);
+    }
+    successResponse(res, "Data retrieved successfully!", 200, data);
+  }catch(error){
+    console.log("error",error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);    
   }
 });
