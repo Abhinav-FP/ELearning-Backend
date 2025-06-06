@@ -803,7 +803,13 @@ exports.StudentLessonListing = catchAsync(async (req, res) => {
 
 exports.SpecialSlotList = catchAsync(async (req, res)=>{
   try{
-    const data= await SpecialSlot.find()
+    const { status } = req.query;
+    console.log("req.query", req.query);
+    const filter = {};
+    if(status && status != ""){
+      filter.paymentStatus = status;
+    }
+    const data= await SpecialSlot.find(filter)
     .populate("student")
     .populate("teacher")
     .populate("lesson")
@@ -837,6 +843,7 @@ exports.SpecialSlotData = catchAsync(async (req, res)=>{
     return errorResponse(res, error.message || "Internal Server Error", 500);    
   }
 });
+
 exports.DeleteGetLesson = catchAsync(async (req, res) => {
     try {
         const { _id, status } = req.body;
@@ -848,4 +855,4 @@ exports.DeleteGetLesson = catchAsync(async (req, res) => {
         console.log("error", error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
-})
+});
