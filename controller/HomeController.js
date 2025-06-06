@@ -122,7 +122,12 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
             })
         );
 
-        return successResponse(res, "Teachers fetched with lowest-price lessons", 200, teacherData);
+        const record = Lesson.find({
+            teacher: new mongoose.Types.ObjectId(teachers?.userId?._id)
+        }).count();
+        return successResponse(res, "Teachers fetched with lowest-price lessons", 200, {
+            record, teacherData
+        });
     } catch (error) {
         Loggers.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
@@ -132,7 +137,7 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
 exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
     try {
         const teachers = await Teacher.find({})
-            .populate({ path: "userId", select: "-password" }).limit(2);
+            .populate({ path: "userId", select: "-password" }).limit(3);
 
         if (!teachers.length) {
             return validationErrorResponse(res, "Teacher data not found", 400);
@@ -146,15 +151,17 @@ exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
                 })
                     .sort({ price: 1 })
                     .lean();
-
                 return {
                     ...teacher.toObject(),
                     lowestPriceLesson: lowestLesson || null
                 };
             })
         );
+        const record = Lesson.find({
+            teacher: new mongoose.Types.ObjectId(teachers?.userId?._id)
+        }).count();
 
-        return successResponse(res, "Teachers fetched with lowest-price lessons", 200, teacherData);
+        return successResponse(res, "Teachers fetched with lowest-price lessons", 200, { record, teacherData });
     } catch (error) {
         Loggers.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
