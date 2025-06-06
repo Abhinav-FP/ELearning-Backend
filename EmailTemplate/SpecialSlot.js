@@ -1,5 +1,5 @@
 const moment = require("moment");
-module.exports = (userName, teacherName, startDateTime, link, price, duration) => {
+module.exports = (userName, teacherName, startDateTime, link, price, endUTC) => {
     return `
 <div id="email" style="background: #fdf6f7;padding: 20px 0;">
   <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">        
@@ -42,9 +42,9 @@ module.exports = (userName, teacherName, startDateTime, link, price, duration) =
                 </td> 
               </tr>
               <tr>
-                <td width="30%"style="font-size: 1rem; font-weight: 600; line-height: 18px;text-align: left;color: #333333;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;">Duration:</td> 
+                <td width="30%"style="font-size: 1rem; font-weight: 600; line-height: 18px;text-align: left;color: #333333;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;">End Time:</td> 
                 <td width="70%" style="font-size: 1rem; font-weight: 400; line-height: 1.3rem;text-align: left;color: #CC2828;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;">
-                    ${duration}
+                    ${moment(endUTC).format("hh:mm A")} UTC
                 </td> 
               </tr>
               <tr>
