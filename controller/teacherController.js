@@ -8,8 +8,12 @@ const logger = require("../utils/Logger");
 const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
 const User = require("../model/user");
 const Teacher = require("../model/teacher");
+const SpecialSlot = require("../model/SpecialSlot");
 const Review = require("../model/review");
 const mongoose = require('mongoose');
+const sendEmail = require("../utils/EmailMailler");
+const SpecialSlotEmail = require("../EmailTemplate/SpecialSlot");
+const jwt = require("jsonwebtoken");
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
@@ -716,6 +720,87 @@ exports.DashboardApi = catchAsync(async (req, res) => {
 
   } catch (error) {
     console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+// Special Slot apis
+exports.SpecialSlotCreate = catchAsync(async (req, res) => {
+  try {
+    console.log("req.body",req.body);
+    let { student, lesson, amount, startDateTime, endDateTime } = req.body;
+    const time_zone = req.user.time_zone;
+
+    if (!student || !lesson || !amount || !startDateTime || !endDateTime) {
+      return errorResponse(res, "All fields are required", 400);
+    }
+
+    // Convert input to UTC
+    const start = DateTime.fromISO(startDateTime, { zone: time_zone });
+    const end = DateTime.fromISO(endDateTime, { zone: time_zone });
+
+    const startUTC = start.toUTC().toJSDate();
+    const endUTC = end.toUTC().toJSDate();
+
+    // Calculate duration in Luxon
+    const duration = end.diff(start, ["hours", "minutes"]).toObject();
+    const readableDuration = `${duration.hours || 0}h ${duration.minutes || 0}m`;
+    
+    const user= await User.findById(student);
+    if (!user) {
+      return errorResponse(res, "Invalid student id", 400);
+    }
+    
+    const slot = new SpecialSlot({
+      student, 
+      lesson, 
+      amount, 
+      startDateTime : startUTC, 
+      endDateTime : endUTC,
+      teacher: req.user.id,
+    });
+    
+    const slotResult = await slot.save();
+    
+    if (!slotResult) {
+      return errorResponse(res, "Failed to add special slot.", 500);
+    }
+    const token = jwt.sign(
+      { id: slotResult?._id },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "48h" }
+    );
+    const link = `https://japaneseforme.com/slot/${token}`;
+    
+    // Email Sending logic
+    const teacher = await User.findById(req.user.id);
+    const registrationSubject = "Special Slot Created 🎉";
+    const emailHtml = SpecialSlotEmail(user?.name, teacher?.name, startUTC, link, amount, readableDuration);
+    await sendEmail({
+      email: user.email,
+      subject: registrationSubject,
+      emailHtml
+    });
+
+    return successResponse(res, "Special Slot created successfully", 201, slotResult);
+  } catch (error) {
+    console.log("error",error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.StudentLessonListing = catchAsync(async (req, res) => {
+  try{
+    const lessons = await Lesson.find({ teacher:req.user.id, is_deleted: { $ne: true } });
+    // console.log("lessons",lessons);
+    const students = await User.find({ role:"student" });
+    // console.log("students",students);
+    return successResponse(res, "Special Slot created successfully", 201, {
+      lessons,
+      students
+    });
+  }catch(error){
+    console.log("error",error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
