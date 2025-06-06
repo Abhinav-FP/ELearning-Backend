@@ -85,10 +85,18 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 
       console.log(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
       console.log("📦 Metadata:", metadata);
-
+      let startUTC,endUTC;
       // Convert times to UTC
-      const startUTC = DateTime.fromISO(metadata.startDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
-      const endUTC = DateTime.fromISO(metadata.endDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
+      console.log("metadata",metadata);
+      if(metadata?.isSpecial)
+      {
+        startUTC = metadata.startDateTime;
+        endUTC = metadata.endDateTime;
+      }
+      else{
+        startUTC = DateTime.fromISO(metadata.startDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
+        endUTC = DateTime.fromISO(metadata.endDateTime, { zone: metadata.timezone }).toUTC().toJSDate();        
+      }
       // Save payment record
       const payment = new StripePayment({
         srNo: parseInt(metadata.srNo),
