@@ -10,21 +10,22 @@ exports.BankAddOrEdit = catchAsync(async (req, res) => {
             message: "User ID is missing.",
         });
     }
-    const { BankName, BankNumber, BranchName, IFSC, _id  ,AccountHolderName} = req.body;
+    const { BankName, BankNumber, BranchName, IFSC, _id, AccountHolderName, BranchCode, AccountType, OverseasDetails } = req.body;
+    console.log("req.body", req.body)
 
-    if (!BankName || !BankNumber || !BranchName || !IFSC  || !AccountHolderName) {
-        return res.status(400).json({
-            status: false,
-            message: "All fields (BankName, BankNumber, BranchName, IFSC ,AccountHolderName) are required.",
-        });
-    }
+    // if (!BankName || !BankNumber || !BranchName || !IFSC || !AccountHolderName) {
+    //     return res.status(400).json({
+    //         status: false,
+    //         message: "All fields (BankName, BankNumber, BranchName, IFSC ,AccountHolderName) are required.",
+    //     });
+    // }
     try {
         let result;
         if (_id) {
             // Edit existing record
             result = await Bank.findByIdAndUpdate(
                 _id,
-                { BankName, BankNumber, BranchName, IFSC, userId , AccountHolderName },
+                { BankName, BankNumber, BranchName, IFSC, userId, AccountHolderName, BranchCode, AccountType, OverseasDetails },
                 { new: true, runValidators: true }
             );
 
@@ -48,7 +49,8 @@ exports.BankAddOrEdit = catchAsync(async (req, res) => {
                 BranchName,
                 IFSC,
                 userId,
-                AccountHolderName
+                AccountHolderName,
+                BranchCode, AccountType, OverseasDetails
             });
 
             result = await record.save();

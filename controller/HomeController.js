@@ -6,6 +6,8 @@ const Faq = require("../model/Faq");
 const Teacher = require("../model/teacher");
 const { deleteFileFromSpaces, uploadFileToSpaces } = require("../utils/FileUploader");
 const teacherfaq = require("../model/teacherfaq");
+const Lesson = require("../model/lesson");
+const { default: mongoose } = require("mongoose");
 
 // Home Section
 exports.homeAdd = catchAsync(async (req, res, next) => {
@@ -37,11 +39,7 @@ exports.homeAdd = catchAsync(async (req, res, next) => {
 exports.homefind = catchAsync(async (req, res, next) => {
     try {
         const record = await Home.findOne({});
-        if (record.length === 0) {
-            return validationErrorResponse(res, "Home Data Not Found", 400);
-        }
         return successResponse(res, "Home Find successfully!", 200, record);
-
     } catch (error) {
         Loggers.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
@@ -101,17 +99,30 @@ exports.homeupdate = catchAsync(async (req, res, next) => {
 
 exports.GetTeachers = catchAsync(async (req, res, next) => {
     try {
-        const record = await Teacher.find({}).populate({
-            path: "userId",
-            select: "-password"
-        });
-        if (record.length === 0) {
-            return validationErrorResponse(res, "Faq Data Not Found", 400);
+        const teachers = await Teacher.find({})
+            .populate({ path: "userId", select: "-password" });
+
+        if (!teachers.length) {
+            return validationErrorResponse(res, "Teacher data not found", 400);
         }
 
-        Loggers.info("Faq Find successfully!");
-        return successResponse(res, "Faq Find successfully!", 200, { record });
+        const teacherData = await Promise.all(
+            teachers.map(async (teacher) => {
+                const lowestLesson = await Lesson.findOne({
+                    teacher: new mongoose.Types.ObjectId(teacher.userId?._id), // ✅ Correct usage
+                    is_deleted: false
+                })
+                    .sort({ price: 1 })
+                    .lean();
 
+                return {
+                    ...teacher.toObject(),
+                    lowestPriceLesson: lowestLesson || null
+                };
+            })
+        );
+
+        return successResponse(res, "Teachers fetched with lowest-price lessons", 200, teacherData);
     } catch (error) {
         Loggers.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
@@ -120,18 +131,30 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
 
 exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
     try {
-        const record = await Teacher.find({}).populate({
-            path: "userId",
-            select: "-password"
-        }).limit(2).sort({
-            createdAt: -1
-        }).select("name intro_video average_duration average_price profile_photo");
-        if (record.length === 0) {
-            return validationErrorResponse(res, "Teacher Data Not Found", 400);
+        const teachers = await Teacher.find({})
+            .populate({ path: "userId", select: "-password" }).limit(2);
+
+        if (!teachers.length) {
+            return validationErrorResponse(res, "Teacher data not found", 400);
         }
 
-        return successResponse(res, "Teacher Find successfully!", 200, { record });
+        const teacherData = await Promise.all(
+            teachers.map(async (teacher) => {
+                const lowestLesson = await Lesson.findOne({
+                    teacher: new mongoose.Types.ObjectId(teacher.userId?._id), // ✅ Correct usage
+                    is_deleted: false
+                })
+                    .sort({ price: 1 })
+                    .lean();
 
+                return {
+                    ...teacher.toObject(),
+                    lowestPriceLesson: lowestLesson || null
+                };
+            })
+        );
+
+        return successResponse(res, "Teachers fetched with lowest-price lessons", 200, teacherData);
     } catch (error) {
         Loggers.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
@@ -229,6 +252,8 @@ exports.faqDelete = catchAsync(async (req, res, next) => {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
+
+// Teacher Faq Section
 
 exports.teacherFAQAdd = catchAsync(async (req, res, next) => {
     try {

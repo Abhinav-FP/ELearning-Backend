@@ -9,11 +9,9 @@ const teacherSchema = new mongoose.Schema({
   description: {
     type: String,
     default: null,
-    // required: [true, "Description is required"],
   },
   gender: {
     type: String,
-    // required: [true, "Gender is required"],
     enum: ['M', 'F', "O"],
     default: null
   },
@@ -49,17 +47,17 @@ const teacherSchema = new mongoose.Schema({
     type: Boolean,
     default: null,
   },
-  documentlink : {
-    type :String ,
-    default :""
+  documentlink: {
+    type: String,
+    default: ""
   },
-  average_time : {
-    type :String ,
-    default :null,
+  average_time: {
+    type: String,
+    default: null,
   },
-  average_price :{
-    type :String ,
-    default : null,
+  average_price: {
+    type: String,
+    default: null,
   },
 }, { timestamps: true });
 

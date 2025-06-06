@@ -206,7 +206,7 @@ exports.GetLessons = catchAsync(async (req, res) => {
   try {
     const teacherId = req.user.id;
     const profile = await Teacher.findOne({ userId: teacherId }).populate("userId");
-    const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
+    const lessons = await Lesson.find({ teacher: teacherId }).populate("teacher");
     if (!lessons || lessons.length === 0) {
       return errorResponse(res, "No lessons found", 404);
     }
@@ -727,7 +727,6 @@ exports.DashboardApi = catchAsync(async (req, res) => {
 // Special Slot apis
 exports.SpecialSlotCreate = catchAsync(async (req, res) => {
   try {
-    console.log("req.body",req.body);
     let { student, lesson, amount, startDateTime, endDateTime } = req.body;
     const time_zone = req.user.time_zone;
 
@@ -804,3 +803,16 @@ exports.StudentLessonListing = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
+
+exports.DeleteGetLesson = catchAsync(async (req, res) => {
+    try {
+        const { _id, status } = req.body;
+        const lessons = await Lesson.findByIdAndUpdate(_id, {
+            is_deleted: status
+        })
+        return successResponse(res, "Lessons retrieved successfully", 200, lessons);
+    } catch (error) {
+        console.log("error", error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+})
