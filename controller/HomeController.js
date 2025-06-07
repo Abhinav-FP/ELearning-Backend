@@ -122,9 +122,9 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
             })
         );
 
-        const record = await Lesson.countDocuments({
-            teacher: new mongoose.Types.ObjectId(teachers?.userId?._id)
-        });
+   const record = await Lesson.countDocuments({
+    teacher: new mongoose.Types.ObjectId(teachers?.userId?._id)
+});
 
         return successResponse(res, "Teachers fetched with lowest-price lessons", 200, {
             record, teacherData
@@ -158,9 +158,9 @@ exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
                 };
             })
         );
-        const record = await Lesson.countDocuments({
-            teacher: new mongoose.Types.ObjectId(teachers?.userId?._id)
-        });
+      const record = await Lesson.countDocuments({
+    teacher: new mongoose.Types.ObjectId(teachers?.userId?._id)
+});
 
 
         return successResponse(res, "Teachers fetched with lowest-price lessons", 200, { record, teacherData });
