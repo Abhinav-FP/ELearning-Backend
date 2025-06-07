@@ -316,10 +316,10 @@ exports.updateProfile = catchAsync(async (req, res) => {
 
     const user = await User.findById(userId);
     const teacher = await Teacher.findOne({ userId });
-    if(!user || !teacher){
+    if (!user || !teacher) {
       return errorResponse(res, "User not found", 404);
     }
-    let profile_photo=null;
+    let profile_photo = null;
     if (files.profile_photo?.[0]) {
       if (user?.profile_photo) {
         // console.log("Old profile photo to delete:", user.profile_photo);
@@ -332,7 +332,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
         }
       }
       const fileKey = await uploadFileToSpaces(files.profile_photo?.[0]);
-      console.log("profile_photo",fileKey);
       profile_photo = fileKey;
     }
 
@@ -340,7 +339,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
     //   userUpdates.profile_photo = profile_photo;
     // }
 
-    let documentlink=null;
+    let documentlink = null;
     if (files.documentlink?.[0]) {
       if (teacher?.documentlink) {
         // console.log("Old profile photo to delete:", user.profile_photo);
@@ -353,7 +352,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
         }
       }
       const fileKey = await uploadFileToSpaces(files.documentlink?.[0]);
-      console.log("documentlink",fileKey);
       documentlink = fileKey;
     }
 
@@ -369,7 +367,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
     if (profile_photo !== undefined && profile_photo !== null && profile_photo !== "") {
       userUpdates.profile_photo = profile_photo;
     }
-   
+
     if (languages_spoken !== undefined) teacherUpdates.languages_spoken = JSON.parse(languages_spoken);
     if (gender !== undefined) teacherUpdates.gender = gender;
     if (ais_trained !== undefined) teacherUpdates.ais_trained = ais_trained;
@@ -394,17 +392,17 @@ exports.updateProfile = catchAsync(async (req, res) => {
     const updatedUser = isUserUpdateEmpty
       ? await User.findById(userId)
       : await User.findByIdAndUpdate(userId, userUpdates, {
-          new: true,
-          runValidators: true,
-        });
+        new: true,
+        runValidators: true,
+      });
 
     // Update Teacher
     const updatedTeacher = isTeacherUpdateEmpty
       ? await Teacher.findOne({ userId })
       : await Teacher.findOneAndUpdate({ userId }, teacherUpdates, {
-          new: true,
-          runValidators: true,
-        });
+        new: true,
+        runValidators: true,
+      });
 
     return successResponse(res, "Profile updated successfully!", 200, {
       user: updatedUser,
@@ -420,7 +418,7 @@ exports.EarningsGet = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
     // console.log("req.query",req.query);
-    const { date, search } =req.query;
+    const { date, search } = req.query;
     // console.log("search",search);
 
     if (!userId) {
@@ -457,13 +455,13 @@ exports.EarningsGet = catchAsync(async (req, res) => {
 
     // Get detailed booking data
     let data = await Bookings.find(filter)
-      .sort({startDateTime: -1})
+      .sort({ startDateTime: -1 })
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
       .populate('LessonId');
 
-       if (search && search.trim() !== "") {
+    if (search && search.trim() !== "") {
       const regex = new RegExp(search.trim(), "i"); // case-insensitive match
 
       data = data.filter((item) => {
@@ -478,8 +476,8 @@ exports.EarningsGet = catchAsync(async (req, res) => {
         );
       });
     }
-    
-      if (!data) {
+
+    if (!data) {
       return errorResponse(res, "Data not Found", 401);
     }
 
@@ -612,20 +610,25 @@ exports.DashboardApi = catchAsync(async (req, res) => {
         $unwind: '$lesson'
       },
       {
+        $addFields: {
+          durationCategory: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$lesson.duration', 30] }, then: 'duration30' },
+                { case: { $eq: ['$lesson.duration', 50] }, then: 'duration50' }
+              ],
+              default: 'durationOther'
+            }
+          }
+        }
+      },
+      {
         $group: {
-          _id: '$lesson.duration',
+          _id: '$durationCategory',
           count: { $sum: 1 }
         }
       }
     ]);
-    const counts = {
-      duration30: 0,
-      duration50: 0,
-      duration60: 0
-    };
-    result.forEach(r => {
-      counts[`duration${r._id}`] = r.count;
-    });
     const objectId = new mongoose.Types.ObjectId(userId);
     // Aggregate the earnings
     const earnings = await Bookings.aggregate([
@@ -716,7 +719,8 @@ exports.DashboardApi = catchAsync(async (req, res) => {
       });
 
 
-    successResponse(res, "Bookings retrieved successfully!", 200, { upcomingLesson, TeacherData, ReviewesCount, counts, earningsSummary, paypalpay, stripepay });
+    successResponse(res, "Bookings retrieved successfully!", 200,
+      { upcomingLesson, TeacherData, ReviewesCount, result, earningsSummary, paypalpay, stripepay });
 
   } catch (error) {
     console.log(error);
@@ -741,23 +745,23 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
 
     const startUTC = start.toUTC().toJSDate();
     const endUTC = end.toUTC().toJSDate();
-    
-    const user= await User.findById(student);
+
+    const user = await User.findById(student);
     if (!user) {
       return errorResponse(res, "Invalid student id", 400);
     }
-    
+
     const slot = new SpecialSlot({
-      student, 
-      lesson, 
-      amount, 
-      startDateTime : startUTC, 
-      endDateTime : endUTC,
+      student,
+      lesson,
+      amount,
+      startDateTime: startUTC,
+      endDateTime: endUTC,
       teacher: req.user.id,
     });
-    
+
     const slotResult = await slot.save();
-    
+
     if (!slotResult) {
       return errorResponse(res, "Failed to add special slot.", 500);
     }
@@ -767,7 +771,7 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
       { expiresIn: "48h" }
     );
     const link = `https://japaneseforme.com/slot/${token}`;
-    
+
     // Email Sending logic
     const teacher = await User.findById(req.user.id);
     const registrationSubject = "Special Slot Created 🎉";
@@ -780,79 +784,78 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
 
     return successResponse(res, "Special Slot created successfully", 201, slotResult);
   } catch (error) {
-    console.log("error",error);
+    console.log("error", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
 
 exports.StudentLessonListing = catchAsync(async (req, res) => {
-  try{
-    const lessons = await Lesson.find({ teacher:req.user.id, is_deleted: { $ne: true } });
+  try {
+    const lessons = await Lesson.find({ teacher: req.user.id, is_deleted: { $ne: true } });
     // console.log("lessons",lessons);
-    const students = await User.find({ role:"student" });
+    const students = await User.find({ role: "student" });
     // console.log("students",students);
     return successResponse(res, "Special Slot created successfully", 201, {
       lessons,
       students
     });
-  }catch(error){
-    console.log("error",error);
+  } catch (error) {
+    console.log("error", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
 
-exports.SpecialSlotList = catchAsync(async (req, res)=>{
-  try{
+exports.SpecialSlotList = catchAsync(async (req, res) => {
+  try {
     const { status } = req.query;
-    console.log("req.query", req.query);
     const filter = {};
-    if(status && status != ""){
+    if (status && status != "") {
       filter.paymentStatus = status;
     }
-    const data= await SpecialSlot.find(filter)
-    .populate("student")
-    .populate("teacher")
-    .populate("lesson")
-    .sort({ createdAt: -1});
-     if (!data) {
+    const data = await SpecialSlot.find(filter)
+      .populate("student")
+      .populate("teacher")
+      .populate("lesson")
+      .sort({ createdAt: -1 });
+    if (!data) {
       return errorResponse(res, "Special Slots not Found", 401);
     }
     successResponse(res, "Special Slots retrieved successfully!", 200, data);
-  }catch(error){
-    console.log("error",error);
-    return errorResponse(res, error.message || "Internal Server Error", 500);    
+  } catch (error) {
+    console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
 
-exports.SpecialSlotData = catchAsync(async (req, res)=>{
-  try{
+exports.SpecialSlotData = catchAsync(async (req, res) => {
+  try {
     const token = req.params.token;
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     const id = decoded.id;
-    const data= await SpecialSlot.findById(id)
-    .populate("student")
-    .populate("teacher")
-    .populate("lesson")
-    .sort({ createdAt: -1});
-     if (!data) {
+    const data = await SpecialSlot.findById(id)
+      .populate("student")
+      .populate("teacher")
+      .populate("lesson")
+      .sort({ createdAt: -1 });
+    if (!data) {
       return errorResponse(res, "Data not Found", 401);
     }
     successResponse(res, "Data retrieved successfully!", 200, data);
-  }catch(error){
-    console.log("error",error);
-    return errorResponse(res, error.message || "Internal Server Error", 500);    
+  } catch (error) {
+    console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
 
 exports.DeleteGetLesson = catchAsync(async (req, res) => {
-    try {
-        const { _id, status } = req.body;
-        const lessons = await Lesson.findByIdAndUpdate(_id, {
-            is_deleted: status
-        })
-        return successResponse(res, "Lessons retrieved successfully", 200, lessons);
-    } catch (error) {
-        console.log("error", error);
-        return errorResponse(res, error.message || "Internal Server Error", 500);
-    }
+  try {
+    const { _id, status } = req.body;
+    const lessons = await Lesson.findByIdAndUpdate(_id, {
+      is_deleted: status
+    })
+    return successResponse(res, "Lessons retrieved successfully", 200, lessons);
+  } catch (error) {
+    console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
 });
