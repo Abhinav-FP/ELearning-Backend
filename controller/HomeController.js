@@ -215,8 +215,6 @@ exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
     }
 });
 
-
-
 exports.policycondition = catchAsync(async (req, res, next) => {
     try {
         const { _id, ...updateData } = req.body;
