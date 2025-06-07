@@ -11,6 +11,8 @@ const BookingSuccess = require("../EmailTemplate/BookingSuccess");
 const TeacherBooking = require("../EmailTemplate/TeacherBooking");
 const sendEmail = require("../utils/EmailMailler");
 const User = require("../model/user");
+const SpecialSlot = require("../model/SpecialSlot");
+const mongoose = require("mongoose");
 
 const clientId = process.env.PAYPAL_CLIENT_ID;
 const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -132,7 +134,6 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       startUTC = startDateTime;
       endUTC = endDateTime;
     } else {
-
       // Convert times from user's timezone to UTC
       startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
       endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
@@ -154,6 +155,22 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       endDateTime: endUTC,
     });
     await Bookingsave.save();
+
+    // Updating Special Slot
+    if(isSpecial){
+      const studentId = new mongoose.Types.ObjectId(UserId);
+      const lessonId = new mongoose.Types.ObjectId(LessonId);
+      const updatedSlot = await SpecialSlot.findOneAndUpdate(
+        {
+          student: studentId,
+          lesson: lessonId,
+          startDateTime: startUTC,
+        },
+        { paymentStatus: "paid" },
+        { new: true, runValidators: true }
+      );
+      console.log("Speial Slot updated", updatedSlot);
+    }
 
     const user = await User.findById({ _id: req.user.id });
     const teacher = await User.findById({ _id: teacherId });

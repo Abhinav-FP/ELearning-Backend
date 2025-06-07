@@ -5,20 +5,22 @@ require("./dbconfigration");
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const cron = require("node-cron");
-const fetch = require('node-fetch');
-
 const StripePayment = require("./model/StripePayment");
-const TeacherAvailability = require("./model/TeacherAvailability");
-const paypalCommon = require("./utils/Paypalcommon")
 const Bookings = require("./model/booking");
 const User = require("./model/user");
-const Teacher = require("./model/teacher");
+const SpecialSlot = require("./model/SpecialSlot");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("./EmailTemplate/BookingSuccess");
 const TeacherBooking = require("./EmailTemplate/TeacherBooking");
 const sendEmail = require("./utils/EmailMailler");
+
+const cron = require("node-cron");
+const fetch = require('node-fetch');
+const mongoose = require("mongoose");
+const Teacher = require("./model/teacher");
 const { updateCurrencyRatesJob } = require("./controller/currencycontroller");
+const TeacherAvailability = require("./model/TeacherAvailability");
+const paypalCommon = require("./utils/Paypalcommon")
 const currency = require("./EmailTemplate/currency");
 const bodyParser = require("body-parser");
 const { default: axios } = require("axios");
@@ -126,10 +128,25 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         srNo: parseInt(metadata.srNo),
         notes: metadata.notes || ""
       });
-
       const record = await booking.save();
+      console.log("record", record);
 
-      console.log("record", record)
+      // Updating Specialslot
+      if(metadata?.isSpecial){
+        const studentId = new mongoose.Types.ObjectId(metadata.userId);
+        const lessonId = new mongoose.Types.ObjectId(metadata.LessonId);
+        const updatedSlot = await SpecialSlot.findOneAndUpdate(
+          {
+            student: studentId,
+            lesson: lessonId,
+            startDateTime: startUTC,
+          },
+          { paymentStatus: "paid" },
+          { new: true, runValidators: true }
+        );
+        console.log("Speial Slot updated", updatedSlot);
+      }
+
       // Send confirmation email to student
       const user = await User.findById(metadata.userId);
       const teacher = await User.findById(metadata.teacherId);
