@@ -569,28 +569,18 @@ exports.BookingsGet = catchAsync(async (req, res) => {
 exports.DashboardApi = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    const TeacherData = await Teacher.findOne({ userId: userId });
+    const objectId = new mongoose.Types.ObjectId(userId);
+    const TeacherData = await Lesson.findOne({ 
+      teacher: userId,
+      is_deleted : false,
+    }).sort({price: 1});
+    // console.log("objectId",objectId);
 
-    const ReviewCount = await Review.aggregate([
-      {
-        $lookup: {
-          from: 'lessons', // ✅ name of the Lessons collection
-          localField: 'lessonId',
-          foreignField: '_id',
-          as: 'lesson'
-        }
-      },
-      {
-        $unwind: '$lesson'
-      },
-      {
-        $group: {
-          _id: '$lesson.teacherId',
-          reviewCount: { $sum: 1 }
-        }
-      }
-    ]);
-    const ReviewesCount = ReviewCount.length > 0 ? ReviewCount[0].reviewCount : 0;
+    const Reviews = await Review.find({ }).populate("lessonId");
+    const ReviewesCount = Reviews.filter(
+      review => review.lessonId?.teacher?.toString() === objectId.toString()
+    ).length;
+    // const ReviewesCount = Reviews.length > 0 ? Reviews[0].reviewCount : 0;
     const result = await Bookings.aggregate([
       {
         $match: {
@@ -629,7 +619,6 @@ exports.DashboardApi = catchAsync(async (req, res) => {
         }
       }
     ]);
-    const objectId = new mongoose.Types.ObjectId(userId);
     // Aggregate the earnings
     const earnings = await Bookings.aggregate([
       { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true } },
@@ -696,7 +685,9 @@ exports.DashboardApi = catchAsync(async (req, res) => {
       {
         $match: {
           teacherId: objectId,
-          StripepaymentId: { $exists: true, $ne: null }
+          StripepaymentId: { $exists: true, $ne: null },
+          lessonCompletedStudent : true,
+          lessonCompletedTeacher : true,
         }
       },
       {
@@ -711,6 +702,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
     const today = new Date();
 
     const upcomingLesson = await Bookings.find({
+      teacherId: objectId,
       startDateTime: { $gt: today }
     })
       .sort({ startDateTime: 1 }).limit(3).select('startDateTime').populate({

@@ -37,11 +37,13 @@ const bookingSchema = new mongoose.Schema(
     },
     lessonCompletedStudent: {
       type: Boolean,
-      default: false,
+      // default: false,
+      default: true,
     },
     lessonCompletedTeacher: {
       type: Boolean,
-      default: false,
+      // default: false,
+      default: true,
     },
     cancelled: {
       type: Boolean,

@@ -20,6 +20,7 @@ exports.PayoutAdd = catchAsync(async (req, res) => {
       teacherId: userId,
       lessonCompletedStudent: true,
       lessonCompletedTeacher: true,
+      payoutCreationDate: null,
     },
     { $set: { payoutCreationDate: time } },
     {
