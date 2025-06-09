@@ -1,5 +1,5 @@
 module.exports = (userName, link) => {
-    return `
+  return `
     <div id="email" style="background: #fdf6f7;padding: 20px 0;">
      <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:500px; margin: auto;background-color: #fff;">        
         <tr>
@@ -20,7 +20,7 @@ module.exports = (userName, link) => {
                 <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: left;color: #333333;margin: 0 0 .7rem;">Hi ${userName},</p>
 
                 <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: left;color: #333333;margin: 0 0 1.3rem;">
-                    Thanks for joining Japanese for Me. You're now part of a global community of language learners and certified teachers. Whether you're learning English or Japanese, we are here to guide you every step of the way. Please click the below button to verify your email and start your journey with us.
+                    Thanks for joining Japanese for Me. Please click the below button to verify your email and start your journey with us.
                 </p>
                 <p style="margin: 0 0 1.3rem;"><a href=${link} style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">Verify now</a></p> 
                 <p style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: left;color: #333333;margin: 0 0 1.5rem;">Happy Learning, <br>Japanese for Me Team</p>  

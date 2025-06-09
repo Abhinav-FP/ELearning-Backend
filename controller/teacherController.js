@@ -578,9 +578,9 @@ exports.DashboardApi = catchAsync(async (req, res) => {
 
     const Reviews = await Review.find({ }).populate("lessonId");
     const ReviewesCount = Reviews.filter(
-      review => review.lessonId?.teacher?.toString() === objectId.toString()
+      review => review?.lessonId?.teacher?.toString() === objectId.toString()
     ).length;
-    // const ReviewesCount = Reviews.length > 0 ? Reviews[0].reviewCount : 0;
+
     const result = await Bookings.aggregate([
       {
         $match: {
@@ -619,7 +619,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
         }
       }
     ]);
-    // Aggregate the earnings
+
     const earnings = await Bookings.aggregate([
       { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true } },
       {
@@ -666,6 +666,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
       pendingEarnings: 0,
       approvedEarnings: 0
     };
+
     const paypalamount = await Bookings.aggregate([
       {
         $match: {
@@ -681,6 +682,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
       }
     ]);
     const paypalpay = paypalamount.length > 0 ? paypalamount[0].totalPaypalAmount : 0;
+    
     const stripeamount = await Bookings.aggregate([
       {
         $match: {
