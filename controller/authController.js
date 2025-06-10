@@ -199,7 +199,7 @@ exports.GetUser = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid User", 401);
     }
     const user = await User.findById({ _id: userId }).select(
-      "email name role time_zone profile_photo"
+      "email name role time_zone profile_photo email_verify"
     );
     if (!user) {
       Loggers.error("Invalid User");
@@ -300,6 +300,33 @@ exports.resetPassword = catchAsync(async (req, res) => {
 
     return successResponse(res, "Password updated successfully!", 200);
   } catch (error) {
+    console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.ResendVerificationLink = catchAsync(async (req, res) => {
+  try{
+    const userId = req.user.id;
+    if (!userId) {
+      Loggers.error("Invalid User");
+      return errorResponse(res, "Invalid User", 401);
+    }
+    const userResult = await User.findById({ _id: userId });
+     const token = await signEmail(userResult._id);
+    const link = `https://e-learning-seven-ashy.vercel.app/verify/${token}`;
+
+    // Send email logic for student
+    const registrationSubject =
+      "Welcome to Japanese for Me!🎉 Your account has been created.";
+    const emailHtml = Welcome(userResult?.name, link);
+    await sendEmail({
+      email: userResult?.email,
+      subject: registrationSubject,
+      emailHtml: emailHtml,
+    });
+    return successResponse(res, "Verification link sent successfully!", 200);
+  }catch(error){
     console.log(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }

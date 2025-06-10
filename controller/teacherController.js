@@ -549,8 +549,21 @@ exports.BookingsGet = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid User", 401);
     }
 
+    const filter = { teacherId: userId };
+    const sort = {};
+    const { type } = req.query;
+    const now = Date.now();
+    if(type == "upcoming"){
+      filter.startDateTime = { $gt: now };
+      sort.startDateTime = 1;
+    }
+    else if(type == "past"){
+      filter.startDateTime = { $lte: now }
+      sort.startDateTime = -1;
+    } 
+
     // Get detailed booking data
-    const data = await Bookings.find({ teacherId: userId }).sort({ startDateTime: -1 })
+    const data = await Bookings.find(filter).sort(sort)
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
@@ -574,6 +587,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
       teacher: userId,
       is_deleted : false,
     }).sort({price: 1});
+
     // console.log("objectId",objectId);
 
     const Reviews = await Review.find({ }).populate("lessonId");
@@ -585,7 +599,8 @@ exports.DashboardApi = catchAsync(async (req, res) => {
       {
         $match: {
           lessonCompletedStudent: true,
-          lessonCompletedTeacher: true
+          lessonCompletedTeacher: true,
+          teacherId: objectId
         }
       },
       {
@@ -725,7 +740,9 @@ exports.DashboardApi = catchAsync(async (req, res) => {
 // Special Slot apis
 exports.SpecialSlotCreate = catchAsync(async (req, res) => {
   try {
-    // console.log("req.body",req.body);
+    const userId = req.user.id;
+    const objectId = new mongoose.Types.ObjectId(userId);
+
     let { student, lesson, amount, startDateTime, endDateTime } = req.body;
     const time_zone = req.user.time_zone;
 
@@ -740,6 +757,22 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
     const startUTC = start.toUTC().toJSDate();
     const endUTC = end.toUTC().toJSDate();
 
+    const availabilityBlocks = await TeacherAvailability.find({ teacher: objectId });
+    // Check for overlap with availability
+    const slotOverlaps = availabilityBlocks.some((block) => {
+      return (
+        startUTC < block.endDateTime && endUTC > block.startDateTime
+      );
+    });
+
+    if (slotOverlaps) {
+      return errorResponse(
+        res,
+        "You already have an availability in the given time. Special slots are not allowed.",
+        400
+      );
+    }
+    
     const user = await User.findById(student);
     if (!user) {
       return errorResponse(res, "Invalid student id", 400);
@@ -787,7 +820,7 @@ exports.StudentLessonListing = catchAsync(async (req, res) => {
   try {
     const lessons = await Lesson.find({ teacher: req.user.id, is_deleted: { $ne: true } });
     // console.log("lessons",lessons);
-    const students = await User.find({ role: "student" });
+    const students = await User.find({ role: "student", block:false, email_verify:true });
     // console.log("students",students);
     return successResponse(res, "Special Slot created successfully", 201, {
       lessons,
@@ -801,8 +834,10 @@ exports.StudentLessonListing = catchAsync(async (req, res) => {
 
 exports.SpecialSlotList = catchAsync(async (req, res) => {
   try {
+    const userId = req.user.id;
+    const objectId = new mongoose.Types.ObjectId(userId);
     const { status } = req.query;
-    const filter = {};
+    const filter = {teacher: objectId};
     if (status && status != "") {
       filter.paymentStatus = status;
     }

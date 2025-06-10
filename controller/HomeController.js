@@ -98,121 +98,296 @@ exports.homeupdate = catchAsync(async (req, res, next) => {
     }
 });
 
+// exports.GetTeachers = catchAsync(async (req, res, next) => {
+//     try {
+//         const teachers = await Teacher.find({})
+//             .populate({ path: "userId", select: "-password" });
+
+//         if (!teachers.length) {
+//             return validationErrorResponse(res, "Teacher data not found", 400);
+//         }
+//         const teacherData = [];
+//         for (const teacher of teachers) {
+//             const teacherId = new mongoose.Types.ObjectId(teacher.userId?._id);
+//             const lessons = await Lesson.find({
+//                 teacher: teacherId,
+//                 is_deleted: false
+//             }).select("_id price").lean();
+//             // Skip this teacher if no lessons found
+//             if (!lessons.length) continue;
+//             const lessonIds = lessons.map(lesson => lesson._id);
+//             // Get lowest price lesson
+//             const lowestLesson = lessons.reduce(
+//                 (min, curr) => curr.price < min.price ? curr : min,
+//                 lessons[0]
+//             );
+//             // Get review stats
+//             const reviewStats = await review.aggregate([
+//                 { $match: { lessonId: { $in: lessonIds } } },
+//                 {
+//                     $group: {
+//                         _id: null,
+//                         averageRating: { $avg: "$rating" },
+//                         totalReviews: { $sum: 1 }
+//                     }
+//                 }
+//             ]);
+//             const averageRating = reviewStats[0]?.averageRating || 0;
+//             const totalReviews = reviewStats[0]?.totalReviews || 0;
+//             teacherData.push({
+//                 ...teacher.toObject(),
+//                 lowestLesson,
+//                 totalLessons: lessons.length,
+//                 totalReviews,
+//                 averageRating: Number(averageRating.toFixed(2))
+//             });
+//         }
+
+//         if (!teacherData.length) {
+//             return validationErrorResponse(res, "No teacher with lessons found", 400);
+//         }
+
+//         return successResponse(res, "Teachers fetched with lowest-price lessons", 200, teacherData);
+//     } catch (error) {
+//         Loggers.error(error);
+//         return errorResponse(res, error.message || "Internal Server Error", 500);
+//     }
+// });
+
 exports.GetTeachers = catchAsync(async (req, res, next) => {
-    try {
-        const teachers = await Teacher.find({})
-            .populate({ path: "userId", select: "-password" });
+  try {
+    // Step 1: Get all teachers with userId populated (only where user is verified and not blocked)
+    const teachers = await Teacher.find({})
+      .populate({
+        path: "userId",
+        select: "-password",
+        match: { block: false, email_verify: true },
+      })
+    //   .sort({ createdAt: -1 })
+      .lean(); // Still includes teachers with userId: null if match fails
 
-        if (!teachers.length) {
-            return validationErrorResponse(res, "Teacher data not found", 400);
-        }
-        const teacherData = [];
-        for (const teacher of teachers) {
-            const teacherId = new mongoose.Types.ObjectId(teacher.userId?._id);
-            const lessons = await Lesson.find({
-                teacher: teacherId,
-                is_deleted: false
-            }).select("_id price").lean();
-            // Skip this teacher if no lessons found
-            if (!lessons.length) continue;
-            const lessonIds = lessons.map(lesson => lesson._id);
-            // Get lowest price lesson
-            const lowestLesson = lessons.reduce(
-                (min, curr) => curr.price < min.price ? curr : min,
-                lessons[0]
-            );
-            // Get review stats
-            const reviewStats = await review.aggregate([
-                { $match: { lessonId: { $in: lessonIds } } },
-                {
-                    $group: {
-                        _id: null,
-                        averageRating: { $avg: "$rating" },
-                        totalReviews: { $sum: 1 }
-                    }
-                }
-            ]);
-            const averageRating = reviewStats[0]?.averageRating || 0;
-            const totalReviews = reviewStats[0]?.totalReviews || 0;
-            teacherData.push({
-                ...teacher.toObject(),
-                lowestLesson,
-                totalLessons: lessons.length,
-                totalReviews,
-                averageRating: Number(averageRating.toFixed(2))
-            });
-        }
+    // Step 2: Count lessons grouped by teacher.userId._id
+    const teacherUserIds = teachers.map(t => t?.userId?._id).filter(Boolean); // Skip nulls from unmatched populate
 
-        if (!teacherData.length) {
-            return validationErrorResponse(res, "No teacher with lessons found", 400);
-        }
+    const lessonsAgg = await Lesson.aggregate([
+      {
+        $match: {
+          is_deleted: false,
+          teacher: { $in: teacherUserIds },
+        },
+      },
+      {
+        $group: {
+          _id: "$teacher",
+          count: { $sum: 1 },
+          lessons: {
+            $push: {
+              _id: "$_id",
+              price: "$price",
+            },
+          },
+        },
+      },
+    ]);
 
-        return successResponse(res, "Teachers fetched with lowest-price lessons", 200, teacherData);
-    } catch (error) {
-        Loggers.error(error);
-        return errorResponse(res, error.message || "Internal Server Error", 500);
+    // console.log("lessonsAgg",lessonsAgg);
+
+    // Build map: teacherId => { count, lowestLesson }
+    const lessonsMap = {};
+    lessonsAgg.forEach((entry) => {
+      const lowestLesson = entry.lessons.reduce((min, curr) =>
+        curr.price < min.price ? curr : min,
+        entry.lessons[0]
+      );
+
+      lessonsMap[entry._id.toString()] = {
+        count: entry.count,
+        lowestLesson,
+      };
+    });
+    // console.log("lessonsMap",lessonsMap);
+
+    // Step 3 & 4: Merge data and exclude teachers with 0 lessons
+    const finalTeachers = teachers
+      .map((teacher) => {
+        const teacherId = teacher?.userId?._id?.toString();
+        const lessonInfo = lessonsMap[teacherId];
+
+        if (!lessonInfo) return null;
+
+        return {
+          ...teacher,
+          lowestLesson: lessonInfo.lowestLesson,
+          totalLessons: lessonInfo.count,
+        };
+      })
+      .filter(Boolean); // Remove teachers with 0 lessons or unmatched user
+
+    if (!finalTeachers.length) {
+      return validationErrorResponse(res, "No teacher with lessons found", 400);
     }
+
+    return successResponse(
+      res,
+      "Teachers fetched with reviews and lessons",
+      200,
+      finalTeachers
+    );
+  } catch (error) {
+    Loggers.error(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
 });
 
+// exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
+//     try {
+//         const teachers = await Teacher.find({})
+//             .populate({ path: "userId", select: "-password" }).sort({createdAt: -1});
+
+//         const teacherData = [];
+
+//         for (const teacher of teachers) {
+//             const teacherId = new mongoose.Types.ObjectId(teacher.userId?._id);
+
+//             const lessons = await Lesson.find({
+//                 teacher: teacherId,
+//                 is_deleted: false
+//             }).select("_id price").lean();
+
+//             // Skip this teacher if no lessons found
+//             if (!lessons.length) continue;
+
+//             const lessonIds = lessons.map(lesson => lesson._id);
+
+//             // Get lowest price lesson
+//             const lowestLesson = lessons.reduce(
+//                 (min, curr) => curr.price < min.price ? curr : min,
+//                 lessons[0]
+//             );
+
+//             // // Get review stats
+//             // const reviewStats = await review.aggregate([
+//             //     { $match: { lessonId: { $in: lessonIds } } },
+//             //     {
+//             //         $group: {
+//             //             _id: null,
+//             //             averageRating: { $avg: "$rating" },
+//             //             totalReviews: { $sum: 1 }
+//             //         }
+//             //     }
+//             // ]);
+
+//             // const averageRating = reviewStats[0]?.averageRating || 0;
+//             // const totalReviews = reviewStats[0]?.totalReviews || 0;
+
+//             teacherData.push({
+//                 ...teacher.toObject(),
+//                 lowestLesson,
+//                 totalLessons: lessons.length,
+//                 // totalReviews,
+//                 // averageRating: Number(averageRating.toFixed(2))
+//             });
+//         }
+
+//         if (!teacherData.length) {
+//             return validationErrorResponse(res, "No teacher with lessons found", 400);
+//         }
+
+//         return successResponse(res, "Teachers fetched with reviews and lessons", 200, teacherData);
+//     } catch (error) {
+//         Loggers.error(error);
+//         return errorResponse(res, error.message || "Internal Server Error", 500);
+//     }
+// });
+
 exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
-    try {
-        const teachers = await Teacher.find({})
-            .populate({ path: "userId", select: "-password" });
+  try {
+    // Step 1: Get all teachers with userId populated (only where user is verified and not blocked)
+    const teachers = await Teacher.find({})
+      .populate({
+        path: "userId",
+        select: "-password",
+        match: { block: false, email_verify: true },
+      })
+      .sort({ createdAt: -1 })
+      .lean(); // Still includes teachers with userId: null if match fails
 
-        const teacherData = [];
+    // Step 2: Count lessons grouped by teacher.userId._id
+    const teacherUserIds = teachers.map(t => t?.userId?._id).filter(Boolean); // Skip nulls from unmatched populate
 
-        for (const teacher of teachers) {
-            const teacherId = new mongoose.Types.ObjectId(teacher.userId?._id);
+    const lessonsAgg = await Lesson.aggregate([
+      {
+        $match: {
+          is_deleted: false,
+          teacher: { $in: teacherUserIds },
+        },
+      },
+      {
+        $group: {
+          _id: "$teacher",
+          count: { $sum: 1 },
+          lessons: {
+            $push: {
+              _id: "$_id",
+              price: "$price",
+            },
+          },
+        },
+      },
+    ]);
 
-            const lessons = await Lesson.find({
-                teacher: teacherId,
-                is_deleted: false
-            }).select("_id price").lean();
+    // console.log("lessonsAgg",lessonsAgg);
 
-            // Skip this teacher if no lessons found
-            if (!lessons.length) continue;
+    // Build map: teacherId => { count, lowestLesson }
+    const lessonsMap = {};
+    lessonsAgg.forEach((entry) => {
+      const lowestLesson = entry.lessons.reduce((min, curr) =>
+        curr.price < min.price ? curr : min,
+        entry.lessons[0]
+      );
 
-            const lessonIds = lessons.map(lesson => lesson._id);
+      lessonsMap[entry._id.toString()] = {
+        count: entry.count,
+        lowestLesson,
+      };
+    });
+    // console.log("lessonsMap",lessonsMap);
 
-            // Get lowest price lesson
-            const lowestLesson = lessons.reduce(
-                (min, curr) => curr.price < min.price ? curr : min,
-                lessons[0]
-            );
+    // Step 3 & 4: Merge data and exclude teachers with 0 lessons
+    const finalTeachers = teachers
+      .map((teacher) => {
+        const teacherId = teacher?.userId?._id?.toString();
+        const lessonInfo = lessonsMap[teacherId];
 
-            // Get review stats
-            const reviewStats = await review.aggregate([
-                { $match: { lessonId: { $in: lessonIds } } },
-                {
-                    $group: {
-                        _id: null,
-                        averageRating: { $avg: "$rating" },
-                        totalReviews: { $sum: 1 }
-                    }
-                }
-            ]);
+        if (!lessonInfo) return null;
 
-            const averageRating = reviewStats[0]?.averageRating || 0;
-            const totalReviews = reviewStats[0]?.totalReviews || 0;
+        return {
+          ...teacher,
+          lowestLesson: lessonInfo.lowestLesson,
+          totalLessons: lessonInfo.count,
+        };
+      })
+      .filter(Boolean); // Remove teachers with 0 lessons or unmatched user
 
-            teacherData.push({
-                ...teacher.toObject(),
-                lowestLesson,
-                totalLessons: lessons.length,
-                totalReviews,
-                averageRating: Number(averageRating.toFixed(2))
-            });
-        }
-
-        if (!teacherData.length) {
-            return validationErrorResponse(res, "No teacher with lessons found", 400);
-        }
-
-        return successResponse(res, "Teachers fetched with reviews and lessons", 200, teacherData);
-    } catch (error) {
-        Loggers.error(error);
-        return errorResponse(res, error.message || "Internal Server Error", 500);
+    if (!finalTeachers.length) {
+      return validationErrorResponse(res, "No teacher with lessons found", 400);
     }
+    
+    // ✅ Return only first 3 if more than 3
+    const resultTeachers = finalTeachers.length > 3
+    ? finalTeachers.slice(0, 3)
+    : finalTeachers;
+
+    return successResponse(
+      res,
+      "Teachers fetched with reviews and lessons",
+      200,
+      resultTeachers
+    );
+  } catch (error) {
+    Loggers.error(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
 });
 
 exports.policycondition = catchAsync(async (req, res, next) => {
