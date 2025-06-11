@@ -51,14 +51,18 @@ const teacherSchema = new mongoose.Schema({
     type: String,
     default: ""
   },
-  average_time: {
-    type: String,
-    default: null,
+  tags: {
+    type: [String],
+    default: [],
   },
-  average_price: {
-    type: String,
-    default: null,
-  },
+  // average_time: {
+  //   type: String,
+  //   default: null,
+  // },
+  // average_price: {
+  //   type: String,
+  //   default: null,
+  // },
 }, { timestamps: true });
 
 const Teacher = mongoose.model('Teacher', teacherSchema);

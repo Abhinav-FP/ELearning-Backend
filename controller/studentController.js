@@ -3,8 +3,8 @@ const Payment = require("../model/PaypalPayment");
 const stripePayments = require("../model/StripePayment");
 const review = require("../model/review");
 const Teacher = require("../model/teacher");
-const TeacherAvailability = require("../model/TeacherAvailability");
 const Lesson = require("../model/lesson");
+const TeacherAvailability = require("../model/TeacherAvailability");
 const Wishlist = require("../model/wishlist");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
@@ -219,10 +219,15 @@ exports.teachergetByID = catchAsync(async (req, res) => {
         isLiked = true;
       }
     }
+    const lesson = await Lesson.findOne({
+        teacher: teacher.userId._id,
+      }).sort({ price : 1});
+      // console.log("lesson",lesson);
 
     const updatedTeacher = {
       ...teacher.toObject(),
       isLiked,
+      priceStart : lesson?.price || null,
     };
 
     return successResponse(

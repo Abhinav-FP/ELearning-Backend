@@ -305,9 +305,10 @@ exports.updateProfile = catchAsync(async (req, res) => {
       interest,
       experience,
       description,
-      average_price,
-      average_time,
+      // average_price,
+      // average_time,
       qualifications,
+      tags,
       // documentlink,
     } = req.body;
 
@@ -375,8 +376,9 @@ exports.updateProfile = catchAsync(async (req, res) => {
     if (interest !== undefined) teacherUpdates.interest = interest;
     if (experience !== undefined) teacherUpdates.experience = experience;
     if (description !== undefined) teacherUpdates.description = description;
-    if (average_price !== undefined) teacherUpdates.average_price = average_price;
-    if (average_time !== undefined) teacherUpdates.average_time = average_time;
+    // if (average_price !== undefined) teacherUpdates.average_price = average_price;
+    // if (average_time !== undefined) teacherUpdates.average_time = average_time;
+    if (tags !== undefined) teacherUpdates.tags = JSON.parse(tags);
     if (qualifications !== undefined) teacherUpdates.qualifications = qualifications;
     if (documentlink !== undefined && documentlink !== null && documentlink !== "") {
       teacherUpdates.documentlink = documentlink;
