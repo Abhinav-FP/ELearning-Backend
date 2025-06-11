@@ -10,11 +10,28 @@ const Review = require("../model/review");
 
 exports.TeacherList = catchAsync(async (req, res) => {
   try {
-    const [approved, rejected, pending] = await Promise.all([
+    const { search } = req.query;
+
+    // Step 1: Fetch all teacher groups with userId populated
+    const [approvedRaw, rejectedRaw, pendingRaw] = await Promise.all([
       Teacher.find({ admin_approved: true }).populate("userId"),
       Teacher.find({ admin_approved: false }).populate("userId"),
       Teacher.find({ admin_approved: null }).populate("userId"),
     ]);
+
+    // Step 2: Filter function after population
+    const filterBySearch = (list) => {
+      if (!search || search.trim() === "") return list;
+      const searchLower = search.toLowerCase();
+      return list.filter((teacher) =>
+        teacher.userId?.name?.toLowerCase().includes(searchLower)
+      );
+    };
+
+    // Step 3: Apply search filters
+    const approved = filterBySearch(approvedRaw);
+    const rejected = filterBySearch(rejectedRaw);
+    const pending = filterBySearch(pendingRaw);
 
     return successResponse(res, "Teachers grouped successfully", 200, {
       approvedTeachers: approved,
