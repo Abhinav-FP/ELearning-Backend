@@ -70,8 +70,9 @@ exports.StudentList = catchAsync(async (req, res) => {
 
   try {
     const query = { role: "student" };
-    if (search && search.trim() !== "") {
-      query.name = { $regex: search.trim(), $options: "i" };
+   if (search && search.trim() !== "") {
+      const regex = { $regex: search.trim(), $options: "i" };
+      query.$or = [{ name: regex }, { email: regex }];
     }
     if (block === "true") {
       query.block = true;
