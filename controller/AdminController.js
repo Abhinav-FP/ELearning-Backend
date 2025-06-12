@@ -198,7 +198,7 @@ exports.PayoutAcceptorReject = catchAsync(async (req, res) => {
 
 exports.AdminBookingsGet = catchAsync(async (req, res) => {
   try {
-    const data = await Bookings.find({}).sort({ startDateTime: -1 })
+    const data = await Bookings.find({}).sort({ createdAt: -1 })
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
@@ -211,6 +211,82 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
     successResponse(res, "Bookings retrieved successfully!", 200, data);
   } catch (error) {
     console.log(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.AdminEarning = catchAsync(async(req, res)=>{
+  try{
+    const { date, search } = req.query;
+    const filter = {};
+    if (date) {
+      const now = new Date();
+      if (date === "last7") {
+        const from = new Date();
+        from.setDate(now.getDate() - 7);
+        filter.startDateTime = { $gte: from, $lte: now };
+
+      } else if (date === "last30") {
+        const from = new Date();
+        from.setDate(now.getDate() - 30);
+        filter.startDateTime = { $gte: from, $lte: now };
+
+      } else if (!isNaN(date)) {
+        // If it's a year like "2024"
+        const year = parseInt(date, 10);
+        const startOfYear = new Date(`${year}-01-01T00:00:00.000Z`);
+        const endOfYear = new Date(`${year}-12-31T23:59:59.999Z`);
+        filter.startDateTime = { $gte: startOfYear, $lte: endOfYear };
+      }
+    }
+    const count = await Bookings.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$totalAmount" },
+          teacherEarning: { $sum: "$teacherEarning" },
+          adminCommission: { $sum: "$adminCommission" },
+          bonus: { $sum: "$bonus" }
+        }
+      }
+    ]);
+    let bookings = await Bookings.find(filter).sort({ startDateTime: -1 })
+      .populate('StripepaymentId')
+      .populate('paypalpaymentId')
+      .populate('UserId')
+      .populate('teacherId')
+      .populate('LessonId');
+
+    if (search && search.trim() !== "") {
+      const regex = new RegExp(search.trim(), "i"); // case-insensitive match
+
+      bookings = bookings.filter((item) => {
+        const lessonTitle = item.LessonId?.title || "";
+        const stripeId = item.StripepaymentId?.payment_id || "";
+        const paypalId = item.paypalpaymentId?.orderID || "";
+        const studentName = item?.UserId?.name || "";
+        const teacherName = item?.teacherId?.name || "";
+
+        return (
+          regex.test(lessonTitle) ||
+          regex.test(stripeId) ||
+          regex.test(paypalId) ||
+          regex.test(studentName) ||
+          regex.test(teacherName)
+        );
+      });
+    }
+
+    if (!bookings) {
+      return errorResponse(res, "Bookings not Found", 401);
+    }
+    successResponse(res, "Bookings retrieved successfully!", 200, {
+      count:count[0],
+      bookings
+    });
+  }catch(error){
+    console.log("error",error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
