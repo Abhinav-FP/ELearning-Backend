@@ -65,12 +65,22 @@ const bookingSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Admin Commission is required"],
     },
+    // This is the bonus/tip the student can give while submitting review
+    bonus: {
+      type: Number,
+      default: 0,
+    },
     payoutCreationDate: {
       type: Date,
       default: null,
     },
     payoutDoneAt: {
       type: Date,
+      default: null,
+    },
+    // Zoom meeting link
+    meetingLink: {
+      type: String,
       default: null,
     },
   },

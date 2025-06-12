@@ -219,15 +219,15 @@ exports.teachergetByID = catchAsync(async (req, res) => {
         isLiked = true;
       }
     }
-    const lesson = await Lesson.findOne({
-        teacher: teacher.userId._id,
-      }).sort({ price : 1});
-      // console.log("lesson",lesson);
+    // const lesson = await Lesson.findOne({
+    //     teacher: teacher.userId._id,
+    //   }).sort({ price : 1});
+    //   // console.log("lesson",lesson);
 
     const updatedTeacher = {
       ...teacher.toObject(),
       isLiked,
-      priceStart : lesson?.price || null,
+      // priceStart : lesson?.price || null,
     };
 
     return successResponse(
