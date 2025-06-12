@@ -13,7 +13,7 @@ exports.TeacherList = catchAsync(async (req, res) => {
     const { search } = req.query;
 
     // Step 1: Fetch all teacher groups with userId populated
-    const [approvedRaw, rejectedRaw, pendingRaw] = await Promise.all([
+    const [approvedRaw, rejectedRaw, pendingRaw, blockRaw] = await Promise.all([
       Teacher.find({ admin_approved: true }).populate("userId"),
       Teacher.find({ admin_approved: false }).populate("userId"),
       Teacher.find({ admin_approved: null }).populate("userId"),
@@ -66,13 +66,26 @@ exports.ApproveRejectTeacher = catchAsync(async (req, res) => {
 });
 
 exports.StudentList = catchAsync(async (req, res) => {
+  const { search = "", block = "" } = req.query;
+
   try {
-    const Student = await User.find({ role: "student" });
-    return successResponse(res, "Student retrieved successfully", 200, Student);
+    const query = { role: "student" };
+    if (search && search.trim() !== "") {
+      query.name = { $regex: search.trim(), $options: "i" };
+    }
+    if (block === "true") {
+      query.block = true;
+    } else if (block === "false") {
+      query.block = false;
+    }
+    const students = await User.find(query);
+
+    return successResponse(res, "Students retrieved successfully", 200, students);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
-})
+});
+
 
 exports.AdminBlockUser = catchAsync(async (req, res) => {
   try {
@@ -250,3 +263,21 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
+
+
+exports.Admindashbaord = catchAsync(async (req, res) => {
+  try {
+    const countstudent = await User.countDocuments({ role: "student", block: false, email_verify: true });
+    const Countteacher = await Teacher.countDocuments({ admin_approved: true })
+    const pendingreview = await Review.countDocuments({ review_status: "Pending" })
+    const totalbooking = await Bookings.countDocuments({ lessonCompletedStudent: true, lessonCompletedTeacher: true });
+    const TeacherData = await Teacher.find({ admin_approved: true }).limit(5).populate("userId");
+    const ReviewData = await Review.find({}).limit(5).populate("userId").populate("lessonId");
+    return successResponse(res, "Admin Dashboard Data Get", 200, {
+      ReviewData, countstudent, Countteacher, pendingreview, TeacherData, totalbooking
+    });
+  } catch (error) {
+    console.log("error", error)
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+})
