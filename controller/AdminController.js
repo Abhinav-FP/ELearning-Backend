@@ -115,7 +115,12 @@ exports.AdminBlockUser = catchAsync(async (req, res) => {
 
 exports.PayoutListing = catchAsync(async (req, res) => {
   try {
-    const result = await Payout.find({})
+    const { search, status } = req.query;
+    const filter = {};
+    if(status && status!=""){
+      filter.Status=status;
+    }
+    let result = await Payout.find(filter)
       .sort({ createdAt: -1 })
       .populate("BankId")
       .populate("userId");
@@ -125,6 +130,19 @@ exports.PayoutListing = catchAsync(async (req, res) => {
         message: "No payouts found.",
       });
     }
+    
+    if (search && search.trim() !== "") {
+      const regex = new RegExp(search.trim(), "i");
+
+      result = result.filter((item) => {
+        const teacherName = item?.userId?.name || "";
+
+        return (
+          regex.test(teacherName)
+        );
+      });
+    }
+
     return res.status(200).json({
       status: true,
       message: "Payouts retrieved successfully.",
@@ -219,7 +237,8 @@ exports.PayoutAcceptorReject = catchAsync(async (req, res) => {
 
 exports.AdminBookingsGet = catchAsync(async (req, res) => {
   try {
-    const data = await Bookings.find({}).sort({ createdAt: -1 })
+    const { search } = req.query;
+    let data = await Bookings.find({}).sort({ createdAt: -1 })
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
@@ -228,6 +247,20 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
 
     if (!data) {
       return errorResponse(res, "Bookings not Found", 401);
+    }
+
+    if (search && search.trim() !== "") {
+      const regex = new RegExp(search.trim(), "i"); // case-insensitive match
+
+      data = data.filter((item) => {
+        const lessonTitle = item.LessonId?.title || "";
+        const teacherName = item?.teacherId?.name || "";
+
+        return (
+          regex.test(lessonTitle) ||
+          regex.test(teacherName)
+        );
+      });
     }
     successResponse(res, "Bookings retrieved successfully!", 200, data);
   } catch (error) {
