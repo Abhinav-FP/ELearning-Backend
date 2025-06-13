@@ -84,20 +84,18 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const pi = event.data.object;
       console.log(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
       const metadata = pi.metadata;
-
       console.log(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
       console.log("📦 Metadata:", metadata);
-      let startUTC,endUTC;
+      let startUTC, endUTC;
       // Convert times to UTC
-      console.log("metadata",metadata);
-      if(metadata?.isSpecial)
-      {
+      console.log("metadata", metadata);
+      if (metadata?.isSpecial) {
         startUTC = metadata.startDateTime;
         endUTC = metadata.endDateTime;
       }
-      else{
+      else {
         startUTC = DateTime.fromISO(metadata.startDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
-        endUTC = DateTime.fromISO(metadata.endDateTime, { zone: metadata.timezone }).toUTC().toJSDate();        
+        endUTC = DateTime.fromISO(metadata.endDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
       }
       // Save payment record
       const payment = new StripePayment({
@@ -132,7 +130,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       console.log("record", record);
 
       // Updating Specialslot
-      if(metadata?.isSpecial){
+      if (metadata?.isSpecial) {
         const studentId = new mongoose.Types.ObjectId(metadata.userId);
         const lessonId = new mongoose.Types.ObjectId(metadata.LessonId);
         const updatedSlot = await SpecialSlot.findOneAndUpdate(
@@ -164,7 +162,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       await sendEmail({
         email: teacher.email,
         subject: TeacherSubject,
-        emailHtml:TeacheremailHtml
+        emailHtml: TeacheremailHtml
       });
 
       console.log("Success Payment")

@@ -553,46 +553,57 @@ exports.BookingsGet = catchAsync(async (req, res) => {
 
     const filter = { teacherId: userId };
     const sort = {};
-    const { type } = req.query;
+    const { type, search } = req.query;
     const now = Date.now();
-    if(type == "upcoming"){
+    if (type === "upcoming") {
       filter.startDateTime = { $gt: now };
       sort.startDateTime = 1;
-    }
-    else if(type == "past"){
-      filter.startDateTime = { $lte: now }
+    } else if (type === "past") {
+      filter.startDateTime = { $lte: now };
       sort.startDateTime = -1;
-    } 
+    }
 
     // Get detailed booking data
-    const data = await Bookings.find(filter).sort(sort)
+    let data = await Bookings.find(filter).sort(sort)
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
       .populate('LessonId');
 
-    if (!data) {
-      return errorResponse(res, "Bookings not Found", 401);
+    // Apply search filter on populated fields
+    if (search?.trim()) {
+      const regex = new RegExp(search.trim(), "i");
+      data = data.filter((item) => {
+        const lessonTitle = item?.LessonId?.title || "";
+        const studentName = item?.UserId?.name || "";
+        return regex.test(lessonTitle) || regex.test(studentName);
+      });
     }
-    successResponse(res, "Bookings retrieved successfully!", 200, data);
+
+    if (!data || data.length === 0) {
+      return errorResponse(res, "No bookings found", 404);
+    }
+
+    return successResponse(res, "Bookings retrieved successfully!", 200, data);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
+
 
 exports.DashboardApi = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
     const objectId = new mongoose.Types.ObjectId(userId);
-    const TeacherData = await Lesson.findOne({ 
+    const TeacherData = await Lesson.findOne({
       teacher: userId,
-      is_deleted : false,
-    }).sort({price: 1});
+      is_deleted: false,
+    }).sort({ price: 1 });
 
     // console.log("objectId",objectId);
 
-    const Reviews = await Review.find({ }).populate("lessonId");
+    const Reviews = await Review.find({}).populate("lessonId");
     const ReviewesCount = Reviews.filter(
       review => review?.lessonId?.teacher?.toString() === objectId.toString()
     ).length;
@@ -699,14 +710,14 @@ exports.DashboardApi = catchAsync(async (req, res) => {
       }
     ]);
     const paypalpay = paypalamount.length > 0 ? paypalamount[0].totalPaypalAmount : 0;
-    
+
     const stripeamount = await Bookings.aggregate([
       {
         $match: {
           teacherId: objectId,
           StripepaymentId: { $exists: true, $ne: null },
-          lessonCompletedStudent : true,
-          lessonCompletedTeacher : true,
+          lessonCompletedStudent: true,
+          lessonCompletedTeacher: true,
         }
       },
       {
@@ -774,7 +785,7 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
         400
       );
     }
-    
+
     const user = await User.findById(student);
     if (!user) {
       return errorResponse(res, "Invalid student id", 400);
@@ -822,7 +833,7 @@ exports.StudentLessonListing = catchAsync(async (req, res) => {
   try {
     const lessons = await Lesson.find({ teacher: req.user.id, is_deleted: { $ne: true } });
     // console.log("lessons",lessons);
-    const students = await User.find({ role: "student", block:false, email_verify:true });
+    const students = await User.find({ role: "student", block: false, email_verify: true });
     // console.log("students",students);
     return successResponse(res, "Special Slot created successfully", 201, {
       lessons,
@@ -839,7 +850,7 @@ exports.SpecialSlotList = catchAsync(async (req, res) => {
     const userId = req.user.id;
     const objectId = new mongoose.Types.ObjectId(userId);
     const { status } = req.query;
-    const filter = {teacher: objectId};
+    const filter = { teacher: objectId };
     if (status && status != "") {
       filter.paymentStatus = status;
     }
