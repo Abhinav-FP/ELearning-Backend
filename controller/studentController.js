@@ -39,22 +39,32 @@ exports.paymentget = catchAsync(async (req, res) => {
 
 exports.teacherget = catchAsync(async (req, res) => {
   try {
-    const teachers = await Teacher.find({}).populate({
+    const { search } = req.query;
+    let teachers = await Teacher.find({}) .populate({
       path: "userId",
       select: "-password",
     });
-    const wishlistResult = await Wishlist.find({
-      student: req.user.id,
-    }).populate("teacher");
+    teachers = teachers.filter(
+      (item) =>
+        (item?.userId?.email_verify === true && item?.userId?.block === false)
+    );
+    if (search && search.trim() !== "") {
+      const regex = new RegExp(search.trim(), "i");
+
+      teachers = teachers.filter((item) => {
+        const teacherName = item?.userId?.name || "";
+
+        return (
+          regex.test(teacherName)
+        );
+      });
+    }
+    const wishlistResult = await Wishlist.find({student: req.user.id}).populate("teacher");
     if (!teachers) {
       return validationErrorResponse(res, "No teacher found", 400);
     }
     const size = wishlistResult.length === 0 ? 0 : wishlistResult.length;
-
-    // Extract wishlist emails
     const wishlistEmails = wishlistResult.map((w) => w.teacher?.email);
-
-    // Add isLiked to each teacher
     const updatedTeachers = teachers.map((t) => {
       const isLiked = wishlistEmails.includes(t.userId?.email);
       return {
