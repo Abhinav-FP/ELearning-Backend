@@ -10,34 +10,41 @@ const Review = require("../model/review");
 
 exports.TeacherList = catchAsync(async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, block } = req.query;
+    const userQuery = {};
+    if (block) {
+      userQuery.block = block;
+    }
+    if (search && search.trim() !== "") {
+      const searchRegex = new RegExp(search, "i");
+      userQuery.$or = [{ name: searchRegex }, { email: searchRegex }];
+    }
+    const teacherQuery = {};
+    if (Object.keys(userQuery).length > 0) {
+      const matchedUsers = await User.find(userQuery).select("_id");
+      const userIds = matchedUsers.map((user) => user._id);
+      teacherQuery.userId = { $in: userIds };
+    }
 
-    // Step 1: Fetch all teacher groups with userId populated
-    const [approvedRaw, rejectedRaw, pendingRaw, blockRaw] = await Promise.all([
-      Teacher.find({ admin_approved: true }).populate("userId"),
-      Teacher.find({ admin_approved: false }).populate("userId"),
-      Teacher.find({ admin_approved: null }).populate("userId"),
-    ]);
+    const [approvedTeachers, rejectedTeachers, pendingApproval] =
+      await Promise.all([
+        Teacher.find({ ...teacherQuery, admin_approved: true }).populate(
+          "userId"
+        ),
+        Teacher.find({ ...teacherQuery, admin_approved: false }).populate(
+          "userId"
+        ),
+        Teacher.find({ ...teacherQuery, admin_approved: null }).populate(
+          "userId"
+        ),
+      ]);
 
-    // Step 2: Filter function after population
-    const filterBySearch = (list) => {
-      if (!search || search.trim() === "") return list;
-      const searchLower = search.toLowerCase();
-      return list.filter((teacher) =>
-        teacher.userId?.name?.toLowerCase().includes(searchLower)
-      );
-    };
-
-    // Step 3: Apply search filters
-    const approved = filterBySearch(approvedRaw);
-    const rejected = filterBySearch(rejectedRaw);
-    const pending = filterBySearch(pendingRaw);
-
-    return successResponse(res, "Teachers grouped successfully", 200, {
-      approvedTeachers: approved,
-      rejectedTeachers: rejected,
-      pendingApproval: pending,
+    return successResponse(res, "Teachers retrieved successfully", 200, {
+      approvedTeachers,
+      rejectedTeachers,
+      pendingApproval,
     });
+
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
@@ -70,7 +77,7 @@ exports.StudentList = catchAsync(async (req, res) => {
 
   try {
     const query = { role: "student" };
-   if (search && search.trim() !== "") {
+    if (search && search.trim() !== "") {
       const regex = { $regex: search.trim(), $options: "i" };
       query.$or = [{ name: regex }, { email: regex }];
     }
@@ -229,8 +236,8 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
   }
 });
 
-exports.AdminEarning = catchAsync(async(req, res)=>{
-  try{
+exports.AdminEarning = catchAsync(async (req, res) => {
+  try {
     const { date, search } = req.query;
     const filter = {};
     if (date) {
@@ -296,11 +303,11 @@ exports.AdminEarning = catchAsync(async(req, res)=>{
       return errorResponse(res, "Bookings not Found", 401);
     }
     successResponse(res, "Bookings retrieved successfully!", 200, {
-      count:count[0],
+      count: count[0],
       bookings
     });
-  }catch(error){
-    console.log("error",error);
+  } catch (error) {
+    console.log("error", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
