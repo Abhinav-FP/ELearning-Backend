@@ -1,4 +1,4 @@
-const { homeAdd, homefind, homeupdate, FAQAdd, faqfind, faqupdate, policycondition, GetTeacherVideo, GetTeachers, faqDelete, teacherFAQAdd, teacherfaqfind, teacherfaqupdate, teacherfaqDelete } = require("../controller/HomeController");
+const { homeAdd, homefind, homeupdate, FAQAdd, faqfind, faqupdate, policycondition, GetTeacherVideo, GetTeachers, faqDelete, teacherFAQAdd, teacherfaqfind, teacherfaqupdate, teacherfaqDelete, getCommission } = require("../controller/HomeController");
 const { upload } = require("../utils/FileUploader");
 const router = require("express").Router();
 
@@ -26,5 +26,8 @@ router.post("/teacher/faqAdd", teacherFAQAdd);
 router.get("/teacher/faqFind", teacherfaqfind);
 router.post("/teacher/faqUpdate", teacherfaqupdate);
 router.post("/teacher/delete", teacherfaqDelete);
+
+// Admi commission get route
+router.get("/home/getCommission", getCommission);
 
 module.exports = router;

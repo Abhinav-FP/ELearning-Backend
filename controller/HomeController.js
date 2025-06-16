@@ -1,6 +1,6 @@
 const Home = require("../model/Home");
 const { errorResponse, successResponse, validationErrorResponse } = require("../utils/ErrorHandling");
-const Loggers = require("../utils/Logger");
+const logger = require("../utils/Logger");
 const catchAsync = require("../utils/catchAsync");
 const Faq = require("../model/Faq");
 const Teacher = require("../model/teacher");
@@ -25,13 +25,13 @@ exports.homeAdd = catchAsync(async (req, res, next) => {
             course_img
         })
         const data = await record.save();
-        Loggers.info("Home created successfully!");
+        logger.info("Home created successfully!");
         successResponse(res, "Home created successfully!", 201, {
             data: data,
         });
 
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 }
@@ -42,7 +42,7 @@ exports.homefind = catchAsync(async (req, res, next) => {
         const record = await Home.findOne({});
         return successResponse(res, "Home Find successfully!", 200, record);
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
@@ -93,7 +93,7 @@ exports.homeupdate = catchAsync(async (req, res, next) => {
 
         return successResponse(res, "Home updated successfully!", 200, { updatedRecord });
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
@@ -149,7 +149,7 @@ exports.homeupdate = catchAsync(async (req, res, next) => {
 
 //         return successResponse(res, "Teachers fetched with lowest-price lessons", 200, teacherData);
 //     } catch (error) {
-//         Loggers.error(error);
+//         logger.error(error);
 //         return errorResponse(res, error.message || "Internal Server Error", 500);
 //     }
 // });
@@ -234,7 +234,7 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
       finalTeachers
     );
   } catch (error) {
-    Loggers.error(error);
+    logger.error(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
@@ -295,7 +295,7 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
 
 //         return successResponse(res, "Teachers fetched with reviews and lessons", 200, teacherData);
 //     } catch (error) {
-//         Loggers.error(error);
+//         logger.error(error);
 //         return errorResponse(res, error.message || "Internal Server Error", 500);
 //     }
 // });
@@ -385,7 +385,7 @@ exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
       resultTeachers
     );
   } catch (error) {
-    Loggers.error(error);
+    logger.error(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
@@ -401,14 +401,14 @@ exports.policycondition = catchAsync(async (req, res, next) => {
         );
 
         if (!updatedRecord) {
-            Loggers.warn("No data found with this ID.");
+            logger.warn("No data found with this ID.");
             return validationErrorResponse(res, "Not Updated", 400);
         }
-        Loggers.info("Home Update successfully!");
+        logger.info("Home Update successfully!");
         return successResponse(res, "Term & privacy Update successfully!", 200, { updatedRecord });
 
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
@@ -427,7 +427,7 @@ exports.FAQAdd = catchAsync(async (req, res, next) => {
         });
 
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 }
@@ -438,7 +438,7 @@ exports.faqfind = catchAsync(async (req, res, next) => {
         const record = await Faq.find({});
         return successResponse(res, "Faq Find successfully!", 200, record);
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
@@ -453,13 +453,13 @@ exports.faqupdate = catchAsync(async (req, res, next) => {
             { new: true }
         );
         if (!updatedRecord) {
-            Loggers.warn("No data found with this ID.");
+            logger.warn("No data found with this ID.");
             return validationErrorResponse(res, "Faq Data Not Updated", 400);
         }
-        Loggers.info("Faq Update successfully!");
+        logger.info("Faq Update successfully!");
         return successResponse(res, "Faq Update successfully!", 200, { updatedRecord });
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
@@ -472,18 +472,17 @@ exports.faqDelete = catchAsync(async (req, res, next) => {
             { new: true }
         );
         if (!updatedRecord) {
-            Loggers.warn("No data found with this ID.");
+            logger.warn("No data found with this ID.");
             return validationErrorResponse(res, "Faq Data Not Delete", 400);
         }
         return successResponse(res, "Faq Delete successfully!", 200, updatedRecord);
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
 
 // Teacher Faq Section
-
 exports.teacherFAQAdd = catchAsync(async (req, res, next) => {
     try {
         const { type, question, answer } = req.body;
@@ -491,13 +490,13 @@ exports.teacherFAQAdd = catchAsync(async (req, res, next) => {
             type, question, answer
         })
         const data = await record.save();
-        Loggers.info("Faq created successfully!");
+        logger.info("Faq created successfully!");
         successResponse(res, "Faq created successfully!", 201, {
             data: data,
         });
 
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 }
@@ -508,7 +507,7 @@ exports.teacherfaqfind = catchAsync(async (req, res, next) => {
         const record = await teacherfaq.find({});
         return successResponse(res, "Faq Find successfully!", 200, record);
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
@@ -523,13 +522,13 @@ exports.teacherfaqupdate = catchAsync(async (req, res, next) => {
             { new: true }
         );
         if (!updatedRecord) {
-            Loggers.warn("No data found with this ID.");
+            logger.warn("No data found with this ID.");
             return validationErrorResponse(res, "Faq Data Not Updated", 400);
         }
-        Loggers.info("Faq Update successfully!");
+        logger.info("Faq Update successfully!");
         return successResponse(res, "Faq Update successfully!", 200, { updatedRecord });
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
@@ -542,12 +541,25 @@ exports.teacherfaqDelete = catchAsync(async (req, res, next) => {
             { new: true }
         );
         if (!updatedRecord) {
-            Loggers.warn("No data found with this ID.");
+            logger.warn("No data found with this ID.");
             return validationErrorResponse(res, "Faq Data Not Delete", 400);
         }
         return successResponse(res, "Faq Delete successfully!", 200, updatedRecord);
     } catch (error) {
-        Loggers.error(error);
+        logger.error(error);
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
+
+exports.getCommission = catchAsync(async (req, res, next) => {
+    try {
+        const record = await Home.findOne({}).select("admin_comission");
+        if(!record){
+          return errorResponse(res, "Commission not found", 404);
+        }
+        successResponse(res, "Commission retrieved successfully!", 201, record?.admin_comission);
+    } catch (error) {
+        logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });

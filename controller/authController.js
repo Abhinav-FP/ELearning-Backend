@@ -161,6 +161,9 @@ exports.login = catchAsync(async (req, res) => {
     if (!user) {
       return errorResponse(res, "Invalid email", 401);
     }
+    if(user?.block){
+      return errorResponse(res, "Your account is blocked", 401);
+    }
     if (password != user.password) {
       return errorResponse(res, "Invalid password", 401);
     }
