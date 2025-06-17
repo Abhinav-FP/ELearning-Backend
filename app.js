@@ -25,8 +25,11 @@ const paypalCommon = require("./utils/Paypalcommon")
 const currency = require("./EmailTemplate/currency");
 const bodyParser = require("body-parser");
 const { default: axios } = require("axios");
+const createZoomMeeting = require("./zoommeeting");
 const webhookID = process.env.PAYPAL_WEBHOOK_ID;
 const verifyURL = process.env.PAYPAL_VERIFY_URL;
+const logger = require("./utils/Logger");
+
 
 const corsOptions = {
   origin: "*", // Allowed origins
@@ -276,17 +279,134 @@ app.use("/api", require("./route/teacherRoutes"));
 app.use("/api/payment", require("./route/paymentRoutes"));
 
 const ZOOM_WEBHOOK_SECRET = process.env.ZOOM_WEBHOOK_SECRET;
-app.post("/zoom-webhook", (req, res) => {
-  if (req.body.event === "endpoint.url_validation") {
-      const plainToken = req.body.payload.plainToken;
-      const encryptedToken = crypto.createHmac("sha256", ZOOM_WEBHOOK_SECRET)
-                                    .update(plainToken)
-                                    .digest("hex");
-      res.status(200).json({ plainToken, encryptedToken });
-  } else {
-      res.sendStatus(200);
+const ZOOM_CLIENT_ID = process.env.ZOOM_clientId;
+const ZOOM_CLIENT_SECRET = process.env.ZOOM_clientSecret;
+const ZOOM_ACCOUNT_ID = process.env.ZOOM_accountId;
+
+// Helper: Get Zoom OAuth token
+async function getZoomAccessToken() {
+  const base64 = Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString("base64");
+  const res = await axios.post(
+    `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${ZOOM_ACCOUNT_ID}`,
+    {},
+    {
+      headers: { Authorization: `Basic ${base64}` },
+    }
+  );
+  return res.data.access_token;
+}
+
+// Map to track empty meetings
+const emptyMeetingTimeouts = new Map();
+
+app.post("/zoom-webhook", async (req, res) => {
+  console.log("Zoom webhook received", req.body);
+  logger.info("Zoom webhook received", req.body);
+  const event = req.body.event;
+
+  // Step 1: Validate Zoom endpoint
+  if (event === "endpoint.url_validation") {
+    const plainToken = req.body.payload.plainToken;
+    const encryptedToken = crypto.createHmac("sha256", ZOOM_WEBHOOK_SECRET)
+      .update(plainToken)
+      .digest("hex");
+    return res.status(200).json({ plainToken, encryptedToken });
   }
+
+  // Step 2: Handle "participant_left" event
+  if (event === "meeting.participant_left") {
+    const meetingId = req.body.payload.object.id;
+
+    // Check how many participants are still in the meeting
+    const accessToken = await getZoomAccessToken();
+
+    try {
+      const resp = await axios.get(
+        `https://api.zoom.us/v2/metrics/meetings/${meetingId}/participants?type=live`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      const participants = resp.data?.participants || [];
+
+      // If no one is left, set a 5 min timeout to verify and end meeting
+      if (participants.length === 0) {
+        if (!emptyMeetingTimeouts.has(meetingId)) {
+          logger.info(`No one left in meeting ${meetingId}. Starting 5-min timer.`);
+
+          const timeout = setTimeout(async () => {
+            try {
+              // Get Zoom entry
+              const zoom = await Zoom.findOne({ meetingId });
+              if (!zoom) return;
+
+              // Populate associated booking
+              const booking = await Bookings.findOne({ zoom: zoom._id });
+              if (!booking) return;
+
+              const now = new Date();
+              const endTime = new Date(booking.endDateTime);
+
+              // Only end if endDateTime has passed
+              if (now >= endTime) {
+                logger.info(`Ending Zoom meeting ${meetingId} after empty timeout.`);
+
+                await axios.delete(
+                  `https://api.zoom.us/v2/meetings/${meetingId}`,
+                  { headers: { Authorization: `Bearer ${accessToken}` } }
+                );
+              }
+            } catch (err) {
+             logger.error("Error ending Zoom meeting:", err?.response?.data || err.message);
+            } finally {
+              emptyMeetingTimeouts.delete(meetingId);
+            }
+          }, 5 * 60 * 1000); // 5 minutes
+
+          emptyMeetingTimeouts.set(meetingId, timeout);
+        }
+      } else {
+        // If someone rejoined, clear the timeout
+        if (emptyMeetingTimeouts.has(meetingId)) {
+          clearTimeout(emptyMeetingTimeouts.get(meetingId));
+          emptyMeetingTimeouts.delete(meetingId);
+          logger.info(`Participant rejoined meeting ${meetingId}. Timer cleared.`);
+        }
+      }
+    } catch (error) {
+      logger.error("Zoom participant check failed:", error?.response?.data || error.message);
+    }
+  }
+
+  return res.sendStatus(200);
 });
+
+// Testing route for zoom meeting creation
+// app.get("/zoom", async(req, res) => {
+//   const meetingDetails = {
+//   topic: "Demo Application",
+//   type: 2,
+//   start_time: "2025-06-17T15:00:00+05:30",
+//   duration: 5,
+//   password: "12334",
+//   timezone: "Asia/Kolkata",
+//   settings: {
+//     auto_recording: "cloud",
+//     host_video: true,
+//     participant_video: true,
+//     mute_upon_entry: true,
+//     join_before_host: true,
+//     waiting_room: false,
+//     registrants_capacity: 2,
+//   },
+// };
+// const result = await createZoomMeeting(meetingDetails);
+// return res.json({
+//     msg: 'Hello World',
+//     status: 200,
+//     data:result,
+//   });
+
+// });
 
 app.get("/", (req, res) => {
   res.json({

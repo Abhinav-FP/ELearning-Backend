@@ -79,8 +79,9 @@ const bookingSchema = new mongoose.Schema(
       default: null,
     },
     // Zoom meeting link
-    meetingLink: {
-      type: String,
+    zoom: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Zoom",
       default: null,
     },
   },

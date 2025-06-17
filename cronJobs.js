@@ -1,6 +1,7 @@
 // cronJobs.js
 const cron = require('node-cron');
 const Bookings = require("./model/booking");
+const Zoom = require("./model/Zoom");
 const TeacherAvailability = require("./model/TeacherAvailability");
 const { updateCurrencyRatesJob } = require("./controller/currencycontroller");
 const sendEmail = require("./utils/EmailMailler");
@@ -8,6 +9,8 @@ const currency = require("./EmailTemplate/currency");
 const Reminder = require("./EmailTemplate/Reminder");
 const TeacherReminder = require("./EmailTemplate/TeacherReminder");
 const { DateTime } = require("luxon"); // Already in your project
+const createZoomMeeting = require('./zoommeeting');
+const logger = require("./utils/Logger");
 
 module.exports = () => {
   cron.schedule('*/1 * * * *', async () => {
@@ -22,6 +25,7 @@ module.exports = () => {
         .populate('UserId')
         .populate('LessonId')
         .sort({ startDateTime: 1 });
+        // console.log("data",data);
 
         const registrationSubject = "Reminder for Booking ⏰";
 
@@ -32,14 +36,45 @@ module.exports = () => {
         // console.log("startUTC",startUTC);
         // console.log("nowTime",nowTime);
         // console.log("diffInMinutes",diffInMinutes);
-
         let time = null;
         if (diffInMinutes === 1440) time = "24 hours";
         else if (diffInMinutes === 120) time = "2 hours";
         else if (diffInMinutes === 30) time = "30 minutes";
         else continue; // skip if not one of the 3 target intervals
+
+        // Zoom Code
+        if(diffInMinutes === 30)
+        {
+          logger.info(`Creating Zoom meeting for booking ID: ${booking._id}`);
+          const meetingDetails = {
+            topic: booking?.LessonId?.title || "Title not available",
+            type: 2,
+            start_time: booking?.startDateTime,
+            duration: booking?.LessonId?.duration,
+            password: "12334",
+            timezone: "UTC",
+            settings: {
+              auto_recording: "cloud",
+              host_video: true,
+              participant_video: true,
+              mute_upon_entry: true,
+              join_before_host: true,
+              waiting_room: false,
+              registrants_capacity: 2,
+            },
+          };
+          const result = await createZoomMeeting(meetingDetails);
+          // console.log("result",result);
+          const zoomRecord = new Zoom({
+            meetingId: result?.meeting_id || "",
+            meetingLink: result?.meeting_url || "",
+          });
+          const zoomResult = await zoomRecord.save();
+          booking.zoom = zoomResult._id; // Save the Zoom meeting ID in the booking
+          await booking.save();
+        }
         
-        console.log("Sending email for booking",booking);
+        logger.info("Sending email for booking",booking._id);
         // continue;
 
         const user = booking?.UserId;
@@ -53,7 +88,7 @@ module.exports = () => {
         // Sending email to student
         const emailHtml = Reminder(
             userName,
-            "https://japaneseforme.com/",
+            "https://japaneseforme.com/student/lessons",
             time,
             teacherName,
             lessonName
@@ -68,7 +103,7 @@ module.exports = () => {
         // Sending email to teacher
         const TeacherEmailHtml = TeacherReminder(
             userName,
-            "https://japaneseforme.com/",
+            "https://japaneseforme.com/teacher-dashboard/booking",
             time,
             teacherName,
             lessonName
