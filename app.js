@@ -7,6 +7,7 @@ const app = express();
 const cors = require("cors");
 const StripePayment = require("./model/StripePayment");
 const Bookings = require("./model/booking");
+const Zoom = require("./model/Zoom");
 const crypto =require("crypto");
 const User = require("./model/user");
 const SpecialSlot = require("./model/SpecialSlot");
