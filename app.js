@@ -7,6 +7,7 @@ const app = express();
 const cors = require("cors");
 const StripePayment = require("./model/StripePayment");
 const Bookings = require("./model/booking");
+const crypto =require("crypto");
 const User = require("./model/user");
 const SpecialSlot = require("./model/SpecialSlot");
 const { DateTime } = require("luxon");
@@ -274,6 +275,19 @@ app.use("/api", require("./route/bookingRoutes"));
 app.use("/api", require("./route/teacherRoutes"));
 app.use("/api/payment", require("./route/paymentRoutes"));
 
+const ZOOM_WEBHOOK_SECRET = process.env.ZOOM_WEBHOOK_SECRET;
+app.post("/zoom-webhook", (req, res) => {
+  if (req.body.event === "endpoint.url_validation") {
+      const plainToken = req.body.payload.plainToken;
+      const encryptedToken = crypto.createHmac("sha256", ZOOM_WEBHOOK_SECRET)
+                                    .update(plainToken)
+                                    .digest("hex");
+      res.status(200).json({ plainToken, encryptedToken });
+  } else {
+      res.sendStatus(200);
+  }
+});
+
 app.get("/", (req, res) => {
   res.json({
     msg: 'Hello World',
@@ -281,7 +295,7 @@ app.get("/", (req, res) => {
   });
 });
 
-require('./cronJobs')();
+// require('./cronJobs')();
 
 const server = app.listen(PORT, () => console.log("Server is running at port : " + PORT));
 server.timeout = 360000; // 6 minutes

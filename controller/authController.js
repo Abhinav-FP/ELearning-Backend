@@ -43,7 +43,7 @@ exports.signup = catchAsync(async (req, res) => {
     //   }
     // }
     const token = await signEmail(userResult._id);
-    const link = `https://e-learning-seven-ashy.vercel.app/verify/${token}`;
+    const link = `https://japaneseforme.com//verify/${token}`;
 
     if (role !== "teacher") {
       // Send email logic for student
@@ -317,7 +317,7 @@ exports.ResendVerificationLink = catchAsync(async (req, res) => {
     }
     const userResult = await User.findById({ _id: userId });
      const token = await signEmail(userResult._id);
-    const link = `https://e-learning-seven-ashy.vercel.app/verify/${token}`;
+    const link = `https://japaneseforme.com/verify/${token}`;
 
     // Send email logic for student
     const registrationSubject =
