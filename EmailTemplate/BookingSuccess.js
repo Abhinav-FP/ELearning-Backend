@@ -38,7 +38,7 @@ module.exports = (startDateTime, userName, teacherName) => {
                     </div>
                 </div>
 
-                <p style="margin: 0 0 1.3rem;text-align: center;"><a href="https://e-learning-seven-ashy.vercel.app/student/lessons" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">View Your Booking</a></p> 
+                <p style="margin: 0 0 1.3rem;text-align: center;"><a href="https://japaneseforme.com/student/lessons" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">View Your Booking</a></p> 
                 <p style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: center;color: #333333;margin: 0 0 1.5rem;">We're excited for you! Get ready for a great learning experience.</p>  
               </td>
               </tr>
