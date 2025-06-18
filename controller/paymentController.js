@@ -157,7 +157,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     await Bookingsave.save();
 
     // Updating Special Slot
-    if(isSpecial){
+    if(isSpecialSlot){
       const studentId = new mongoose.Types.ObjectId(UserId);
       const lessonId = new mongoose.Types.ObjectId(LessonId);
       const updatedSlot = await SpecialSlot.findOneAndUpdate(
