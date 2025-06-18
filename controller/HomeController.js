@@ -40,7 +40,8 @@ exports.homeAdd = catchAsync(async (req, res, next) => {
 exports.homefind = catchAsync(async (req, res, next) => {
     try {
         const record = await Home.findOne({});
-        return successResponse(res, "Home Find successfully!", 200, record);
+        const Faqrecord = await Faq.find({});
+        return successResponse(res, "Home Find successfully!", 200, {Faqrecord ,  record});
     } catch (error) {
         logger.error(error);
         return errorResponse(res, error.message || "Internal Server Error", 500);
@@ -435,7 +436,6 @@ exports.FAQAdd = catchAsync(async (req, res, next) => {
 
 exports.faqfind = catchAsync(async (req, res, next) => {
     try {
-        const record = await Faq.find({});
         return successResponse(res, "Faq Find successfully!", 200, record);
     } catch (error) {
         logger.error(error);

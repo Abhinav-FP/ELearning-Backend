@@ -5,7 +5,7 @@ module.exports = (userName, link, time, teacherName, lessonName) => {
         <tr>
             <td style="padding: .5rem  1rem;text-align: center;"> 
                 <a href="https://www.japaneseforme.com/" style="text-decoration: none;">
-                  <img style="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" src="logo.png" alt="logo">
+                  <img style="logo.png " src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="">
                 </a>
              </td> 
         </tr>
@@ -23,11 +23,9 @@ module.exports = (userName, link, time, teacherName, lessonName) => {
                 <p style="margin: 0 0 .5rem;text-align: center;"><a href="${link}" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">Join Session</a></p>  
                 </td>
             </tr>
-
             <tr> 
               <td style="padding:0;">  
                 <div style="padding: 1.3rem  1rem;background: #EFD1D1;">
-                 
                     <p style="font-size: 12px; font-weight: 400; line-height: 18px;  text-align: center;color: #CC2828;margin: 0 auto; max-width: 260px;">© 2025 Japanese for Me. All Rights Reserved.</p>
                 </div>
             </td>
