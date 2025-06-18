@@ -23,7 +23,7 @@ router.get("/home/teacher/video", GetTeacherVideo)
 
 //Teacher FAQ SECtion  
 router.post("/teacher/faqAdd", teacherFAQAdd);
-router.get("/teacher/faqFind", teacherfaqfind);
+router.get("/home/teacher/faqFind", teacherfaqfind);
 router.post("/teacher/faqUpdate", teacherfaqupdate);
 router.post("/teacher/delete", teacherfaqDelete);
 
