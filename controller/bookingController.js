@@ -80,7 +80,7 @@ exports.GetBookings = catchAsync(async (req, res) => {
     const { role,id } = req.user;
 
     let data;
-      data = await Bookings.find({ UserId: id }).populate('teacherId').populate('UserId').populate('LessonId').sort({startDateTime: 1});
+      data = await Bookings.find({ UserId: id }).populate('teacherId').populate('UserId').populate('LessonId').populate('zoom').sort({startDateTime: 1});
 
     if (!data || data.length === 0) {
       return errorResponse(res, "No bookings found", 200);

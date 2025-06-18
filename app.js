@@ -30,6 +30,7 @@ const createZoomMeeting = require("./zoommeeting");
 const webhookID = process.env.PAYPAL_WEBHOOK_ID;
 const verifyURL = process.env.PAYPAL_VERIFY_URL;
 const logger = require("./utils/Logger");
+const { uploadFileToSpaces } = require("./utils/FileUploader");
 
 
 const corsOptions = {
@@ -314,6 +315,61 @@ app.post("/zoom-webhook", async (req, res) => {
     return res.status(200).json({ plainToken, encryptedToken });
   }
 
+  // Recording complete route
+  if (event === "recording.completed") {
+    logger.info("Recording completed event received");
+    console.log("Recording completed event received");
+    const recordingObject = req.body.payload.object;
+    const meetingId = recordingObject.id;
+    const files = recordingObject.recording_files || [];
+
+    try {
+      const accessToken = await getZoomAccessToken();
+      const uploadedUrls = [];
+
+      for (const file of files) {
+        if (!file.download_url) continue;
+
+        const downloadUrl = `${file.download_url}?access_token=${accessToken}`;
+        const response = await axios.get(downloadUrl, {
+          responseType: "arraybuffer",
+        });
+
+        const fileBuffer = response.data;
+        const fileMime = file.file_type === "M4A"
+          ? "audio/m4a"
+          : file.file_type === "MP4"
+          ? "video/mp4"
+          : "application/octet-stream";
+
+        const fileName = `recording-${meetingId}-${file.id}.${file.file_type.toLowerCase()}`;
+
+        // Upload to DO Spaces
+        const url = await uploadFileToSpaces({
+          originalname: fileName,
+          buffer: fileBuffer,
+          mimetype: fileMime,
+        });
+
+        if (url) uploadedUrls.push(url);
+      }
+
+      if (uploadedUrls.length) {
+        await Zoom.findOneAndUpdate(
+          { meetingId: String(meetingId) },
+          { $push: { download: { $each: uploadedUrls } } },
+          { new: true }
+        );
+        logger.info(`Uploaded Zoom recordings for meeting ${meetingId}`);
+        console.log(`Uploaded Zoom recordings for meeting ${meetingId}`);
+      }
+    } catch (err) {
+      logger.error("Error uploading Zoom recordings:", err?.response?.data || err.message);
+      console.log("Error uploading Zoom recordings:", err?.response?.data || err.message);
+    }
+    return res.sendStatus(200);
+  }
+
   // Step 2: Handle "participant_left" event
   if (event === "meeting.participant_left") {
     const meetingId = req.body.payload.object.id;
@@ -386,7 +442,7 @@ app.post("/zoom-webhook", async (req, res) => {
 //   const meetingDetails = {
 //   topic: "Demo Application",
 //   type: 2,
-//   start_time: "2025-06-17T18:20:00+05:30",
+//   start_time: "2025-06-18T11:40:00+05:30",
 //   duration: 5,
 //   password: "12334",
 //   timezone: "Asia/Kolkata",
@@ -416,7 +472,7 @@ app.get("/", (req, res) => {
   });
 });
 
-require('./cronJobs')();
+// require('./cronJobs')();
 
 const server = app.listen(PORT, () => console.log("Server is running at port : " + PORT));
 server.timeout = 360000; // 6 minutes

@@ -568,7 +568,8 @@ exports.BookingsGet = catchAsync(async (req, res) => {
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
-      .populate('LessonId');
+      .populate('LessonId')
+      .populate('zoom');
 
     // Apply search filter on populated fields
     if (search?.trim()) {

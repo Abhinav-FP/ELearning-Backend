@@ -15,7 +15,7 @@ const logger = require("./utils/Logger");
 module.exports = () => {
   cron.schedule('*/1 * * * *', async () => {
     try {
-        // console.log(`Running cron job at ${new Date().toISOString()}`);
+        console.log(`Running cron job at ${new Date().toISOString()}`);
         const now = new Date(); // current time in UTC
 
         const data = await Bookings.find({
@@ -46,6 +46,7 @@ module.exports = () => {
         if(diffInMinutes === 30)
         {
           logger.info(`Creating Zoom meeting for booking ID: ${booking._id}`);
+          // console.log(`Creating Zoom meeting for booking ID: ${booking._id}`);
           const meetingDetails = {
             topic: booking?.LessonId?.title || "Title not available",
             type: 2,
@@ -75,6 +76,7 @@ module.exports = () => {
         }
         
         logger.info("Sending email for booking",booking._id);
+        // console.log("Sending email for booking",booking._id);
         // continue;
 
         const user = booking?.UserId;
@@ -115,11 +117,12 @@ module.exports = () => {
             emailHtml: TeacherEmailHtml,
         });        
 
-        console.log(`📧 Reminder email sent to ${user.email}`);
+        logger.info(`📧 Reminder email sent to ${user.email}`);
         }
 
     } catch (error) {
-        console.error("Error in cron job", error);
+        console.log("Error in cron job", error);
+        logger.error("Error in cron job", error);
     }
     });
 
