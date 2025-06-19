@@ -67,9 +67,7 @@ exports.payoutList = catchAsync(async (req, res) => {
       message: "User ID is missing.",
     });
   }
-  // console.log("req.query",req.query);
   const { status } = req.query;
-  // console.log("status",status);
   try {
     const filter = {
       userId

@@ -237,7 +237,6 @@ exports.UploadCheck = catchAsync(async (req, res) => {
 
 exports.DeleteCheck = catchAsync(async (req, res) => {
   try {
-    // console.log("req.body",req.body);
     const { url } = req.body;
     if (!url) {
       return res.status(400).json({
@@ -833,9 +832,7 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
 exports.StudentLessonListing = catchAsync(async (req, res) => {
   try {
     const lessons = await Lesson.find({ teacher: req.user.id, is_deleted: { $ne: true } });
-    // console.log("lessons",lessons);
     const students = await User.find({ role: "student", block: false, email_verify: true });
-    // console.log("students",students);
     return successResponse(res, "Special Slot created successfully", 201, {
       lessons,
       students

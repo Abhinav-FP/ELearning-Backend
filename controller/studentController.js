@@ -9,22 +9,15 @@ const Wishlist = require("../model/wishlist");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const Loggers = require("../utils/Logger");
+const Booking = require("../model/booking")
 
 exports.paymentget = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
-    // console.log("req.user.id", req.user.id)
-    const payment = await Payment.find({ UserId: UserId }).populate("LessonId").sort({ created_at: -1 });
-    const stripeData = await stripePayments.find({ UserId: UserId, payment_status: "succeeded" }).populate("LessonId").sort({ srNo: -1 });
-    // console.log("_id:", payment)
-    if (!payment && !stripeData) {
-      Loggers.warn("Payment Not Found.");
-      return validationErrorResponse(res, "payment Not Updated", 400);
-    }
-    return successResponse(res, "Payment Get successfully!", 201, {
-      payment,
-      stripeData
-    });
+    const BookingData = await Booking.find({
+      UserId: UserId
+    }).populate("LessonId").populate("paypalpaymentId").populate("StripepaymentId")
+    return successResponse(res, "Payment Get successfully!", 201, BookingData);
   } catch (error) {
     console.log("error", error);
     Loggers.error(error);
@@ -40,7 +33,7 @@ exports.paymentget = catchAsync(async (req, res) => {
 exports.teacherget = catchAsync(async (req, res) => {
   try {
     const { search } = req.query;
-    let teachers = await Teacher.find({}) .populate({
+    let teachers = await Teacher.find({}).populate({
       path: "userId",
       select: "-password",
     });
@@ -59,7 +52,7 @@ exports.teacherget = catchAsync(async (req, res) => {
         );
       });
     }
-    const wishlistResult = await Wishlist.find({student: req.user.id}).populate("teacher");
+    const wishlistResult = await Wishlist.find({ student: req.user.id }).populate("teacher");
     if (!teachers) {
       return validationErrorResponse(res, "No teacher found", 400);
     }

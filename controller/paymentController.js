@@ -94,7 +94,6 @@ exports.createOrder = catchAsync(async (req, res) => {
 exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
-    console.log("req.body", req.body)
     const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone, totalAmount, adminCommission, email,
       isSpecialSlot
     } = req.body;
@@ -134,14 +133,9 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       startUTC = startDateTime;
       endUTC = endDateTime;
     } else {
-      // Convert times from user's timezone to UTC
       startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
       endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
     }
-
-
-    console.log("startUTC", startUTC)
-    console.log("endUTC", endUTC)
     const teacherEarning = totalAmount - adminCommission;
     const Bookingsave = new Bookings({
       teacherId,
