@@ -161,7 +161,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         subject: registrationSubject,
         emailHtml
       });
-
       // Send Confirmation email to teacher
       const TeacherSubject = "New Booking 🎉";
       const TeacheremailHtml = TeacherBooking(startUTC, user?.name, teacher?.name);
