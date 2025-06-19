@@ -8,7 +8,7 @@ const cors = require("cors");
 const StripePayment = require("./model/StripePayment");
 const Bookings = require("./model/booking");
 const Zoom = require("./model/Zoom");
-const crypto =require("crypto");
+const crypto = require("crypto");
 const User = require("./model/user");
 const SpecialSlot = require("./model/SpecialSlot");
 const { DateTime } = require("luxon");
@@ -339,8 +339,8 @@ app.post("/zoom-webhook", async (req, res) => {
         const fileMime = file.file_type === "M4A"
           ? "audio/m4a"
           : file.file_type === "MP4"
-          ? "video/mp4"
-          : "application/octet-stream";
+            ? "video/mp4"
+            : "application/octet-stream";
 
         const fileName = `recording-${meetingId}-${file.id}.${file.file_type.toLowerCase()}`;
 
@@ -413,7 +413,7 @@ app.post("/zoom-webhook", async (req, res) => {
                 );
               }
             } catch (err) {
-             logger.error("Error ending Zoom meeting:", err?.response?.data || err.message);
+              logger.error("Error ending Zoom meeting:", err?.response?.data || err.message);
             } finally {
               emptyMeetingTimeouts.delete(meetingId);
             }
