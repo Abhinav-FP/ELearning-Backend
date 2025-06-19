@@ -16,7 +16,7 @@ exports.paymentget = catchAsync(async (req, res) => {
     const UserId = req.user.id;
     const BookingData = await Booking.find({
       UserId: UserId
-    }).populate("LessonId").populate("paypalpaymentId").populate("StripepaymentId")
+    }).populate("LessonId").populate("paypalpaymentId").populate("StripepaymentId").sort({createdAt  : -1})
     return successResponse(res, "Payment Get successfully!", 201, BookingData);
   } catch (error) {
     console.log("error", error);
