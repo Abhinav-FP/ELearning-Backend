@@ -413,7 +413,6 @@ exports.policycondition = catchAsync(async (req, res, next) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
-
 // Faq Section 
 
 exports.FAQAdd = catchAsync(async (req, res, next) => {
@@ -560,6 +559,16 @@ exports.getCommission = catchAsync(async (req, res, next) => {
       return errorResponse(res, "Commission not found", 404);
     }
     successResponse(res, "Commission retrieved successfully!", 201, record?.admin_comission);
+  } catch (error) {
+    logger.error(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.Privacy = catchAsync(async (req, res, next) => {
+  try {
+    const record = await Home.findOne({}).select("privcay_policy term_contdition");
+    return successResponse(res, "Home Find successfully!", 200, record);
   } catch (error) {
     logger.error(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
