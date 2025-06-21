@@ -68,9 +68,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 
     case 'charge.failed': {
       const charge = event.data.object;
-      Loggers.debug(`✅ Webhook event received: ${event.type}`)
-      console.log(`❌ Charge failed: ${charge.failure_message}`);
-      // You can notify user or log failure
+      Loggers.debug(`❌ Charge failed: ${charge.failure_message}`)
       break;
     }
 
