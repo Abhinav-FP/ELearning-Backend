@@ -31,6 +31,7 @@ const webhookID = process.env.PAYPAL_WEBHOOK_ID;
 const verifyURL = process.env.PAYPAL_VERIFY_URL;
 const logger = require("./utils/Logger");
 const { uploadFileToSpaces } = require("./utils/FileUploader");
+const Loggers = require("./utils/Logger");
 
 
 const corsOptions = {
@@ -45,30 +46,29 @@ app.use(cors(corsOptions));
 
 //stripe Webhook
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  console.log("Headers received:", req.headers);
+  Loggers.info("Headers received:", req.headers)
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
   let event;
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err) {
-    console.error(`❌ Webhook signature verification failed: ${err.message}`);
+    Loggers.error(`❌ Webhook signature verification failed: ${err.message}`)
     return res.status(400).json(`Webhook Error: ${err.message}`);
   }
 
-  console.log(`✅ Webhook event received: ${event.type}`);
-
+  Loggers.silly(`✅ Webhook event received: ${event.type}`)
   // Handle event
   switch (event.type) {
     case 'charge.succeeded': {
       const charge = event.data.object;
-      console.log(`💰 Charge succeeded for amount: ${charge.amount}`);
-      // You can save payment to DB or update user status here
+      Loggers.warn(`💰 Charge succeeded for amount: ${charge.amount}`)
       break;
     }
 
     case 'charge.failed': {
       const charge = event.data.object;
+      Loggers.debug(`✅ Webhook event received: ${event.type}`)
       console.log(`❌ Charge failed: ${charge.failure_message}`);
       // You can notify user or log failure
       break;
@@ -76,25 +76,23 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 
     case 'payment_intent.created': {
       const pi = event.data.object;
-      console.log(`🕐 PaymentIntent created: ${pi.id}`);
+      Loggers.silly(`🕐 PaymentIntent created: ${pi.id}`)
       break;
     }
 
     case 'payment_intent.payment_failed': {
       const pi = event.data.object;
-      console.log(`❌ PaymentIntent failed: ${pi.last_payment_error?.message}`);
+      Loggers.debug(`❌ PaymentIntent failed: ${pi.last_payment_error?.message}`)
       break;
     }
 
     case 'payment_intent.succeeded': {
       const pi = event.data.object;
-      console.log(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
+      Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
       const metadata = pi.metadata;
-      console.log(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
-      console.log("📦 Metadata:", metadata);
+      Loggers.info("📦 Metadata:", metadata)
       let startUTC, endUTC;
       // Convert times to UTC
-      console.log("metadata", metadata);
       if (metadata?.isSpecial) {
         startUTC = metadata.startDateTime;
         endUTC = metadata.endDateTime;
@@ -115,7 +113,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         payment_status: pi.status
       });
       const savedPayment = await payment.save();
-      console.log("savedPayment", savedPayment)
       const teacherEarning = (pi.amount / 100) - metadata.adminCommission;
       // Save booking record
       const booking = new Bookings({
@@ -133,7 +130,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         notes: metadata.notes || ""
       });
       const record = await booking.save();
-      console.log("record", record);
 
       // Updating Specialslot
       if (metadata?.isSpecial) {
@@ -148,7 +144,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           { paymentStatus: "paid" },
           { new: true, runValidators: true }
         );
-        console.log("Speial Slot updated", updatedSlot);
       }
 
       // Send confirmation email to student
@@ -169,14 +164,12 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         subject: TeacherSubject,
         emailHtml: TeacheremailHtml
       });
-
-      console.log("Success Payment")
-      // Mark order as paid, send email, grant access, etc.
+      Loggers.info("Stripe webhook received successfully. Payment processed and booking with special slot completed.");
       break;
     }
 
     default:
-      console.log(`⚠️ Unhandled event type: ${event.type}`);
+      Loggers.error(`⚠️ Unhandled event type: ${event.type}`)
   }
 
   res.json({ received: true });
