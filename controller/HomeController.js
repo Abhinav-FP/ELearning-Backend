@@ -34,8 +34,7 @@ exports.homeAdd = catchAsync(async (req, res, next) => {
     logger.error(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
-}
-);
+});
 
 exports.homefind = catchAsync(async (req, res, next) => {
   try {
