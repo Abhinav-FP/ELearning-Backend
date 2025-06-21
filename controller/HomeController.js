@@ -567,7 +567,7 @@ exports.getCommission = catchAsync(async (req, res, next) => {
 
 exports.Privacy = catchAsync(async (req, res, next) => {
   try {
-    const record = await Home.findOne({}).select("privcay_policy term_contdition");
+    const record = await Home.findOne({}).select("privcay_policy term_contdition admin_comission");
     return successResponse(res, "Home Find successfully!", 200, record);
   } catch (error) {
     logger.error(error);
