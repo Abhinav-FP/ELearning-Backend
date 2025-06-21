@@ -163,12 +163,10 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
         { paymentStatus: "paid" },
         { new: true, runValidators: true }
       );
-      console.log("Speial Slot updated", updatedSlot);
     }
 
     const user = await User.findById({ _id: req.user.id });
     const teacher = await User.findById({ _id: teacherId });
-    // console.log("UserId:", user);
 
     // Send confirmation email to student
     const registrationSubject = "Booking Confirmed 🎉";

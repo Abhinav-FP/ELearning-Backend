@@ -11,14 +11,7 @@ exports.BankAddOrEdit = catchAsync(async (req, res) => {
         });
     }
     const { BankName, BankNumber, BranchName, IFSC, _id, AccountHolderName, BranchCode, AccountType, OverseasDetails } = req.body;
-    console.log("req.body", req.body)
 
-    // if (!BankName || !BankNumber || !BranchName || !IFSC || !AccountHolderName) {
-    //     return res.status(400).json({
-    //         status: false,
-    //         message: "All fields (BankName, BankNumber, BranchName, IFSC ,AccountHolderName) are required.",
-    //     });
-    // }
     try {
         let result;
         if (_id) {

@@ -67,7 +67,6 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
       booking.endDateTime = endUTC;
       booking.rescheduled = true;
     }
-    // console.log("booking",booking);
     await booking.save();
     return successResponse(res, "Booking updated successfully", 200);
   } catch (error) {

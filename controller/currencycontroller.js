@@ -100,7 +100,6 @@ async function updateCurrencyRatesJob() {
         );
 
         await Promise.all(currencyPromises);
-        console.log("✅ Currency rates updated successfully.");
         return "Update Currency";
     } catch (error) {
         console.error("❌ Error updating currency rates:", error);

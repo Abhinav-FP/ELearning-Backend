@@ -172,91 +172,10 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 
   res.json({ received: true });
 });
-
-//paypal Webhook 
-// app.post('/api/paypal/webhook', bodyParser.json(), async (req, res) => {
-//   const payload = req.body;
-//   const transmissionID = req.headers['paypal-transmission-id'];
-//   const transmissionTime = req.headers['paypal-transmission-time'];
-//   const certURL = req.headers['paypal-cert-url'];
-//   const authAlgo = req.headers['paypal-auth-algo'];
-//   const transmissionSig = req.headers['paypal-transmission-sig'];
-//   let accessToken;
-
-//   const body = {
-//     webhook_id: webhookID,
-//     transmission_id: transmissionID,
-//     transmission_time: transmissionTime,
-//     cert_url: certURL,
-//     auth_algo: authAlgo,
-//     transmission_sig: transmissionSig,
-//     webhook_event: payload,
-//   };
-
-//   if (!webhookID || !verifyURL) {
-//     const errorParams =
-//       'Paypal Webhook Error: webhookID or verifyURL was found to be empty';
-//     console.error(errorParams);
-//     return res.status(400).json(errorParams);
-//   }
-
-//   try {
-//     accessToken = await paypalCommon.generateAccessToken();
-//   } catch (err) {
-//     const errorConstructEvent = 'Paypal Webhook Error in generateAccessToken: ';
-//     console.error(errorConstructEvent, err.message);
-//     return res.status(400).json(`${errorConstructEvent} ${err.message}`);
-//   }
-
-//   try {
-//     // let Paypal verify if this payload was actually sent by them
-//     let response = await axios(verifyURL, {
-//       method: 'POST',
-//       body: JSON.stringify(body),
-//       headers: {
-//         'Content-Type': 'application/json',
-//         Authorization: `Bearer ${accessToken}`,
-//       },
-//     });
-//     let responseJson = await response.json();
-//     if (responseJson.verification_status !== 'SUCCESS') {
-//       const errorConstructEvent =
-//         'Paypal Webhook Error, payload verification failure.';
-//       console.error(errorConstructEvent);
-//       return res.status(400).json(errorConstructEvent);
-//     }
-//   } catch (err) {
-//     const errorConstructEvent = 'Paypal Webhook Error in verify: ';
-//     console.error(errorConstructEvent, err.message);
-//     return res.status(400).json(`${errorConstructEvent} ${err.message}`);
-//   }
-
-//   if (payload.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
-//     // Your business logic here
-//   }
-
-//   res.status(200).json();
-// });
-
-// app.post('/api/payment/save', async (req, res) => {
-//   console.log("req.body" ,req.body)
-//   const {  amount, payer, status ,orderID } = req.body;
-
-//   try {
-//     console.log('Received payment from:', payer?.email_address);
-//     console.log('Amount:', amount, 'Status:', status, );
-//     return res.status(200).json({ message: 'Payment saved successfully' });
-//   } catch (err) {
-//     console.error('Error saving payment:', err.message);
-//     return res.status(500).json({ error: 'Failed to save payment' });
-//   }
-// });
-
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
 const PORT = process.env.REACT_APP_SERVER_DOMAIN || 5000;
-
 
 app.use("/api", require("./route/userRoutes"));
 app.use("/api", require("./route/messageRoutes"));

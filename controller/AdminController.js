@@ -166,10 +166,8 @@ exports.PayoutAcceptorReject = catchAsync(async (req, res) => {
         message: "Payout ID is missing.",
       });
     }
-    // console.log("payoutId",payoutId);
 
     const { status, reason, transactionId } = req.body;
-    // console.log("req.body",req.body);
 
     if (!status) {
       return res.status(400).json({

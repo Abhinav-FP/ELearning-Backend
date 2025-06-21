@@ -1,7 +1,7 @@
 const User = require("../model/user");
 const Teacher = require("../model/teacher");
 const jwt = require("jsonwebtoken");
-const {errorResponse, successResponse,validationErrorResponse} = require("../utils/ErrorHandling");
+const { errorResponse, successResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
 const Loggers = require("../utils/Logger");
 const sendEmail = require("../utils/EmailMailler");
@@ -17,7 +17,7 @@ const signEmail = async (id) => {
 
 exports.signup = catchAsync(async (req, res) => {
   try {
-    const { name, email, password, role, gender, nationality, time_zone } =  req.body;
+    const { name, email, password, role, gender, nationality, time_zone } = req.body;
     if (!email || !password || !role || !name || !time_zone) {
       return errorResponse(res, "All fields are required", 401, "false");
     }
@@ -48,13 +48,13 @@ exports.signup = catchAsync(async (req, res) => {
     if (role !== "teacher") {
       // Send email logic for student
       const registrationSubject =
-      "Welcome to Japanese for Me!🎉 Your account has been created.";
-    const emailHtml = Welcome(name, link);
-    await sendEmail({
-      email: email,
-      subject: registrationSubject,
-      emailHtml: emailHtml,
-    });
+        "Welcome to Japanese for Me!🎉 Your account has been created.";
+      const emailHtml = Welcome(name, link);
+      await sendEmail({
+        email: email,
+        subject: registrationSubject,
+        emailHtml: emailHtml,
+      });
       return successResponse(res, "User created successfully!", 201, {
         user: userResult,
       });
@@ -98,13 +98,13 @@ exports.signup = catchAsync(async (req, res) => {
   } catch (error) {
     console.log("error", error);
     Loggers.error(error);
-     if (error.code === 11000 && error.keyPattern?.email) {
-    return errorResponse(
-      res,
-      "This email is already registered. Please log in or use a different email.",
-      400
-    );
-  }
+    if (error.code === 11000 && error.keyPattern?.email) {
+      return errorResponse(
+        res,
+        "This email is already registered. Please log in or use a different email.",
+        400
+      );
+    }
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((el) => el.message);
       console.log("errors", errors);
@@ -115,22 +115,22 @@ exports.signup = catchAsync(async (req, res) => {
 });
 
 exports.verifyEmail = catchAsync(async (req, res) => {
-  try{
-  const { token } = req.body;
-  const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY);
-  if (!id) {
-    return errorResponse(res, "Invalid or expired token", 400);
+  try {
+    const { token } = req.body;
+    const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    if (!id) {
+      return errorResponse(res, "Invalid or expired token", 400);
+    }
+    const user = await User.findById(id);
+    if (!user) {
+      return errorResponse(res, "User not found", 404);
+    }
+    user.email_verify = true;
+    await user.save();
+    return successResponse(res, "Email verified successfully!", 200);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
   }
-  const user = await User.findById(id);
-  if (!user) {
-    return errorResponse(res, "User not found", 404);
-  }
-  user.email_verify = true;
-  await user.save();
-  return successResponse(res, "Email verified successfully!", 200);
-} catch (error) {
-  return errorResponse(res, error.message || "Internal Server Error", 500);
-}
 });
 
 exports.login = catchAsync(async (req, res) => {
@@ -161,7 +161,7 @@ exports.login = catchAsync(async (req, res) => {
     if (!user) {
       return errorResponse(res, "Invalid email", 401);
     }
-    if(user?.block){
+    if (user?.block) {
       return errorResponse(res, "Your account is blocked", 401);
     }
     if (password != user.password) {
@@ -240,7 +240,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
     let photo = null;
     if (req.file) {
       if (user.profile_photo) {
-        // console.log("Old profile photo to delete:", user.profile_photo);
         const isDeleted = await deleteFileFromSpaces(user.profile_photo);
         if (!isDeleted) {
           return res.status(500).json({
@@ -309,14 +308,14 @@ exports.resetPassword = catchAsync(async (req, res) => {
 });
 
 exports.ResendVerificationLink = catchAsync(async (req, res) => {
-  try{
+  try {
     const userId = req.user.id;
     if (!userId) {
       Loggers.error("Invalid User");
       return errorResponse(res, "Invalid User", 401);
     }
     const userResult = await User.findById({ _id: userId });
-     const token = await signEmail(userResult._id);
+    const token = await signEmail(userResult._id);
     const link = `https://japaneseforme.com/verify/${token}`;
 
     // Send email logic for student
@@ -329,7 +328,7 @@ exports.ResendVerificationLink = catchAsync(async (req, res) => {
       emailHtml: emailHtml,
     });
     return successResponse(res, "Verification link sent successfully!", 200);
-  }catch(error){
+  } catch (error) {
     console.log(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }

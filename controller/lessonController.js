@@ -81,7 +81,6 @@ exports.GetLessonsForAdmin = catchAsync(async (req, res) => {
             lessons = await Lesson.find({ teacher: teacherId }).populate("teacher");
         } else {
             lessons = await Lesson.find().populate("teacher");
-            console.log("lessons" , lessons)
         }
         if (!lessons || lessons.length === 0) {
             return errorResponse(res, "No lessons found", 404);

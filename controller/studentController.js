@@ -212,7 +212,6 @@ exports.teachergetByID = catchAsync(async (req, res) => {
     let isLiked = false;
 
     if (req.user?.id) {
-      // Student is logged in
       const wishlistResult = await Wishlist.findOne({
         teacher: teacher.userId._id,
         student: req.user.id,
@@ -222,15 +221,10 @@ exports.teachergetByID = catchAsync(async (req, res) => {
         isLiked = true;
       }
     }
-    // const lesson = await Lesson.findOne({
-    //     teacher: teacher.userId._id,
-    //   }).sort({ price : 1});
-    //   // console.log("lesson",lesson);
 
     const updatedTeacher = {
       ...teacher.toObject(),
       isLiked,
-      // priceStart : lesson?.price || null,
     };
 
     return successResponse(

@@ -286,7 +286,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
     const files = req.files || {};
-    // console.log("files",files);
     if (!userId) {
       return errorResponse(res, "Invalid User", 401);
     }
@@ -296,7 +295,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
       email,
       timezone,
       nationality,
-      // profile_photo,
       languages_spoken,
       gender,
       ais_trained,
@@ -304,11 +302,8 @@ exports.updateProfile = catchAsync(async (req, res) => {
       interest,
       experience,
       description,
-      // average_price,
-      // average_time,
       qualifications,
       tags,
-      // documentlink,
     } = req.body;
 
     const userUpdates = {};
@@ -322,7 +317,6 @@ exports.updateProfile = catchAsync(async (req, res) => {
     let profile_photo = null;
     if (files.profile_photo?.[0]) {
       if (user?.profile_photo) {
-        // console.log("Old profile photo to delete:", user.profile_photo);
         const isDeleted = await deleteFileFromSpaces(user.profile_photo);
         if (!isDeleted) {
           return res.status(500).json({

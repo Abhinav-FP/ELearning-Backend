@@ -19,7 +19,6 @@ exports.forgotlinkrecord = catchAsync(
   async (req, res) => {
     try {
       const { email } = req.body;
-      console.log("email", email)
       if (!email) {
         return validationErrorResponse(res, { email: 'Email is required' });
       }
@@ -58,9 +57,6 @@ exports.forgotpassword = catchAsync(
       }
       user.password = newPassword;
       const record = await user.save();
-      console.log(
-        "record", record
-      )
       return successResponse(res, "Password has been successfully reset");
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
