@@ -15,7 +15,7 @@ const logger = require("./utils/Logger");
 module.exports = () => {
   cron.schedule('*/1 * * * *', async () => {
     try {
-        console.log(`Running cron job at ${new Date().toISOString()}`);
+        // console.log(`Running cron job at ${new Date().toISOString()}`);
         const now = new Date(); // current time in UTC
 
         const data = await Bookings.find({
