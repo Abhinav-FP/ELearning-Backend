@@ -1,9 +1,9 @@
 const Lesson = require("../model/lesson");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
-const  Bookings =  require("../model/booking")
-const  User =  require("../model/user");
-const Review  =  require("../EmailTemplate/Review")
+const Bookings = require("../model/booking")
+const User = require("../model/user");
+const Review = require("../EmailTemplate/Review")
 
 exports.AddLesson = catchAsync(async (req, res) => {
     try {
