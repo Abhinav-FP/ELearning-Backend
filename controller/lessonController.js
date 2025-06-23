@@ -102,7 +102,6 @@ exports.LessonDone = catchAsync(async (req, res) => {
         const { token } = req.body;
         const { teacherId, UserId, BookingId } = jwt.verify(token, process.env.JWT_SECRET_KEY);
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        console.log("decoded", decoded);
         // const TeacherId = req.user.teacherId;
         // const UserId = req.user.UserId;
         // const BookingId = req.user.BookingId;
@@ -122,29 +121,25 @@ exports.LessonDone = catchAsync(async (req, res) => {
         }
         let updatedBooking = ""
         if (teacherId) {
-                 updatedBooking = await Bookings.findByIdAndUpdate(
-                    booking._id,
-                    {
-                        lessonCompletedTeacher : true,
-                    },
-                    { new: true }
-                );
+            updatedBooking = await Bookings.findByIdAndUpdate(
+                booking._id,
+                {
+                    lessonCompletedTeacher: true,
+                },
+                { new: true }
+            );
         }
         if (UserId) {
-                updatedBooking = await Bookings.findByIdAndUpdate(
-                    booking,
-                    {
-                        lessonCompletedStudent:true,
-                    },
-                    { new: true }
-                );
+            updatedBooking = await Bookings.findByIdAndUpdate(
+                booking,
+                {
+                    lessonCompletedStudent: true,
+                },
+                { new: true }
+            );
         }
-        console.log("updatedBooking", updatedBooking);
-        
         if (updatedBooking?.lessonCompletedTeacher === true && updatedBooking?.lessonCompletedStudent === true) {
-            console.log("helloana")
             const userdata = await User.findById(updatedBooking?.UserId);
-            console.log("userdata",  userdata)
             if (userdata?.email) {
                 const reviewLink = `https://japaneseforme.com/review/${updatedBooking._id}`;
                 const reviewSubject = "🎉 Share your feedback with Japanese for Me!";
