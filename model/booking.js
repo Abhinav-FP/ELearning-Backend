@@ -11,13 +11,11 @@ const bookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Student id is required"],
-         default: "67f8eb8224daa0005ae23291"
     },
     LessonId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lesson",
       required: [true, "Lesson id is required"],
-       default: "67ff410ea8e3ad25440e5161"
     },
     paypalpaymentId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -26,6 +24,14 @@ const bookingSchema = new mongoose.Schema(
     StripepaymentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "stripepayments",
+    },
+    BonusId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "bonus",
+    },
+    ReviewId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "reviews",
     },
     startDateTime: {
       type: Date,
@@ -65,7 +71,6 @@ const bookingSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Admin Commission is required"],
     },
-    // This is the bonus/tip the student can give while submitting review
     bonus: {
       type: Number,
       default: 0,

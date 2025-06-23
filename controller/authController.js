@@ -43,7 +43,7 @@ exports.signup = catchAsync(async (req, res) => {
     //   }
     // }
     const token = await signEmail(userResult._id);
-    const link = `https://japaneseforme.com//verify/${token}`;
+    const link = `https://japaneseforme.com/verify/${token}`;
 
     if (role !== "teacher") {
       // Send email logic for student
