@@ -1,9 +1,11 @@
 const Lesson = require("../model/lesson");
 const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
-const Bookings = require("../model/booking")
+const Bookings = require("../model/booking");
 const User = require("../model/user");
-const Review = require("../EmailTemplate/Review")
+const Review = require("../EmailTemplate/Review");
+const jwt = require("jsonwebtoken");
+const sendEmail = require("../utils/EmailMailler");
 
 exports.AddLesson = catchAsync(async (req, res) => {
     try {
@@ -97,9 +99,13 @@ exports.GetLessonsForAdmin = catchAsync(async (req, res) => {
 
 exports.LessonDone = catchAsync(async (req, res) => {
     try {
-        const TeacherId = req.user.teacherId;
-        const UserId = req.user.UserId;
-        const BookingId = req.user.BookingId;
+        const { token } = req.body;
+        const { teacherId, UserId, BookingId } = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        console.log("decoded", decoded);
+        // const TeacherId = req.user.teacherId;
+        // const UserId = req.user.UserId;
+        // const BookingId = req.user.BookingId;
         if (!BookingId) {
             return res.status(400).json({
                 status: false,
@@ -108,7 +114,6 @@ exports.LessonDone = catchAsync(async (req, res) => {
         }
 
         const booking = await Bookings.findById(BookingId);
-        console.log("booking"  ,booking)
         if (!booking) {
             return res.status(404).json({
                 status: false,
@@ -116,7 +121,7 @@ exports.LessonDone = catchAsync(async (req, res) => {
             });
         }
         let updatedBooking = ""
-        if (TeacherId) {
+        if (teacherId) {
                  updatedBooking = await Bookings.findByIdAndUpdate(
                     booking._id,
                     {
@@ -134,8 +139,10 @@ exports.LessonDone = catchAsync(async (req, res) => {
                     { new: true }
                 );
         }
+        console.log("updatedBooking", updatedBooking);
         
-        if (updatedBooking?.lessonCompletedTeacher === true || updatedBooking?.lessonCompletedStudent === true) {
+        if (updatedBooking?.lessonCompletedTeacher === true && updatedBooking?.lessonCompletedStudent === true) {
+            console.log("helloana")
             const userdata = await User.findById(UserId);
             if (userdata?.email) {
                 const reviewLink = `https://japaneseforme.com/review/${updatedBooking._id}`;
@@ -151,13 +158,6 @@ exports.LessonDone = catchAsync(async (req, res) => {
         return res.status(200).json({
             status: true,
             msg: "Lesson completion status updated successfully",
-            data: {
-                teacher_done: booking.
-                    lessonCompletedTeacher
-                ,
-                student_done: booking.
-                    lessonCompletedStudent,
-            },
         });
 
     } catch (error) {
