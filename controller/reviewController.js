@@ -1,3 +1,4 @@
+const Bookings = require("../model/booking");
 const Review = require("../model/review");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
@@ -5,14 +6,15 @@ const Loggers = require("../utils/Logger");
 
 exports.reviewAdd = catchAsync(async (req, res) => {
     const userId = req.user.id;
-    const { description, lessonId, rating } = req.body;
+    const { description, rating, bookingId } = req.body;
 
-    if (!userId || !lessonId || !description) {
+    if (!userId || !bookingId || !description) {
         Loggers.warn("Missing required fields");
         return validationErrorResponse(res, "All fields are required", 400);
     }
+    const lessonId = await Bookings.findById(bookingId).select("lesson");
     try {
-        const review = await Review.create({ userId, description, lessonId, rating });
+        const review = await new Review({ userId, description, lessonId, rating });
         return successResponse(res, "Review submitted successfully", 201, { review });
     } catch (error) {
         Loggers.error(error.message);
