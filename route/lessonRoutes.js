@@ -7,7 +7,7 @@ router.post("/lesson/add", verifyToken, AddLesson);
 router.put("/lesson/update/:id", verifyToken, UpdateLesson);
 router.delete("/lesson/delete/:id", verifyToken, DeleteLesson);
 router.get("/lesson/admin/get", verifyToken, GetLessonsForAdmin);
-router.post("/lesson/completed", verifyToken, LessonDone);
+router.post("/lesson/completed", LessonDone);
 
 
 
