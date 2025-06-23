@@ -143,7 +143,8 @@ exports.LessonDone = catchAsync(async (req, res) => {
         
         if (updatedBooking?.lessonCompletedTeacher === true && updatedBooking?.lessonCompletedStudent === true) {
             console.log("helloana")
-            const userdata = await User.findById(UserId);
+            const userdata = await User.findById(updatedBooking?.UserId);
+            console.log("userdata",  userdata)
             if (userdata?.email) {
                 const reviewLink = `https://japaneseforme.com/review/${updatedBooking._id}`;
                 const reviewSubject = "🎉 Share your feedback with Japanese for Me!";
