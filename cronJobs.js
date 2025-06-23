@@ -144,7 +144,7 @@ module.exports = () => {
           const teacherName = teacher?.name || "";
 
           const token = jwt.sign(
-            { bookingId: booking._id, studentId: booking?.UserId },
+            { BookingId: booking._id, UserId: booking?.UserId },
             process.env.JWT_SECRET_KEY,
             { expiresIn: process.env.JWT_EXPIRES_IN || "365d" }
           );
@@ -166,7 +166,7 @@ module.exports = () => {
 
           // Lesson done email to teacher
            const teacherToken = jwt.sign(
-            { bookingId: booking._id, teacherId: booking?.teacherId },
+            { BookingId: booking._id, teacherId: booking?.teacherId },
             process.env.JWT_SECRET_KEY,
             { expiresIn: process.env.JWT_EXPIRES_IN || "365d" }
           );
