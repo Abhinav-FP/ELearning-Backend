@@ -32,6 +32,7 @@ const bookingSchema = new mongoose.Schema(
     ReviewId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "reviews",
+      default : null ,
     },
     startDateTime: {
       type: Date,

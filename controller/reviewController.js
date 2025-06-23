@@ -5,19 +5,27 @@ const { successResponse, errorResponse, validationErrorResponse } = require("../
 const Loggers = require("../utils/Logger");
 
 exports.reviewAdd = catchAsync(async (req, res) => {
-    const userId = req.user.id;
-    const { description, rating, bookingId } = req.body;
-
-    if (!userId || !bookingId || !description) {
-        Loggers.warn("Missing required fields");
-        return validationErrorResponse(res, "All fields are required", 400);
-    }
-    const lessonId = await Bookings.findById(bookingId).select("lesson");
     try {
-        const review = await new Review({ userId, description, lessonId, rating });
-        return successResponse(res, "Review submitted successfully", 201, { review });
+        const userId = req.user.id;
+        const { description, rating, bookingId } = req.body;
+        if (!userId || !bookingId || !description) {
+            return validationErrorResponse(res, "All fields are required", 400);
+        }
+        const lessonId = await Bookings.findById(bookingId).select("LessonId");
+        const reviews = await Review.create({ userId, description, lessonId :  lessonId.LessonId , rating });
+        const updatedBooking = await Bookings.findByIdAndUpdate(
+            bookingId,
+            {
+                ReviewId: reviews._id
+            },
+            { new: true }
+        );
+        if (!updatedBooking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+        return successResponse(res, "Review submitted successfully", 201, { reviews });
     } catch (error) {
-        Loggers.error(error.message);
+        console.log(error)
         return errorResponse(res, "Failed to submit review", 500);
     }
 });
@@ -30,14 +38,11 @@ exports.reviewGet = catchAsync(async (req, res) => {
         if (status) {
             query.review_status = status;
         }
-
         const reviews = await Review.find(query);
-
         if (!reviews.length) {
             Loggers.warn("No reviews found");
             return validationErrorResponse(res, "No reviews available", 404);
         }
-
         return successResponse(res, "Reviews retrieved successfully", 200, { reviews });
     } catch (error) {
         Loggers.error(error.message);
@@ -148,3 +153,5 @@ exports.ReviewApporve = catchAsync(async (req, res) => {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
 });
+
+

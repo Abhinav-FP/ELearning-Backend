@@ -108,23 +108,37 @@ exports.LessonDone = catchAsync(async (req, res) => {
         }
 
         const booking = await Bookings.findById(BookingId);
+        console.log("booking"  ,booking)
         if (!booking) {
             return res.status(404).json({
                 status: false,
                 msg: "Booking not found",
             });
         }
+        let updatedBooking = ""
         if (TeacherId) {
-            booking.lessonCompletedTeacher = true;
+                 updatedBooking = await Bookings.findByIdAndUpdate(
+                    booking._id,
+                    {
+                        lessonCompletedTeacher : true,
+                    },
+                    { new: true }
+                );
         }
         if (UserId) {
-            booking.lessonCompletedStudent = true;
+                updatedBooking = await Bookings.findByIdAndUpdate(
+                    booking,
+                    {
+                        lessonCompletedStudent:true,
+                    },
+                    { new: true }
+                );
         }
-        const record = await booking.save();
-        if (record?.lessonCompletedTeacher === true || record?.lessonCompletedStudent === true) {
+        
+        if (updatedBooking?.lessonCompletedTeacher === true || updatedBooking?.lessonCompletedStudent === true) {
             const userdata = await User.findById(UserId);
             if (userdata?.email) {
-                const reviewLink = `https://japaneseforme.com/review/${record._id}`;
+                const reviewLink = `https://japaneseforme.com/review/${updatedBooking._id}`;
                 const reviewSubject = "🎉 Share your feedback with Japanese for Me!";
                 const emailHtml = Review(userdata?.name, reviewLink);
                 await sendEmail({
