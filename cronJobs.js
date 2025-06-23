@@ -8,14 +8,17 @@ const sendEmail = require("./utils/EmailMailler");
 const currency = require("./EmailTemplate/currency");
 const Reminder = require("./EmailTemplate/Reminder");
 const TeacherReminder = require("./EmailTemplate/TeacherReminder");
+const StudentLessonDone = require("./EmailTemplate/StudentLessonDone");
+const TeacherLessonDone = require("./EmailTemplate/TeacherLessonDone");
 const { DateTime } = require("luxon"); // Already in your project
 const createZoomMeeting = require('./zoommeeting');
 const logger = require("./utils/Logger");
+const jwt = require("jsonwebtoken");
 
 module.exports = () => {
   cron.schedule('*/1 * * * *', async () => {
     try {
-        // console.log(`Running cron job at ${new Date().toISOString()}`);
+        console.log(`Running cron job at ${new Date().toISOString()}`);
         const now = new Date(); // current time in UTC
 
         const data = await Bookings.find({
@@ -118,6 +121,72 @@ module.exports = () => {
         });        
 
         logger.info(`📧 Reminder email sent to ${user.email}`);
+        }
+
+        // Sending lesson done emails to user and teacher
+        const endNow = DateTime.utc().startOf('minute'); // e.g., 13:42:00
+        const justEndedBookings = await Bookings.find({
+          cancelled: false,
+          endDateTime: {
+            $gte: endNow.toJSDate(),
+            $lt: endNow.plus({ minutes: 1 }).toJSDate(), // match to current minute
+          },
+          // "_id": "68565ed871ccc9a756f9b73d",
+        })
+          .populate('teacherId')
+          .populate('UserId')
+          .populate('LessonId');
+
+        // console.log("justEndedBookings",justEndedBookings);
+        for (const booking of justEndedBookings) {
+          const user = booking?.UserId;
+          const teacher = booking?.teacherId;
+
+          const userName = user?.name || "";
+          const teacherName = teacher?.name || "";
+
+          const token = jwt.sign(
+            { BookingId: booking._id, UserId: booking?.UserId },
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: process.env.JWT_EXPIRES_IN || "365d" }
+          );
+
+          const studentDoneEmailHtml = StudentLessonDone(
+            userName,
+            teacherName,
+            `https://japaneseforme.com/confirm-lesson/${token}`
+          );
+
+          await sendEmail({
+            email: user.email,
+            subject: "Please confirm your lesson completion ✅",
+            emailHtml: studentDoneEmailHtml,
+          });
+
+          logger.info(`📧 StudentLessonDone email sent to ${user.email} for booking ${booking._id}`);
+          console.log(`📧 StudentLessonDone email sent to ${user.email} for booking ${booking._id}`);
+
+          // Lesson done email to teacher
+           const teacherToken = jwt.sign(
+            { BookingId: booking._id, teacherId: booking?.teacherId },
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: process.env.JWT_EXPIRES_IN || "365d" }
+          );
+
+          const teacherDoneEmailHtml = TeacherLessonDone(
+            userName,
+            teacherName,
+            `https://japaneseforme.com/confirm-lesson/${teacherToken}`
+          );
+
+          await sendEmail({
+            email: teacher.email,
+            subject: "Please confirm your lesson completion ✅",
+            emailHtml: teacherDoneEmailHtml,
+          });
+
+          logger.info(`📧 TeacherLessonDone email sent to ${teacher.email} for booking ${booking._id}`);
+          console.log(`📧 TeacherLessonDone email sent to ${teacher.email} for booking ${booking._id}`);
         }
 
     } catch (error) {
