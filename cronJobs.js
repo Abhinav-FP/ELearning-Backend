@@ -18,7 +18,7 @@ const jwt = require("jsonwebtoken");
 module.exports = () => {
   cron.schedule('*/1 * * * *', async () => {
     try {
-        // console.log(`Running cron job at ${new Date().toISOString()}`);
+        console.log(`Running cron job at ${new Date().toISOString()}`);
         const now = new Date(); // current time in UTC
 
         const data = await Bookings.find({
@@ -131,11 +131,13 @@ module.exports = () => {
             $gte: endNow.toJSDate(),
             $lt: endNow.plus({ minutes: 1 }).toJSDate(), // match to current minute
           },
+          // "_id": "68565ed871ccc9a756f9b73d",
         })
           .populate('teacherId')
           .populate('UserId')
           .populate('LessonId');
 
+        // console.log("justEndedBookings",justEndedBookings);
         for (const booking of justEndedBookings) {
           const user = booking?.UserId;
           const teacher = booking?.teacherId;
@@ -152,7 +154,7 @@ module.exports = () => {
           const studentDoneEmailHtml = StudentLessonDone(
             userName,
             teacherName,
-            `https://japaneseforme.com/student/confirm-lesson/${token}`
+            `https://japaneseforme.com/confirm-lesson/${token}`
           );
 
           await sendEmail({
@@ -174,7 +176,7 @@ module.exports = () => {
           const teacherDoneEmailHtml = TeacherLessonDone(
             userName,
             teacherName,
-            `https://japaneseforme.com/student/confirm-lesson/${teacherToken}`
+            `https://japaneseforme.com/confirm-lesson/${teacherToken}`
           );
 
           await sendEmail({
