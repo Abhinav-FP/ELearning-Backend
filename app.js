@@ -240,6 +240,10 @@ app.post("/zoom-webhook", async (req, res) => {
         if (!file.download_url) continue;
 
         const downloadUrl = `${file.download_url}?access_token=${accessToken}`;
+
+        logger.info(`Download url received ${downloadUrl}`);
+        console.log(`Download url received ${downloadUrl}`);
+
         const response = await axios.get(downloadUrl, {
           responseType: "arraybuffer",
         });
@@ -253,6 +257,9 @@ app.post("/zoom-webhook", async (req, res) => {
 
         const fileName = `recording-${meetingId}-${file.id}.${file.file_type.toLowerCase()}`;
 
+        logger.info(`fileName ${fileName}`);
+        console.log(`fileName ${fileName}`);
+
         // Upload to DO Spaces
         const url = await uploadFileToSpaces({
           originalname: fileName,
@@ -261,6 +268,8 @@ app.post("/zoom-webhook", async (req, res) => {
         });
 
         if (url) uploadedUrls.push(url);
+        logger.info(`url ${url}`);
+        console.log(`url ${url}`);
       }
 
       if (uploadedUrls.length) {
@@ -269,8 +278,8 @@ app.post("/zoom-webhook", async (req, res) => {
           { $push: { download: { $each: uploadedUrls } } },
           { new: true }
         );
-        logger.info(`Uploaded Zoom recordings for meeting ${meetingId}`);
-        console.log(`Uploaded Zoom recordings for meeting ${meetingId}`);
+        logger.info(`Uploaded Zoom recordings for meeting ${uploadedUrls}`);
+        console.log(`Uploaded Zoom recordings for meeting ${uploadedUrls}`);
       }
     } catch (err) {
       logger.error("Error uploading Zoom recordings:", err?.response?.data || err.message);
