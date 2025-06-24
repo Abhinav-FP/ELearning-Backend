@@ -27,18 +27,7 @@ const BankSchema = mongoose.Schema({
     },
     AccountType: {
         type: String,
-        enum: [
-            "savings",
-            "current",
-            "fixed",
-            "recurring",
-            "nre",
-            "nro",
-            "business",
-            "joint",
-            "salary"
-        ],
-        default: "savings",
+        default: null,
     },
     OverseasDetails: {
         type: String

@@ -289,7 +289,7 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
         }
 
         // Move cursor 5 minutes ahead of booking end
-        const nextStart = new Date(bEnd.getTime() + 5 * 60000);
+        const nextStart = new Date(bEnd.getTime());
         cursor = nextStart > cursor ? nextStart : cursor;
       }
 

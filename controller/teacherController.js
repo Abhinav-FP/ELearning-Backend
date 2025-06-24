@@ -168,7 +168,7 @@ exports.GetAvailability = catchAsync(async (req, res) => {
         }
 
         // Move cursor 5 minutes ahead of booking end
-        const nextStart = new Date(bEnd.getTime() + 5 * 60000);
+        const nextStart = new Date(bEnd.getTime());
         cursor = nextStart > cursor ? nextStart : cursor;
       }
 
@@ -590,7 +590,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
     const objectId = new mongoose.Types.ObjectId(userId);
-    const TeacherData = await Lesson.findOne({
+    const TeacherData = await Lesson.find({
       teacher: userId,
       is_deleted: false,
     }).sort({ price: 1 });
@@ -627,7 +627,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
             $switch: {
               branches: [
                 { case: { $eq: ['$lesson.duration', 30] }, then: 'duration30' },
-                { case: { $eq: ['$lesson.duration', 50] }, then: 'duration50' }
+                { case: { $eq: ['$lesson.duration', 60] }, then: 'duration60' }
               ],
               default: 'durationOther'
             }
