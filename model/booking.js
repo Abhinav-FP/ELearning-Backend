@@ -90,6 +90,8 @@ const bookingSchema = new mongoose.Schema(
       ref: "Zoom",
       default: null,
     },
+      IsBouns : { type: Boolean, default: false },
+
   },
   { timestamps: true }
 );

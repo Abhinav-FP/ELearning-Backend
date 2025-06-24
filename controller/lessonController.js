@@ -141,7 +141,7 @@ exports.LessonDone = catchAsync(async (req, res) => {
         if (updatedBooking?.lessonCompletedTeacher === true && updatedBooking?.lessonCompletedStudent === true) {
             const userdata = await User.findById(updatedBooking?.UserId);
             if (userdata?.email) {
-                const reviewLink = `https://japaneseforme.com/review/${updatedBooking._id}`;
+                const reviewLink = `https://japaneseforme.com/student/review/${updatedBooking._id}`;
                 const reviewSubject = "🎉 Share your feedback with Japanese for Me!";
                 const emailHtml = Review(userdata?.name, reviewLink);
                 await sendEmail({
@@ -164,3 +164,30 @@ exports.LessonDone = catchAsync(async (req, res) => {
         });
     }
 });
+
+
+exports.Bookingid = catchAsync(async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log("id" ,id)
+        const record = await Bookings.findById( id );
+        if (!record) {
+            return res.status(404).json({
+                status: false,
+                message: "booking not found",
+            });
+        }
+        res.json({
+            data: record,
+            msg: "booking retrieved successfully",
+            status: true
+        })
+    } catch (error) {
+        console.error("Error fetching booking:", error);
+        res.status(500).json({
+            status: false,
+            message: "Failed to fetch booking",
+            error: error.message,
+        });
+    }
+})

@@ -1,15 +1,21 @@
 const mongoose = require("mongoose");
 
 
-const bonusSchema = mongoose.Schema({
+const bonusSchema = new  mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: [true, "User ID is required."],
     },
     teacherId: {
+        type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: [true, "Teacher ID is required."],
+    },
+      bookingId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Bookings",
+        required: [true, "Booking ID is required."],
     },
     LessonId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -25,19 +31,17 @@ const bonusSchema = mongoose.Schema({
         ref: "stripepayments",
     },
     amount: {
-        type: number,
+        type: Number,
         default: 0
     },
     Currency: {
         type: String,
-        default: "usd"
+        default: "USD"
     },
     conversion_rate: {
         type: Number,
         default: 0
-    }
-    ,
+    },
 })
-
 
 module.exports = mongoose.model("bonus", bonusSchema);
