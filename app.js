@@ -235,11 +235,12 @@ app.post("/zoom-webhook", async (req, res) => {
     try {
       const accessToken = await getZoomAccessToken();
       const uploadedUrls = [];
-
+      
+      const downloadToken = req.body.download_token;
+       
       for (const file of files) {
         if (!file.download_url) continue;
-
-        const downloadUrl = `${file.download_url}?access_token=${accessToken}`;
+        const downloadUrl = `${file.download_url}?access_token=${downloadToken}`;
 
         logger.info(`Download url received ${downloadUrl}`);
         console.log(`Download url received ${downloadUrl}`);
@@ -247,6 +248,8 @@ app.post("/zoom-webhook", async (req, res) => {
         const response = await axios.get(downloadUrl, {
           responseType: "arraybuffer",
         });
+        logger.info(`response ${response?.data}`);
+        console.log(`response ${response?.data}`);
 
         const fileBuffer = response.data;
         const fileMime = file.file_type === "M4A"
