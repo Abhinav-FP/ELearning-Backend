@@ -225,71 +225,115 @@ app.post("/zoom-webhook", async (req, res) => {
   }
 
   // Recording complete route
-  if (event === "recording.completed") {
-    logger.info("Recording completed event received");
-    console.log("Recording completed event received");
-    const recordingObject = req.body.payload.object;
-    const meetingId = recordingObject.id;
-    const files = recordingObject.recording_files || [];
+ if (event === "recording.completed") {
+  logger.info("Recording completed event received");
+  console.log("Recording completed event received");
+  const recordingObject = req.body.payload.object;
+  const meetingId = recordingObject.id;
+  const files = recordingObject.recording_files || [];
 
-    try {
-      const accessToken = await getZoomAccessToken();
-      const uploadedUrls = [];
-      
-      const downloadToken = req.body.download_token;
-       
-      for (const file of files) {
-        if (!file.download_url) continue;
+  try {
+    const accessToken = await getZoomAccessToken();
+    const downloadToken = req.body.download_token;
+    const uploadedUrls = [];
+
+    // Fetch current Zoom record for deduplication
+    const zoomRecord = await Zoom.findOne({ meetingId: String(meetingId) });
+
+    for (const file of files) {
+      if (!file.download_url) continue;
+
+      const fileExtension = file.file_type.toLowerCase();
+      const fileName = `recording-${meetingId}-${file.id}.${fileExtension}`;
+
+      // Handle .chat files (convert to JSON, store in chat field)
+      if (fileExtension === "chat") {
         const downloadUrl = `${file.download_url}?access_token=${downloadToken}`;
+        const response = await axios.get(downloadUrl, {
+          responseType: "text",
+        });
 
+        const chatContent = response.data || "";
+        const chatLines = chatContent
+          .split("\n")
+          .filter(line => line.trim())
+          .map(line => {
+            const [time, name, ...messageParts] = line.split("\t");
+            return { time, name, message: messageParts.join(" ") };
+          });
+
+        await Zoom.findOneAndUpdate(
+          { meetingId: String(meetingId) },
+          { chat: JSON.stringify(chatLines) },
+          { new: true }
+        );
+
+        logger.info(`Saved chat file as JSON for meeting ${meetingId}`);
+        console.log(`Saved chat file as JSON for meeting ${meetingId}`);
+        continue;
+      }
+
+      // Handle .mp4 files (check for duplicates, upload)
+      if (fileExtension === "mp4") {
+        const fileExists = zoomRecord?.download?.some(existingUrl =>
+          existingUrl.includes(file.id)
+        );
+
+        if (fileExists) {
+          logger.info(`Skipping duplicate file ${fileName}`);
+          console.log(`Skipping duplicate file ${fileName}`);
+          continue;
+        }
+
+        const downloadUrl = `${file.download_url}?access_token=${downloadToken}`;
         logger.info(`Download url received ${downloadUrl}`);
         console.log(`Download url received ${downloadUrl}`);
 
         const response = await axios.get(downloadUrl, {
           responseType: "arraybuffer",
         });
-        logger.info(`response ${response?.data}`);
-        console.log(`response ${response?.data}`);
 
         const fileBuffer = response.data;
-        const fileMime = file.file_type === "M4A"
-          ? "audio/m4a"
-          : file.file_type === "MP4"
-            ? "video/mp4"
-            : "application/octet-stream";
 
-        const fileName = `recording-${meetingId}-${file.id}.${file.file_type.toLowerCase()}`;
+        const fileMime = "video/mp4";
 
-        logger.info(`fileName ${fileName}`);
-        console.log(`fileName ${fileName}`);
-
-        // Upload to DO Spaces
         const url = await uploadFileToSpaces({
           originalname: fileName,
           buffer: fileBuffer,
           mimetype: fileMime,
         });
 
-        if (url) uploadedUrls.push(url);
-        logger.info(`url ${url}`);
-        console.log(`url ${url}`);
+        if (url) {
+          uploadedUrls.push(url);
+          logger.info(`Uploaded to: ${url}`);
+          console.log(`url ${url}`);
+        }
+
+        continue;
       }
 
-      if (uploadedUrls.length) {
-        await Zoom.findOneAndUpdate(
-          { meetingId: String(meetingId) },
-          { $push: { download: { $each: uploadedUrls } } },
-          { new: true }
-        );
-        logger.info(`Uploaded Zoom recordings for meeting ${uploadedUrls}`);
-        console.log(`Uploaded Zoom recordings for meeting ${uploadedUrls}`);
-      }
-    } catch (err) {
-      logger.error("Error uploading Zoom recordings:", err?.response?.data || err.message);
-      console.log("Error uploading Zoom recordings:", err?.response?.data || err.message);
+      // Ignore other file types
+      logger.info(`Ignoring file ${fileName} of type ${file.file_type}`);
     }
-    return res.sendStatus(200);
+
+    // Push URLs of uploaded mp4 files
+    if (uploadedUrls.length) {
+      await Zoom.findOneAndUpdate(
+        { meetingId: String(meetingId) },
+        { $push: { download: { $each: uploadedUrls } } },
+        { new: true }
+      );
+      logger.info(`Uploaded Zoom recordings for meeting ${meetingId}: ${uploadedUrls}`);
+      console.log(`Uploaded Zoom recordings for meeting ${meetingId}: ${uploadedUrls}`);
+    }
+  } catch (err) {
+    logger.error("Error uploading Zoom recordings:", err?.response?.data || err.message);
+    console.log("Error uploading Zoom recordings:", err?.response?.data || err.message);
   }
+
+  return res.sendStatus(200);
+}
+
 
   // Step 2: Handle "participant_left" event
   if (event === "meeting.participant_left") {

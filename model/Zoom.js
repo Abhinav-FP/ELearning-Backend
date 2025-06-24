@@ -12,7 +12,11 @@ const ZoomSchema = mongoose.Schema(
     },
     download: {
       type: [String],
-      default : null,
+      default : [],
+    },
+    chat: {
+      type: String,
+      default: null,
     },
   },
   { timestamps: true }
