@@ -42,7 +42,7 @@ const PaymentSchema = mongoose.Schema({
         type: Date,
         default: Date.now,
     },
-    IsBouns: { type: Boolean, default: false },
+    IsBonus: { type: Boolean, default: false },
 });
 
 const payment = mongoose.model("stripepayments", PaymentSchema);

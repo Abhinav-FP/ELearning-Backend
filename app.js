@@ -76,7 +76,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
       const metadata = pi.metadata;
       // Bonus Payment Case
-      if (metadata.isBouns === true) {
+      if (metadata.IsBonus ) {
         console.log("MetaData for Bonus Payment");
 
         // Create Stripe payment record
@@ -89,7 +89,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           amount: pi.amount / 100,
           UserId: metadata.userId,
           payment_status: pi.status,
-          IsBouns: true,
+          IsBonus: true,
         });
 
         // Create Bonus record
@@ -107,7 +107,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         await Bookings.findOneAndUpdate(
           { _id: metadata.BookingId },
           {
-            IsBouns: true,
+            IsBonus: true,
             BonusId: record._id,
           },
           { new: true }

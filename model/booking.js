@@ -83,7 +83,7 @@ const bookingSchema = new mongoose.Schema(
       ref: "Zoom",
       default: null,
     },
-    IsBouns: { type: Boolean, default: false },
+    IsBonus: { type: Boolean, default: false },
      BonusId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "bonus",
