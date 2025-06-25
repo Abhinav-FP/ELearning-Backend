@@ -24,38 +24,56 @@ exports.AddAvailability = catchAsync(async (req, res) => {
       return errorResponse(res, "Start time and End time are required", 400);
     }
 
-    // Convert input to UTC
-    let startUTC = DateTime.fromISO(startDateTime, { zone: time_zone }).toUTC().toJSDate();
-    let endUTC = DateTime.fromISO(endDateTime, { zone: time_zone }).toUTC().toJSDate();
+    // Convert to UTC using Luxon
+    let startUTC = DateTime.fromISO(startDateTime, { zone: time_zone }).toUTC();
+    let endUTC = DateTime.fromISO(endDateTime, { zone: time_zone }).toUTC();
+
+    // console.log("startUTC", startUTC.toISO());
+    // console.log("endUTC", endUTC.toISO());
 
     if (startUTC >= endUTC) {
       return errorResponse(res, "End time must be after start time", 400);
     }
+
+    // Fetch existing availability slots
     const existingAvailabilities = await TeacherAvailability.find({ teacher: req.user.id });
-    const hasOverlap = existingAvailabilities.some(avail => {
-      return startUTC < avail.endDateTime && endUTC > avail.startDateTime;
-    });
-    if (hasOverlap) {
-      return errorResponse(res, "Availability overlaps with existing schedule", 400);
-    }
-    const adjacents = existingAvailabilities.filter(avail =>
-      avail.endDateTime.getTime() === startUTC.getTime() ||
-      avail.startDateTime.getTime() === endUTC.getTime()
-    );
-    if (adjacents.length > 0) {
-      for (const avail of adjacents) {
-        startUTC = new Date(Math.min(startUTC.getTime(), avail.startDateTime.getTime()));
-        endUTC = new Date(Math.max(endUTC.getTime(), avail.endDateTime.getTime()));
+
+    // Create 30-minute slots
+    let currentStart = startUTC;
+    const slots = [];
+
+    while (currentStart < endUTC) {
+      const currentEnd = currentStart.plus({ minutes: 30 });
+
+      // Check if this 30-min slot overlaps with any existing availability
+      const isOverlapping = existingAvailabilities.some(avail => {
+        const availStart = DateTime.fromJSDate(avail.startDateTime);
+        const availEnd = DateTime.fromJSDate(avail.endDateTime);
+        return currentStart < availEnd && currentEnd > availStart;
+      });
+
+      if (isOverlapping) {
+        return errorResponse(
+          res,
+          `Availability overlaps with existing schedule`,
+          400
+        );
       }
-      const adjacentIds = adjacents.map(a => a._id);
-      await TeacherAvailability.deleteMany({ _id: { $in: adjacentIds } });
+
+      // Push this valid slot to the list
+      slots.push({
+        teacher: req.user.id,
+        startDateTime: currentStart.toJSDate(),
+        endDateTime: currentEnd.toJSDate(),
+      });
+
+      currentStart = currentEnd;
     }
-    const booking = await TeacherAvailability.create({
-      teacher: req.user.id,
-      startDateTime: startUTC,
-      endDateTime: endUTC,
-    });
-    return successResponse(res, "Availability added successfully", 201, booking);
+
+    // Save all valid slots in one go
+    const savedSlots = await TeacherAvailability.insertMany(slots);
+
+    return successResponse(res, "Availability added successfully", 201, savedSlots);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
