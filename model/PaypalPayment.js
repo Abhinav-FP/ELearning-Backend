@@ -35,7 +35,7 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
   },
   created_at: { type: Date, default: Date.now },
-  IsBouns : { type: Boolean, default: false },
+  IsBouns: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model('paypalpayments', orderSchema);

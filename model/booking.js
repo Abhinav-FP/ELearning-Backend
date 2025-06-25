@@ -25,14 +25,11 @@ const bookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "stripepayments",
     },
-    BonusId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "bonus",
-    },
+   
     ReviewId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "reviews",
-      default : null ,
+      default: null,
     },
     startDateTime: {
       type: Date,
@@ -72,10 +69,6 @@ const bookingSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Admin Commission is required"],
     },
-    bonus: {
-      type: Number,
-      default: 0,
-    },
     payoutCreationDate: {
       type: Date,
       default: null,
@@ -90,8 +83,12 @@ const bookingSchema = new mongoose.Schema(
       ref: "Zoom",
       default: null,
     },
-      IsBouns : { type: Boolean, default: false },
-
+    IsBouns: { type: Boolean, default: false },
+     BonusId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "bonus",
+      default: null,
+    },
   },
   { timestamps: true }
 );

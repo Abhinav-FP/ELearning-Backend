@@ -15,24 +15,12 @@ const { DateTime } = require("luxon");
 const BookingSuccess = require("./EmailTemplate/BookingSuccess");
 const TeacherBooking = require("./EmailTemplate/TeacherBooking");
 const sendEmail = require("./utils/EmailMailler");
-
-const cron = require("node-cron");
-const fetch = require('node-fetch');
 const mongoose = require("mongoose");
-const Teacher = require("./model/teacher");
-const { updateCurrencyRatesJob } = require("./controller/currencycontroller");
-const TeacherAvailability = require("./model/TeacherAvailability");
-const paypalCommon = require("./utils/Paypalcommon")
-const currency = require("./EmailTemplate/currency");
-const bodyParser = require("body-parser");
 const { default: axios } = require("axios");
 const createZoomMeeting = require("./zoommeeting");
-const webhookID = process.env.PAYPAL_WEBHOOK_ID;
-const verifyURL = process.env.PAYPAL_VERIFY_URL;
 const logger = require("./utils/Logger");
 const { uploadFileToSpaces } = require("./utils/FileUploader");
 const Loggers = require("./utils/Logger");
-
 
 const corsOptions = {
   origin: "*", // Allowed origins
@@ -42,7 +30,6 @@ const corsOptions = {
   optionsSuccessStatus: 200, // for legacy browsers
 }
 app.use(cors(corsOptions));
-
 
 //stripe Webhook
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -88,6 +75,39 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const pi = event.data.object;
       Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
       const metadata = pi.metadata;
+      console.log("metadata" ,metadata)
+      if (metadata?.isBouns) {
+        const payment = new StripePayment({
+          srNo: parseInt(metadata.srNo),
+          payment_type: "card",
+          payment_id: pi.id,
+          currency: pi.currency,
+          LessonId: metadata.LessonId,
+          amount: pi.amount / 100,
+          UserId: metadata.userId,
+          payment_status: pi.status,
+          IsBouns: metadata?.isBouns,
+        });
+        const record = await Bonus.create({
+          userId: metadata?.userId,
+          teacherId: metadata?.teacherId,
+          LessonId: metadata?.LessonId,
+          bookingId: metadata?.BookingId,
+          amount: metadata?.amount,
+          currency:  pi.currency,
+          paypalpaymentId: payment?._id,
+        });
+
+        const BookingData = await Bookings.findOneAndUpdate(
+          { _id: metadata?.BookingId },
+          {
+            IsBouns: true,
+            BonusId: record._id,
+          },
+          { new: true }
+        );
+        return ;
+      }
       Loggers.info("📦 Metadata:", metadata)
       let startUTC, endUTC;
       // Convert times to UTC
@@ -144,6 +164,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         );
       }
 
+
+
       // Send confirmation email to student
       const user = await User.findById(metadata.userId);
       const teacher = await User.findById(metadata.teacherId);
@@ -172,6 +194,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 
   res.json({ received: true });
 });
+
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
@@ -211,7 +234,6 @@ async function getZoomAccessToken() {
 const emptyMeetingTimeouts = new Map();
 
 app.post("/zoom-webhook", async (req, res) => {
-  console.log("Zoom webhook received", req.body);
   logger.info("Zoom webhook received", req.body);
   const event = req.body.event;
 
