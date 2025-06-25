@@ -21,6 +21,7 @@ const createZoomMeeting = require("./zoommeeting");
 const logger = require("./utils/Logger");
 const { uploadFileToSpaces } = require("./utils/FileUploader");
 const Loggers = require("./utils/Logger");
+const  Bonus =  require("./model/Bonus");
 
 const corsOptions = {
   origin: "*", // Allowed origins
@@ -75,11 +76,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const pi = event.data.object;
       Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
       const metadata = pi.metadata;
-      console.log("metadata" ,metadata)
-
-      // Bonus Payment Case
-      if (metadata?.isBouns) {
-        const payment = new StripePayment({
+      if (metadata.IsBonus ) {
+        const payment = await StripePayment.create({
           srNo: parseInt(metadata.srNo),
           payment_type: "card",
           payment_id: pi.id,
@@ -88,30 +86,31 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           amount: pi.amount / 100,
           UserId: metadata.userId,
           payment_status: pi.status,
-          IsBouns: metadata?.isBouns,
+          IsBonus: true,
         });
+        // Create Bonus record
         const record = await Bonus.create({
-          userId: metadata?.userId,
-          teacherId: metadata?.teacherId,
-          LessonId: metadata?.LessonId,
-          bookingId: metadata?.BookingId,
-          amount: metadata?.amount,
-          currency:  pi.currency,
-          paypalpaymentId: payment?._id,
+          userId: metadata.userId,
+          teacherId: metadata.teacherId,
+          LessonId: metadata.LessonId,
+          bookingId: metadata.BookingId,
+          amount: metadata.amount,
+          currency: pi.currency,
+          stripePaymentId: payment._id, // ✅ updated to reflect Stripe
         });
-
-        const BookingData = await Bookings.findOneAndUpdate(
-          { _id: metadata?.BookingId },
+        // Update Booking with Bonus
+        await Bookings.findOneAndUpdate(
+          { _id: metadata.BookingId },
           {
-            IsBouns: true,
+            IsBonus: true,
             BonusId: record._id,
           },
           { new: true }
         );
-        return ;
+        return;
       }
       // Bonus Case ends here
-
+      
 
       Loggers.info("📦 Metadata:", metadata)
       let startUTC, endUTC;
@@ -168,9 +167,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           { new: true, runValidators: true }
         );
       }
-
-
-
       // Send confirmation email to student
       const user = await User.findById(metadata.userId);
       const teacher = await User.findById(metadata.teacherId);
@@ -252,114 +248,114 @@ app.post("/zoom-webhook", async (req, res) => {
   }
 
   // Recording complete route
- if (event === "recording.completed") {
-  logger.info("Recording completed event received");
-  console.log("Recording completed event received");
-  const recordingObject = req.body.payload.object;
-  const meetingId = recordingObject.id;
-  const files = recordingObject.recording_files || [];
+  if (event === "recording.completed") {
+    logger.info("Recording completed event received");
+    console.log("Recording completed event received");
+    const recordingObject = req.body.payload.object;
+    const meetingId = recordingObject.id;
+    const files = recordingObject.recording_files || [];
 
-  try {
-    const accessToken = await getZoomAccessToken();
-    const downloadToken = req.body.download_token;
-    const uploadedUrls = [];
+    try {
+      const accessToken = await getZoomAccessToken();
+      const downloadToken = req.body.download_token;
+      const uploadedUrls = [];
 
-    // Fetch current Zoom record for deduplication
-    const zoomRecord = await Zoom.findOne({ meetingId: String(meetingId) });
+      // Fetch current Zoom record for deduplication
+      const zoomRecord = await Zoom.findOne({ meetingId: String(meetingId) });
 
-    for (const file of files) {
-      if (!file.download_url) continue;
+      for (const file of files) {
+        if (!file.download_url) continue;
 
-      const fileExtension = file.file_type.toLowerCase();
-      const fileName = `recording-${meetingId}-${file.id}.${fileExtension}`;
+        const fileExtension = file.file_type.toLowerCase();
+        const fileName = `recording-${meetingId}-${file.id}.${fileExtension}`;
 
-      // Handle .chat files (convert to JSON, store in chat field)
-      if (fileExtension === "chat") {
-        const downloadUrl = `${file.download_url}?access_token=${downloadToken}`;
-        const response = await axios.get(downloadUrl, {
-          responseType: "text",
-        });
-
-        const chatContent = response.data || "";
-        const chatLines = chatContent
-          .split("\n")
-          .filter(line => line.trim())
-          .map(line => {
-            const [time, name, ...messageParts] = line.split("\t");
-            return { time, name, message: messageParts.join(" ") };
+        // Handle .chat files (convert to JSON, store in chat field)
+        if (fileExtension === "chat") {
+          const downloadUrl = `${file.download_url}?access_token=${downloadToken}`;
+          const response = await axios.get(downloadUrl, {
+            responseType: "text",
           });
 
-        await Zoom.findOneAndUpdate(
-          { meetingId: String(meetingId) },
-          { chat: JSON.stringify(chatLines) },
-          { new: true }
-        );
+          const chatContent = response.data || "";
+          const chatLines = chatContent
+            .split("\n")
+            .filter(line => line.trim())
+            .map(line => {
+              const [time, name, ...messageParts] = line.split("\t");
+              return { time, name, message: messageParts.join(" ") };
+            });
 
-        logger.info(`Saved chat file as JSON for meeting ${meetingId}`);
-        console.log(`Saved chat file as JSON for meeting ${meetingId}`);
-        continue;
-      }
+          await Zoom.findOneAndUpdate(
+            { meetingId: String(meetingId) },
+            { chat: JSON.stringify(chatLines) },
+            { new: true }
+          );
 
-      // Handle .mp4 files (check for duplicates, upload)
-      if (fileExtension === "mp4") {
-        const fileExists = zoomRecord?.download?.some(existingUrl =>
-          existingUrl.includes(file.id)
-        );
-
-        if (fileExists) {
-          logger.info(`Skipping duplicate file ${fileName}`);
-          console.log(`Skipping duplicate file ${fileName}`);
+          logger.info(`Saved chat file as JSON for meeting ${meetingId}`);
+          console.log(`Saved chat file as JSON for meeting ${meetingId}`);
           continue;
         }
 
-        const downloadUrl = `${file.download_url}?access_token=${downloadToken}`;
-        logger.info(`Download url received ${downloadUrl}`);
-        console.log(`Download url received ${downloadUrl}`);
+        // Handle .mp4 files (check for duplicates, upload)
+        if (fileExtension === "mp4") {
+          const fileExists = zoomRecord?.download?.some(existingUrl =>
+            existingUrl.includes(file.id)
+          );
 
-        const response = await axios.get(downloadUrl, {
-          responseType: "arraybuffer",
-        });
+          if (fileExists) {
+            logger.info(`Skipping duplicate file ${fileName}`);
+            console.log(`Skipping duplicate file ${fileName}`);
+            continue;
+          }
 
-        const fileBuffer = response.data;
+          const downloadUrl = `${file.download_url}?access_token=${downloadToken}`;
+          logger.info(`Download url received ${downloadUrl}`);
+          console.log(`Download url received ${downloadUrl}`);
 
-        const fileMime = "video/mp4";
+          const response = await axios.get(downloadUrl, {
+            responseType: "arraybuffer",
+          });
 
-        const url = await uploadFileToSpaces({
-          originalname: fileName,
-          buffer: fileBuffer,
-          mimetype: fileMime,
-        });
+          const fileBuffer = response.data;
 
-        if (url) {
-          uploadedUrls.push(url);
-          logger.info(`Uploaded to: ${url}`);
-          console.log(`url ${url}`);
+          const fileMime = "video/mp4";
+
+          const url = await uploadFileToSpaces({
+            originalname: fileName,
+            buffer: fileBuffer,
+            mimetype: fileMime,
+          });
+
+          if (url) {
+            uploadedUrls.push(url);
+            logger.info(`Uploaded to: ${url}`);
+            console.log(`url ${url}`);
+          }
+
+          continue;
         }
 
-        continue;
+        // Ignore other file types
+        logger.info(`Ignoring file ${fileName} of type ${file.file_type}`);
       }
 
-      // Ignore other file types
-      logger.info(`Ignoring file ${fileName} of type ${file.file_type}`);
+      // Push URLs of uploaded mp4 files
+      if (uploadedUrls.length) {
+        await Zoom.findOneAndUpdate(
+          { meetingId: String(meetingId) },
+          { $push: { download: { $each: uploadedUrls } } },
+          { new: true }
+        );
+        logger.info(`Uploaded Zoom recordings for meeting ${meetingId}: ${uploadedUrls}`);
+        console.log(`Uploaded Zoom recordings for meeting ${meetingId}: ${uploadedUrls}`);
+      }
+    } catch (err) {
+      logger.error("Error uploading Zoom recordings:", err?.response?.data || err.message);
+      console.log("Error uploading Zoom recordings:", err?.response?.data || err.message);
     }
 
-    // Push URLs of uploaded mp4 files
-    if (uploadedUrls.length) {
-      await Zoom.findOneAndUpdate(
-        { meetingId: String(meetingId) },
-        { $push: { download: { $each: uploadedUrls } } },
-        { new: true }
-      );
-      logger.info(`Uploaded Zoom recordings for meeting ${meetingId}: ${uploadedUrls}`);
-      console.log(`Uploaded Zoom recordings for meeting ${meetingId}: ${uploadedUrls}`);
-    }
-  } catch (err) {
-    logger.error("Error uploading Zoom recordings:", err?.response?.data || err.message);
-    console.log("Error uploading Zoom recordings:", err?.response?.data || err.message);
+    return res.sendStatus(200);
   }
-
-  return res.sendStatus(200);
-}
 
 
   // Step 2: Handle "participant_left" event

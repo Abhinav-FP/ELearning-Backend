@@ -121,7 +121,6 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       UserId: UserId || undefined,
       amount: captureData.purchase_units[0].payments.captures[0].amount.value, // "100.00"
       currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
-      IsBouns: isbouns,
     });
     const savedPayment = await newPayment.save();
     let startUTC, endUTC;
@@ -194,7 +193,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
-    const { orderID, teacherId, LessonId, totalAmount, isbouns, BookingId } = req.body;
+    const { orderID, teacherId, LessonId, totalAmount, IsBonus, BookingId } = req.body;
     const accessToken = await generateAccessToken();
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
@@ -220,7 +219,7 @@ exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
       UserId: UserId || undefined,
       amount: captureData.purchase_units[0].payments.captures[0].amount.value, // "100.00"
       currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
-      IsBouns: isbouns,
+      IsBonus: IsBonus,
     });
 
     const savedPayment = await newPayment.save();
@@ -238,7 +237,7 @@ exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
     const BookingData = await Bookings.findOneAndUpdate(
       { _id: BookingId },
       {
-        IsBouns: true,
+        IsBonus: true,
         BonusId: record._id,
       },
       { new: true }
@@ -491,7 +490,7 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
     const userId = req.user.id;
     const { amount, LessonId, currency, teacherId,
        startDateTime, endDateTime, timezone, adminCommission,
-        email, isSpecial, isbouns ,
+        email, isSpecial, IsBonus ,
         BookingId
       
       } = req?.body;
@@ -517,7 +516,7 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
         srNo: srNo.toString(),
         isSpecial, 
         BookingId, 
-        isbouns,
+        IsBonus  ,
       }
     });
     res.json({ clientSecret: paymentIntent.client_secret });
