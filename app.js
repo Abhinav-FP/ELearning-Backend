@@ -167,9 +167,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           { new: true, runValidators: true }
         );
       }
-
-
-
       // Send confirmation email to student
       const user = await User.findById(metadata.userId);
       const teacher = await User.findById(metadata.teacherId);
