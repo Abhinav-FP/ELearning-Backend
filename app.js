@@ -76,6 +76,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
       const metadata = pi.metadata;
       // Bonus Payment Case
+     console.log("📦 Metadata:", metadata)
+
       if (metadata.IsBonus ) {
         console.log("MetaData for Bonus Payment");
 
