@@ -76,12 +76,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const pi = event.data.object;
       Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
       const metadata = pi.metadata;
-      // Bonus Payment Case
-     console.log("📦 Metadata:", metadata)
-
       if (metadata.IsBonus ) {
-        console.log("MetaData for Bonus Payment");
-        // Create Stripe payment record
         const payment = await StripePayment.create({
           srNo: parseInt(metadata.srNo),
           payment_type: "card",
@@ -93,8 +88,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           payment_status: pi.status,
           IsBonus: true,
         });
-        console.log("Bonus Payment Created Successfully");
-
         // Create Bonus record
         const record = await Bonus.create({
           userId: metadata.userId,
@@ -105,8 +98,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           currency: pi.currency,
           stripePaymentId: payment._id, // ✅ updated to reflect Stripe
         });
-        console.log("Bonus  Created Successfully");
-
         // Update Booking with Bonus
         await Bookings.findOneAndUpdate(
           { _id: metadata.BookingId },
@@ -116,13 +107,10 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           },
           { new: true }
         );
-
-        console.log("Bonus Payment Updated Successfully");
         return;
       }
-
       // Bonus Case ends here
-      console.log("Payment Bouns Success fully Done ");
+      
 
       Loggers.info("📦 Metadata:", metadata)
       let startUTC, endUTC;
