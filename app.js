@@ -75,11 +75,12 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const pi = event.data.object;
       Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
       const metadata = pi.metadata;
-
       // Bonus Payment Case
       if (metadata.isBouns === true) {
-        console.log("MetaData for  bonus Payment")
-        const payment = new StripePayment({
+        console.log("MetaData for Bonus Payment");
+
+        // Create Stripe payment record
+        const payment = await StripePayment.create({
           srNo: parseInt(metadata.srNo),
           payment_type: "card",
           payment_id: pi.id,
@@ -88,28 +89,33 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           amount: pi.amount / 100,
           UserId: metadata.userId,
           payment_status: pi.status,
-          IsBouns: metadata?.isBouns,
-        });
-        const record = await Bonus.create({
-          userId: metadata?.userId,
-          teacherId: metadata?.teacherId,
-          LessonId: metadata?.LessonId,
-          bookingId: metadata?.BookingId,
-          amount: metadata?.amount,
-          currency: pi.currency,
-          paypalpaymentId: payment?._id,
+          IsBouns: true,
         });
 
-        const BookingData = await Bookings.findOneAndUpdate(
-          { _id: metadata?.BookingId },
+        // Create Bonus record
+        const record = await Bonus.create({
+          userId: metadata.userId,
+          teacherId: metadata.teacherId,
+          LessonId: metadata.LessonId,
+          bookingId: metadata.BookingId,
+          amount: metadata.amount,
+          currency: pi.currency,
+          stripePaymentId: payment._id, // ✅ updated to reflect Stripe
+        });
+
+        // Update Booking with Bonus
+        await Bookings.findOneAndUpdate(
+          { _id: metadata.BookingId },
           {
             IsBouns: true,
             BonusId: record._id,
           },
           { new: true }
         );
+
         return;
       }
+
       // Bonus Case ends here
       console.log("Payment Bouns Success fully Done ");
 
