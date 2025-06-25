@@ -75,10 +75,10 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const pi = event.data.object;
       Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
       const metadata = pi.metadata;
-      console.log("metadata" ,metadata)
+      console.log("metadata for bouns" ,metadata)
 
       // Bonus Payment Case
-      if (metadata?.isBouns) {
+      if (metadata.isBouns === true) {
         const payment = new StripePayment({
           srNo: parseInt(metadata.srNo),
           payment_type: "card",
@@ -111,7 +111,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         return ;
       }
       // Bonus Case ends here
-
+console.log("Payment Bouns Success fully Done ");
 
       Loggers.info("📦 Metadata:", metadata)
       let startUTC, endUTC;
