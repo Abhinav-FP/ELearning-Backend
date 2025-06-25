@@ -1,4 +1,5 @@
 const Bonus = require("../model/Bonus");
+const Bookings = require("../model/booking");
 const catchAsync = require("../utils/catchAsync");
 
 exports.BonusAdd = catchAsync(async (req, res) => {
@@ -23,6 +24,7 @@ exports.BonusAdd = catchAsync(async (req, res) => {
         });
     }
 })
+
 exports.BonusList = catchAsync(async (req, res) => {
     try {
         const record = await Bonus.find({});
@@ -40,4 +42,5 @@ exports.BonusList = catchAsync(async (req, res) => {
         })
     }
 })
+
 
