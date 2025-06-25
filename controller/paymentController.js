@@ -121,7 +121,6 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       UserId: UserId || undefined,
       amount: captureData.purchase_units[0].payments.captures[0].amount.value, // "100.00"
       currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
-      IsBonus: IsBonus,
     });
     const savedPayment = await newPayment.save();
     let startUTC, endUTC;
