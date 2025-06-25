@@ -21,6 +21,7 @@ const createZoomMeeting = require("./zoommeeting");
 const logger = require("./utils/Logger");
 const { uploadFileToSpaces } = require("./utils/FileUploader");
 const Loggers = require("./utils/Logger");
+const  Bonus =  require("./model/Bonus");
 
 const corsOptions = {
   origin: "*", // Allowed origins
@@ -80,7 +81,6 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 
       if (metadata.IsBonus ) {
         console.log("MetaData for Bonus Payment");
-
         // Create Stripe payment record
         const payment = await StripePayment.create({
           srNo: parseInt(metadata.srNo),
