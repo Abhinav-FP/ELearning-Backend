@@ -76,6 +76,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
       const metadata = pi.metadata;
       console.log("metadata" ,metadata)
+
+      // Bonus Payment Case
       if (metadata?.isBouns) {
         const payment = new StripePayment({
           srNo: parseInt(metadata.srNo),
@@ -108,6 +110,9 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         );
         return ;
       }
+      // Bonus Case ends here
+
+
       Loggers.info("📦 Metadata:", metadata)
       let startUTC, endUTC;
       // Convert times to UTC
@@ -459,7 +464,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// require('./cronJobs')();
+require('./cronJobs')();
 
 const server = app.listen(PORT, () => console.log("Server is running at port : " + PORT));
 server.timeout = 360000; // 6 minutes
