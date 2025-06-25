@@ -254,6 +254,8 @@ app.post("/zoom-webhook", async (req, res) => {
     const recordingObject = req.body.payload.object;
     const meetingId = recordingObject.id;
     const files = recordingObject.recording_files || [];
+    logger.info("files received", files);
+    console.log("files received", files);
 
     try {
       const accessToken = await getZoomAccessToken();
@@ -267,6 +269,8 @@ app.post("/zoom-webhook", async (req, res) => {
         if (!file.download_url) continue;
 
         const fileExtension = file.file_type.toLowerCase();
+        logger.info("fileExtension", fileExtension);
+        console.log("fileExtension", fileExtension);
         const fileName = `recording-${meetingId}-${file.id}.${fileExtension}`;
 
         // Handle .chat files (convert to JSON, store in chat field)
