@@ -93,6 +93,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           payment_status: pi.status,
           IsBonus: true,
         });
+        console.log("Bonus Payment Created Successfully");
 
         // Create Bonus record
         const record = await Bonus.create({
@@ -104,6 +105,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           currency: pi.currency,
           stripePaymentId: payment._id, // ✅ updated to reflect Stripe
         });
+        console.log("Bonus  Created Successfully");
 
         // Update Booking with Bonus
         await Bookings.findOneAndUpdate(
@@ -115,6 +117,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           { new: true }
         );
 
+        console.log("Bonus Payment Updated Successfully");
         return;
       }
 
