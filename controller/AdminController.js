@@ -241,8 +241,8 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
       .populate('paypalpaymentId')
       .populate('UserId')
       .populate('teacherId')
-      .populate('LessonId');
-
+      .populate('LessonId')
+      .populate('zoom');
     if (!data) {
       return errorResponse(res, "Bookings not Found", 401);
     }
