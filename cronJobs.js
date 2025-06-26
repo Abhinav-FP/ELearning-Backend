@@ -16,7 +16,7 @@ const logger = require("./utils/Logger");
 const jwt = require("jsonwebtoken");
 
 module.exports = () => {
-  cron.schedule('*/1 * * * *', async () => {
+  cron.schedule('*/2 * * * *', async () => {
     try {
         // console.log(`Running cron job at ${new Date().toISOString()}`);
         const now = new Date(); // current time in UTC
@@ -131,13 +131,13 @@ module.exports = () => {
             $gte: endNow.toJSDate(),
             $lt: endNow.plus({ minutes: 1 }).toJSDate(), // match to current minute
           },
-          // "_id": "68565ed871ccc9a756f9b73d",
+          // "_id": "685bc649111ccd939710821d",
         })
           .populate('teacherId')
           .populate('UserId')
           .populate('LessonId');
 
-        // console.log("justEndedBookings",justEndedBookings);
+        console.log("justEndedBookings",justEndedBookings);
         for (const booking of justEndedBookings) {
           const user = booking?.UserId;
           const teacher = booking?.teacherId;
