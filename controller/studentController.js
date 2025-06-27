@@ -347,7 +347,6 @@ exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
       return errorResponse(res, "Teacher ID is required", 400);
     }
 
-    // 1. Get lessons by teacher
     const lessons = await Lesson.find({
       teacher: teacherId,
       is_deleted: { $ne: true }
