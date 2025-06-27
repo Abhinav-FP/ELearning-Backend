@@ -14,6 +14,7 @@ const mongoose = require('mongoose');
 const sendEmail = require("../utils/EmailMailler");
 const SpecialSlotEmail = require("../EmailTemplate/SpecialSlot");
 const jwt = require("jsonwebtoken");
+const review = require("../model/review");
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
@@ -908,6 +909,35 @@ exports.DeleteGetLesson = catchAsync(async (req, res) => {
     return successResponse(res, "Lessons retrieved successfully", 200, lessons);
   } catch (error) {
     console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+
+exports.GetReview = catchAsync(async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    if (!teacherId) {
+      return errorResponse(res, "Teacher ID is required", 400);
+    }
+
+    const lessons = await Lesson.find({
+      teacher: teacherId,
+      is_deleted: { $ne: true }
+    }).populate("teacher");
+
+    if (!lessons || lessons.length === 0) {
+      return errorResponse(res, "No lessons found", 404);
+    }
+    const lessonIds = lessons.map(lesson => lesson._id);
+    const reviews = await review.find({
+      lessonId: { $in: lessonIds },
+    }).populate("lessonId").populate({
+      path: "userId",
+      select: "name profile_photo"
+    });
+    return successResponse(res, "Lessons and accepted reviews retrieved successfully", 200, reviews);
+  } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
