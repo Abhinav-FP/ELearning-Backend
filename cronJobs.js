@@ -137,7 +137,7 @@ module.exports = () => {
           .populate('UserId')
           .populate('LessonId');
 
-        console.log("justEndedBookings",justEndedBookings);
+        // console.log("justEndedBookings",justEndedBookings);
         for (const booking of justEndedBookings) {
           const user = booking?.UserId;
           const teacher = booking?.teacherId;
