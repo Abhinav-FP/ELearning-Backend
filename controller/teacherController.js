@@ -661,8 +661,12 @@ exports.DashboardApi = catchAsync(async (req, res) => {
       }
     ]);
 
+    const now = new Date();
+    const from = new Date();
+    from.setDate(now.getDate() - 30);
+
     const earnings = await Bookings.aggregate([
-      { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true } },
+      { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true, startDateTime: { $gte: from, $lte: now } } },
       {
         $group: {
           _id: null,
@@ -712,7 +716,8 @@ exports.DashboardApi = catchAsync(async (req, res) => {
       {
         $match: {
           teacherId: objectId,
-          paypalpaymentId: { $exists: true, $ne: null }
+          paypalpaymentId: { $exists: true, $ne: null },
+           startDateTime: { $gte: from, $lte: now }
         }
       },
       {
@@ -731,6 +736,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
           StripepaymentId: { $exists: true, $ne: null },
           lessonCompletedStudent: true,
           lessonCompletedTeacher: true,
+          startDateTime: { $gte: from, $lte: now }
         }
       },
       {
