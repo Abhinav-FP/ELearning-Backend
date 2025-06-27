@@ -16,7 +16,7 @@ exports.paymentget = catchAsync(async (req, res) => {
     const UserId = req.user.id;
     const BookingData = await Booking.find({
       UserId: UserId
-    }).populate("LessonId").populate("paypalpaymentId").populate("StripepaymentId").sort({createdAt  : -1})
+    }).populate("LessonId").populate("paypalpaymentId").populate("StripepaymentId").sort({ createdAt: -1 })
     return successResponse(res, "Payment Get successfully!", 201, BookingData);
   } catch (error) {
     console.log("error", error);
@@ -321,19 +321,53 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
   }
 });
 
+// exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
+//   try {
+//     const teacherId = req.params.id;
+//     if (!teacherId) {
+//       return errorResponse(res, "Teacher ID is required", 400);
+//     }
+//     const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
+
+//     const  reviews = await Review.find({ teacher: lessons?.id }).populate("userId");
+//     if (!lessons || lessons.length === 0) {
+//       return errorResponse(res, "No lessons found", 404);
+//     }
+//     return successResponse(res, "Lessons retrieved successfully", 200, lessons);
+//   } catch (error) {
+//     return errorResponse(res, error.message || "Internal Server Error", 500);
+//   }
+// });
+
+
 exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
   try {
     const teacherId = req.params.id;
-    // console.log("teacherId", teacherId);
-
     if (!teacherId) {
       return errorResponse(res, "Teacher ID is required", 400);
     }
-    const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
+
+    // 1. Get lessons by teacher
+    const lessons = await Lesson.find({
+      teacher: teacherId,
+      is_deleted: { $ne: true }
+    }).populate("teacher");
+
     if (!lessons || lessons.length === 0) {
       return errorResponse(res, "No lessons found", 404);
     }
-    return successResponse(res, "Lessons retrieved successfully", 200, lessons);
+    const lessonIds = lessons.map(lesson => lesson._id);
+    const reviews = await review.find({
+      lessonId: { $in: lessonIds },
+      review_status: "Accept"
+    }).populate("lessonId").populate({
+      path: "userId",
+      select: "name profile_photo"
+    });
+    return successResponse(res, "Lessons and accepted reviews retrieved successfully", 200, {
+      lessons,
+      reviews
+    });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
