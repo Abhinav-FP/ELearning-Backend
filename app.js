@@ -135,7 +135,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         payment_status: pi.status
       });
       const savedPayment = await payment.save();
-      const teacherEarning = ((pi.amount / 100) - processingFee )* 0.90; // 90% to teacher, 10% to admin as discussed with client
+      const teacherEarning = ((pi.amount / 100) - metadata.processingFee )* 0.90; // 90% to teacher, 10% to admin as discussed with client
       // Save booking record
       const booking = new Bookings({
         teacherId: metadata.teacherId,
