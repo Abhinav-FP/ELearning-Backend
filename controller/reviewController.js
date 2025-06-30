@@ -72,18 +72,17 @@ exports.ReviewStatus = catchAsync(async (req, res) => {
 exports.ReviewEdit = catchAsync(async (req, res) => {
     const { _id, description, rating } = req.body;
 
+
     if (!_id || !description) {
         Loggers.warn("Missing required fields");
         return validationErrorResponse(res, "All fields are required", 400);
     }
-
     try {
         const result = await Review.findByIdAndUpdate(_id, { description, rating }, { new: true });
         if (!result) {
             return validationErrorResponse(res, "Review not found", 404);
         }
-
-        return successResponse(res, "Review updated successfully", 200, { result });
+        return successResponse(res, "Review updated successfully", 200,  result);
     } catch (error) {
         Loggers.error(error.message);
         return errorResponse(res, "Failed to update review", 500);
