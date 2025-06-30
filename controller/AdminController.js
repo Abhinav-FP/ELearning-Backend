@@ -117,8 +117,8 @@ exports.PayoutListing = catchAsync(async (req, res) => {
   try {
     const { search, status } = req.query;
     const filter = {};
-    if(status && status!=""){
-      filter.Status=status;
+    if (status && status != "") {
+      filter.Status = status;
     }
     let result = await Payout.find(filter)
       .sort({ createdAt: -1 })
@@ -130,7 +130,7 @@ exports.PayoutListing = catchAsync(async (req, res) => {
         message: "No payouts found.",
       });
     }
-    
+
     if (search && search.trim() !== "") {
       const regex = new RegExp(search.trim(), "i");
 
@@ -398,14 +398,20 @@ exports.Admindashbaord = catchAsync(async (req, res) => {
 })
 
 
-
 exports.AistrainedApprove = catchAsync(async (req, res) => {
   try {
-    const { id, approved } = req.body;
+    const { id } = req.body;
+    const user = await Teacher.findById(id);
+    if (!user) {
+      return errorResponse(res, "User not found", 404);
+    }
+
+    // toggle ais_trained
+    const newStatus = user.ais_trained === true ? false : true;
 
     const teacher = await Teacher.findByIdAndUpdate(
       id,
-      { ais_trained: approved },
+      { ais_trained: newStatus },
       { new: true }
     );
 
@@ -413,12 +419,14 @@ exports.AistrainedApprove = catchAsync(async (req, res) => {
       return errorResponse(res, "Teacher not found.", 404);
     }
 
-    const message = approved
+
+    const message = teacher.ais_trained === true
       ? "Teacher has been successfully marked as AI-trained."
       : "Teacher has been rejected successfully.";
 
     return successResponse(res, message, 200, teacher);
   } catch (error) {
+    console.error("Error:", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
