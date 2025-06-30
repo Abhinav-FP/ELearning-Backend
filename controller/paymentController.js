@@ -131,7 +131,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
       endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
     }
-    const teacherEarning = totalAmount * 0.90; // 90% to teacher, 10% to admin as discussed with client
+    const teacherEarning = (totalAmount- processingFee) * 0.90; // 90% to teacher, 10% to admin as discussed with client
     const Bookingsave = new Bookings({
       teacherId,
       totalAmount,
