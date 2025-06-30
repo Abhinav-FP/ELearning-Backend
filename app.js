@@ -135,7 +135,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         payment_status: pi.status
       });
       const savedPayment = await payment.save();
-      const teacherEarning = (pi.amount / 100) - metadata.adminCommission;
+      const teacherEarning = (pi.amount / 100) * 0.90; // 90% to teacher, 10% to admin as discussed with client
       // Save booking record
       const booking = new Bookings({
         teacherId: metadata.teacherId,
@@ -149,6 +149,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         currency: pi.currency,
         totalAmount: pi.amount / 100,
         srNo: parseInt(metadata.srNo),
+        processingFee: metadata.processingFee || 0,
         notes: metadata.notes || ""
       });
       const record = await booking.save();
@@ -464,7 +465,7 @@ app.get("/", (req, res) => {
   });
 });
 
-require('./cronJobs')();
+// require('./cronJobs')();
 
 const server = app.listen(PORT, () => console.log("Server is running at port : " + PORT));
 server.timeout = 360000; // 6 minutes

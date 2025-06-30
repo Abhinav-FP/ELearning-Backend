@@ -93,9 +93,9 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
     const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone, totalAmount, adminCommission, email,
-      isSpecialSlot
+      isSpecialSlot, processingFee
     } = req.body;
-    console.log(req.body)
+    console.log("req.body in paypal approve",req.body)
     const accessToken = await generateAccessToken();
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
@@ -131,7 +131,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
       endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
     }
-    const teacherEarning = totalAmount - adminCommission;
+    const teacherEarning = totalAmount * 0.90; // 90% to teacher, 10% to admin as discussed with client
     const Bookingsave = new Bookings({
       teacherId,
       totalAmount,
@@ -142,6 +142,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       paypalpaymentId: savedPayment?._id,
       startDateTime: startUTC,
       endDateTime: endUTC,
+      processingFee,
     });
     await Bookingsave.save();
 
@@ -491,8 +492,7 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
     const { amount, LessonId, currency, teacherId,
        startDateTime, endDateTime, timezone, adminCommission,
         email, isSpecial, IsBonus ,
-        BookingId
-      
+        BookingId, processingFee      
       } = req?.body;
       console.log("req?.body" ,req?.body)
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
@@ -516,7 +516,8 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
         srNo: srNo.toString(),
         isSpecial, 
         BookingId, 
-        IsBonus  ,
+        IsBonus,
+        processingFee,
       }
     });
     res.json({ clientSecret: paymentIntent.client_secret });

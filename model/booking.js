@@ -25,7 +25,6 @@ const bookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "stripepayments",
     },
-   
     ReviewId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "reviews",
@@ -68,6 +67,10 @@ const bookingSchema = new mongoose.Schema(
     adminCommission: {
       type: Number,
       required: [true, "Admin Commission is required"],
+    },
+    processingFee: {
+      type: Number,
+      required: [true, "Processing Fee is required"],
     },
     payoutCreationDate: {
       type: Date,
