@@ -396,3 +396,29 @@ exports.Admindashbaord = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 })
+
+
+
+exports.AistrainedApprove = catchAsync(async (req, res) => {
+  try {
+    const { id, approved } = req.body;
+
+    const teacher = await Teacher.findByIdAndUpdate(
+      id,
+      { ais_trained: approved },
+      { new: true }
+    );
+
+    if (!teacher) {
+      return errorResponse(res, "Teacher not found.", 404);
+    }
+
+    const message = approved
+      ? "Teacher has been successfully marked as AI-trained."
+      : "Teacher has been rejected successfully.";
+
+    return successResponse(res, message, 200, teacher);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
