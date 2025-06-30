@@ -139,6 +139,7 @@ exports.GetAvailability = catchAsync(async (req, res) => {
     }
 
     const bookings = await Bookings.find({ teacherId: id, cancelled: false }).lean();
+    // console.log("bookings", bookings);
 
     if (!bookings || bookings.length === 0) {
       return successResponse(res, "Availability processed", 200, {
@@ -211,9 +212,15 @@ exports.GetAvailability = catchAsync(async (req, res) => {
       );
     }
 
+    const transformedBookings = bookings.map(item => ({
+      teacher: item.teacherId,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }));
+
     return successResponse(res, "Availability processed", 200, {
       availabilityBlocks: availableSlots,
-      bookedSlots,
+      bookedSlots: transformedBookings,
     });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
@@ -451,19 +458,19 @@ exports.EarningsGet = catchAsync(async (req, res) => {
       if (date === "last7") {
         const from = new Date();
         from.setDate(now.getDate() - 7);
-        filter.startDateTime = { $gte: from, $lte: now };
+        filter.createdAt = { $gte: from, $lte: now };
 
       } else if (date === "last30") {
         const from = new Date();
         from.setDate(now.getDate() - 30);
-        filter.startDateTime = { $gte: from, $lte: now };
+        filter.createdAt = { $gte: from, $lte: now };
 
       } else if (!isNaN(date)) {
         // If it's a year like "2024"
         const year = parseInt(date, 10);
         const startOfYear = new Date(`${year}-01-01T00:00:00.000Z`);
         const endOfYear = new Date(`${year}-12-31T23:59:59.999Z`);
-        filter.startDateTime = { $gte: startOfYear, $lte: endOfYear };
+        filter.createdAt = { $gte: startOfYear, $lte: endOfYear };
       }
     }
 
@@ -666,7 +673,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
     from.setDate(now.getDate() - 30);
 
     const earnings = await Bookings.aggregate([
-      { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true, startDateTime: { $gte: from, $lte: now } } },
+      { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true, createdAt: { $gte: from, $lte: now } } },
       {
         $group: {
           _id: null,
@@ -717,7 +724,8 @@ exports.DashboardApi = catchAsync(async (req, res) => {
         $match: {
           teacherId: objectId,
           paypalpaymentId: { $exists: true, $ne: null },
-           startDateTime: { $gte: from, $lte: now }
+          createdAt: { $gte: from, $lte: now }
+          // startDateTime: { $gte: from, $lte: now }
         }
       },
       {
@@ -736,7 +744,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
           StripepaymentId: { $exists: true, $ne: null },
           lessonCompletedStudent: true,
           lessonCompletedTeacher: true,
-          startDateTime: { $gte: from, $lte: now }
+          createdAt: { $gte: from, $lte: now }
         }
       },
       {

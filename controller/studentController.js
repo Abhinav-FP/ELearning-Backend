@@ -312,9 +312,15 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
       );
     }
 
+    const transformedBookings = bookings.map(item => ({
+      teacher: item.teacherId,
+      startDateTime: item.startDateTime,
+      endDateTime: item.endDateTime
+    }));
+
     return successResponse(res, "Availability processed", 200, {
       availabilityBlocks: availableSlots,
-      bookedSlots,
+      bookedSlots: transformedBookings,
     });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
