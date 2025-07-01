@@ -125,6 +125,9 @@ exports.verifyEmail = catchAsync(async (req, res) => {
     if (!user) {
       return errorResponse(res, "User not found", 404);
     }
+    if (user.email_verify) {
+      return successResponse(res, "Email is already verified.", 200);
+    }
     user.email_verify = true;
     await user.save();
     return successResponse(res, "Email verified successfully!", 200);
