@@ -16,7 +16,7 @@ const logger = require("./utils/Logger");
 const jwt = require("jsonwebtoken");
 
 module.exports = () => {
-  cron.schedule('*/2 * * * *', async () => {
+  cron.schedule('* * * * *', async () => {
     try {
         // console.log(`Running cron job at ${new Date().toISOString()}`);
         const now = new Date(); // current time in UTC
