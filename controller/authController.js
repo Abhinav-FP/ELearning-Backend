@@ -240,6 +240,15 @@ exports.updateProfile = catchAsync(async (req, res) => {
       return errorResponse(res, "Password cannot be updated", 401);
     }
 
+     // Checking if the changed email already exists
+    if(user.email !== updates?.email)
+    {
+      const exists = await User.exists({email: updates?.email});
+      if(exists){
+        return errorResponse(res, "A User with the same email already exists", 404);
+      }        
+    }
+
     let photo = null;
     if (req.file) {
       if (user.profile_photo) {

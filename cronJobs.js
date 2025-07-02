@@ -131,13 +131,13 @@ module.exports = () => {
             $gte: endNow.toJSDate(),
             $lt: endNow.plus({ minutes: 1 }).toJSDate(), // match to current minute
           },
-          // "_id": "685bc649111ccd939710821d",
+          // "_id": "686271edc0b8706b75e81101",
         })
           .populate('teacherId')
           .populate('UserId')
           .populate('LessonId');
 
-        // console.log("justEndedBookings",justEndedBookings);
+        console.log("justEndedBookings",justEndedBookings);
         for (const booking of justEndedBookings) {
           const user = booking?.UserId;
           const teacher = booking?.teacherId;
@@ -145,26 +145,26 @@ module.exports = () => {
           const userName = user?.name || "";
           const teacherName = teacher?.name || "";
 
-          const token = jwt.sign(
-            { BookingId: booking._id, UserId: booking?.UserId },
-            process.env.JWT_SECRET_KEY,
-            { expiresIn: process.env.JWT_EXPIRES_IN || "365d" }
-          );
+          // const token = jwt.sign(
+          //   { BookingId: booking._id, UserId: booking?.UserId },
+          //   process.env.JWT_SECRET_KEY,
+          //   { expiresIn: process.env.JWT_EXPIRES_IN || "365d" }
+          // );
 
-          const studentDoneEmailHtml = StudentLessonDone(
-            userName,
-            teacherName,
-            `https://japaneseforme.com/confirm-lesson/${token}`
-          );
+          // const studentDoneEmailHtml = StudentLessonDone(
+          //   userName,
+          //   teacherName,
+          //   `https://japaneseforme.com/confirm-lesson/${token}`
+          // );
 
-          await sendEmail({
-            email: user.email,
-            subject: "Please confirm your lesson completion ✅",
-            emailHtml: studentDoneEmailHtml,
-          });
+          // await sendEmail({
+          //   email: user.email,
+          //   subject: "Please confirm your lesson completion ✅",
+          //   emailHtml: studentDoneEmailHtml,
+          // });
 
-          logger.info(`📧 StudentLessonDone email sent to ${user.email} for booking ${booking._id}`);
-          console.log(`📧 StudentLessonDone email sent to ${user.email} for booking ${booking._id}`);
+          // logger.info(`📧 StudentLessonDone email sent to ${user.email} for booking ${booking._id}`);
+          // console.log(`📧 StudentLessonDone email sent to ${user.email} for booking ${booking._id}`);
 
           // Lesson done email to teacher
            const teacherToken = jwt.sign(

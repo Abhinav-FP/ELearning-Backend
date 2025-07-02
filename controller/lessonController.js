@@ -6,6 +6,7 @@ const User = require("../model/user");
 const Review = require("../EmailTemplate/Review");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/EmailMailler");
+const logger = require("../utils/Logger");
 
 exports.AddLesson = catchAsync(async (req, res) => {
     try {
@@ -72,7 +73,7 @@ exports.DeleteLesson = catchAsync(async (req, res) => {
         lesson.is_deleted = true;
         await lesson.save();
 
-        return successResponse(res, "Lesson deleted successfully", 200);
+        return successResponse(res, "Lesson disabled successfully", 200);
     } catch (error) {
         return errorResponse(res, error.message || "Internal Server Error", 500);
     }
@@ -98,71 +99,85 @@ exports.GetLessonsForAdmin = catchAsync(async (req, res) => {
 
 
 exports.LessonDone = catchAsync(async (req, res) => {
-    try {
-        const { token } = req.body;
-        const { teacherId, UserId, BookingId } = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        // const TeacherId = req.user.teacherId;
-        // const UserId = req.user.UserId;
-        // const BookingId = req.user.BookingId;
-        if (!BookingId) {
-            return res.status(400).json({
-                status: false,
-                msg: "Booking ID is required",
-            });
-        }
+  try {
+    const { token } = req.body;
+    const { teacherId, UserId, BookingId } = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-        const booking = await Bookings.findById(BookingId);
-        if (!booking) {
-            return res.status(404).json({
-                status: false,
-                msg: "Booking not found",
-            });
-        }
-        let updatedBooking = ""
-        if (teacherId) {
-            updatedBooking = await Bookings.findByIdAndUpdate(
-                booking._id,
-                {
-                    lessonCompletedTeacher: true,
-                },
-                { new: true }
-            );
-        }
-        if (UserId) {
-            updatedBooking = await Bookings.findByIdAndUpdate(
-                booking,
-                {
-                    lessonCompletedStudent: true,
-                },
-                { new: true }
-            );
-        }
-        if (updatedBooking?.lessonCompletedTeacher === true && updatedBooking?.lessonCompletedStudent === true) {
-            const userdata = await User.findById(updatedBooking?.UserId);
-            if (userdata?.email) {
-                const reviewLink = `https://japaneseforme.com/student/review/${updatedBooking._id}`;
-                const reviewSubject = "🎉 Share your feedback with Japanese for Me!";
-                const emailHtml = Review(userdata?.name, reviewLink);
-                await sendEmail({
-                    email: userdata.email,
-                    subject: reviewSubject,
-                    emailHtml: emailHtml,
-                });
-            }
-        }
-        return res.status(200).json({
-            status: true,
-            msg: "Lesson completion status updated successfully",
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-            status: false,
-            msg: "Something went wrong while updating lesson status",
-            error: error.message,
-        });
+    if (!BookingId) {
+      return res.status(400).json({
+        status: false,
+        msg: "Booking ID is required",
+      });
     }
+
+    const booking = await Bookings.findById(BookingId);
+    if (!booking) {
+      return res.status(404).json({
+        status: false,
+        msg: "Booking not found",
+      });
+    }
+
+    // ✅ If both already done, exit early
+    if (booking.lessonCompletedTeacher && booking.lessonCompletedStudent) {
+      return res.status(200).json({
+        status: true,
+        msg: "Lesson already marked as done",
+      });
+    }
+
+    let updatedBooking = booking;
+
+    if (teacherId && !booking.lessonCompletedTeacher) {
+      updatedBooking = await Bookings.findByIdAndUpdate(
+        booking._id,
+        { lessonCompletedTeacher: true },
+        { new: true }
+      );
+    }
+
+    if (UserId && !booking.lessonCompletedStudent) {
+      updatedBooking = await Bookings.findByIdAndUpdate(
+        booking._id,
+        { lessonCompletedStudent: true },
+        { new: true }
+      );
+    }
+
+    // ✅ Send review email only if both are now marked as done
+    if (
+      updatedBooking?.lessonCompletedTeacher === true &&
+      updatedBooking?.lessonCompletedStudent === true
+    ) {
+      const userdata = await User.findById(updatedBooking?.UserId);
+      if (userdata?.email) {
+        const reviewLink = `https://japaneseforme.com/student/review/${updatedBooking._id}`;
+        const reviewSubject = "🎉 Share your feedback with Japanese for Me!";
+        const emailHtml = Review(userdata?.name, reviewLink);
+
+        await sendEmail({
+          email: userdata.email,
+          subject: reviewSubject,
+          emailHtml: emailHtml,
+        });
+
+        logger.info(
+          `📧 Lesson review email sent to ${userdata.email} for booking ${updatedBooking._id}`
+        );
+      }
+    }
+
+    return res.status(200).json({
+      status: true,
+      msg: "Lesson completion status updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      msg: "Something went wrong while updating lesson status",
+      error: error.message,
+    });
+  }
 });
 
 

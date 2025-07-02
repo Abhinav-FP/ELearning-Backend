@@ -232,7 +232,7 @@ exports.GetLessons = catchAsync(async (req, res) => {
   try {
     const teacherId = req.user.id;
     const profile = await Teacher.findOne({ userId: teacherId }).populate("userId");
-    const lessons = await Lesson.find({ teacher: teacherId }).populate("teacher");
+    const lessons = await Lesson.find({ teacher: teacherId }).sort({ is_deleted: 1 }).populate("teacher");
     if (!lessons || lessons.length === 0) {
       return errorResponse(res, "No lessons found", 404);
     }
@@ -340,6 +340,16 @@ exports.updateProfile = catchAsync(async (req, res) => {
     if (!user || !teacher) {
       return errorResponse(res, "User not found", 404);
     }
+
+    // Checking if the changed email already exists
+    if(user.email !== email)
+    {
+      const exists= await User.exists({email: email});
+      if(exists){
+        return errorResponse(res, "A User with the same email already exists", 404);
+      }        
+    }
+
     let profile_photo = null;
     if (files.profile_photo?.[0]) {
       if (user?.profile_photo) {
@@ -920,7 +930,7 @@ exports.DeleteGetLesson = catchAsync(async (req, res) => {
     const lessons = await Lesson.findByIdAndUpdate(_id, {
       is_deleted: status
     })
-    return successResponse(res, "Lessons retrieved successfully", 200, lessons);
+    return successResponse(res, "Lessons enabled successfully", 200, lessons);
   } catch (error) {
     console.log("error", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);

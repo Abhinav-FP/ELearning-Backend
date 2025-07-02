@@ -15,9 +15,11 @@ router.get("/teacher/availability/get", verifyToken, GetAvailability);
 
 router.get("/teacher/lesson/get", verifyToken, GetLessons);
 
+router.post("/teacher/lesson/delete", verifyToken, DeleteGetLesson);
+
 // The below 2 are test routes only don't use them
-router.post("/teacher/upload/check", upload.single('file'), UploadCheck);
-router.post("/teacher/delete/check", DeleteCheck);
+router.post("/teacher/test/upload", upload.single('file'), UploadCheck);
+router.post("/teacher/test/delete", DeleteCheck);
 
 router.post("/teacher/payout", verifyToken, PayoutAdd);
 
@@ -46,8 +48,6 @@ router.get("/teacher/specialSlot", verifyToken, SpecialSlotList);
 router.get("/teacher/specialSlotdata/:token", SpecialSlotData);
 //The below route is used fopr getting student and lessons listing for special slot creation  
 router.get("/teacher/studentLesson", verifyToken, StudentLessonListing);
-
-router.post("/teacher/lesson/delete", verifyToken, DeleteGetLesson);
 
 router.get("/teacher/review", verifyToken, GetReview);
 
