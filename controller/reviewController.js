@@ -115,7 +115,7 @@ exports.ReviewList = catchAsync(async (req, res) => {
                 path: "lessonId",
                 select: "teacher title description",
             })
-            .populate("userId");
+            .populate("userId").sort({createdAt: -1});
 
         const groupedReviews = reviews.reduce((acc, review) => {
             const status = review.review_status || "Unknown";

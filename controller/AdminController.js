@@ -354,17 +354,19 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
     }).populate([
       { path: "teacherId" },
       { path: "UserId" },
-      { path: "LessonId" }
-    ]);
+      { path: "LessonId" },
+      { path: "zoom" },
+      { path: "zoom" },
+    ]).sort({createdAt: -1});
 
     const payoutdata = await Payouts.find({ userId: id });
-    const lessondata = await Lessons.find({ teacher: id });
+    const lessondata = await Lessons.find({ teacher: id }).sort({is_deleted: 1});
     const reviews = await Review.find()
       .populate({
         path: "lessonId",
         select: "teacher title description",
       })
-      .populate("userId");
+      .populate("userId").sort({createdAt: -1});
 
     const filteredReviews = reviews.filter(
       (review) =>
