@@ -42,6 +42,16 @@ const bonusSchema = new  mongoose.Schema({
         type: Number,
         default: 0
     },
-})
+    payoutCreationDate: {
+      type: Date,
+      default: null,
+    },
+    payoutDoneAt: {
+      type: Date,
+      default: null,
+    },
+},
+{ timestamps: true }
+);
 
 module.exports = mongoose.model("bonus", bonusSchema);

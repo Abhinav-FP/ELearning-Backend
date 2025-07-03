@@ -134,7 +134,7 @@ exports.reviewUserGet = catchAsync(async (req, res) => {
     const reviews = await review.find({ userId: userId }).populate({
       path: "lessonId",
       select: "title",
-    });
+    }).sort({ createdAt: -1 });
     if (!reviews.length) {
       Loggers.warn("No reviews found");
       return validationErrorResponse(res, "No reviews available", 404);

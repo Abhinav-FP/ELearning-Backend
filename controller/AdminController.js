@@ -7,6 +7,7 @@ const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const Payouts = require("../model/Payout");
 const Lessons = require("../model/lesson");
 const Review = require("../model/review");
+const Bonus = require("../model/Bonus");
 
 exports.TeacherList = catchAsync(async (req, res) => {
   try {
@@ -204,15 +205,23 @@ exports.PayoutAcceptorReject = catchAsync(async (req, res) => {
     payout.Reasons = reason || null;
     await payout.save();
 
-    let updatedBookings;
+    let updatedBookings, updatedBonus;
 
     if (status === "approved") {
       updatedBookings = await Bookings.updateMany(
         { payoutCreationDate: payout.createdAt },
         { payoutDoneAt: new Date() }
       );
+      updatedBonus = await Bonus.updateMany(
+        { payoutCreationDate: payout.createdAt },
+        { payoutDoneAt: new Date() }
+      );
     } else if (status === "rejected") {
       updatedBookings = await Bookings.updateMany(
+        { payoutCreationDate: payout.createdAt },
+        { payoutCreationDate: null }
+      );
+      updatedBonus = await Bonus.updateMany(
         { payoutCreationDate: payout.createdAt },
         { payoutCreationDate: null }
       );

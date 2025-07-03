@@ -15,6 +15,7 @@ const sendEmail = require("../utils/EmailMailler");
 const SpecialSlotEmail = require("../EmailTemplate/SpecialSlot");
 const jwt = require("jsonwebtoken");
 const review = require("../model/review");
+const Bonus = require("../model/Bonus");
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
@@ -448,9 +449,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
 exports.EarningsGet = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    // console.log("req.query",req.query);
     const { date, search } = req.query;
-    // console.log("search",search);
 
     if (!userId) {
       return errorResponse(res, "Invalid User", 401);
@@ -461,6 +460,9 @@ exports.EarningsGet = catchAsync(async (req, res) => {
       lessonCompletedStudent: true,
       lessonCompletedTeacher: true,
     };
+    const bonusFilter = {
+      teacherId: objectId,
+    };
 
     if (date) {
       const now = new Date();
@@ -469,11 +471,13 @@ exports.EarningsGet = catchAsync(async (req, res) => {
         const from = new Date();
         from.setDate(now.getDate() - 7);
         filter.createdAt = { $gte: from, $lte: now };
+        bonusFilter.createdAt = { $gte: from, $lte: now };
 
       } else if (date === "last30") {
         const from = new Date();
         from.setDate(now.getDate() - 30);
         filter.createdAt = { $gte: from, $lte: now };
+        bonusFilter.createdAt = { $gte: from, $lte: now };
 
       } else if (!isNaN(date)) {
         // If it's a year like "2024"
@@ -481,6 +485,7 @@ exports.EarningsGet = catchAsync(async (req, res) => {
         const startOfYear = new Date(`${year}-01-01T00:00:00.000Z`);
         const endOfYear = new Date(`${year}-12-31T23:59:59.999Z`);
         filter.createdAt = { $gte: startOfYear, $lte: endOfYear };
+        bonusFilter.createdAt = { $gte: startOfYear, $lte: endOfYear };
       }
     }
 
@@ -490,7 +495,9 @@ exports.EarningsGet = catchAsync(async (req, res) => {
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
-      .populate('LessonId');
+      .populate('LessonId')
+      .populate('zoom')
+      .populate('BonusId');
 
     if (search && search.trim() !== "") {
       const regex = new RegExp(search.trim(), "i"); // case-insensitive match
@@ -510,6 +517,30 @@ exports.EarningsGet = catchAsync(async (req, res) => {
 
     if (!data) {
       return errorResponse(res, "Data not Found", 401);
+    }
+
+    // Get detailed booking data
+    let bonusData = await Bonus.find(bonusFilter)
+      .sort({ startDateTime: -1 })
+      .populate('userId')
+      .populate('paypalpaymentId')
+      .populate('bookingId')
+      .populate('LessonId');
+
+    if (search && search.trim() !== "") {
+      const regex = new RegExp(search.trim(), "i"); // case-insensitive match
+
+      bonusData = bonusData.filter((item) => {
+        const lessonTitle = item.LessonId?.title || "";
+        const stripeId = item.StripepaymentId?.payment_id || "";
+        const paypalId = item.paypalpaymentId?.orderID || "";
+
+        return (
+          regex.test(lessonTitle) ||
+          regex.test(stripeId) ||
+          regex.test(paypalId)
+        );
+      });
     }
 
     // Aggregate the earnings
@@ -556,15 +587,72 @@ exports.EarningsGet = catchAsync(async (req, res) => {
       }
     ]);
 
-    const earningsSummary = earnings[0] || {
+    const bonusEarnings = await Bonus.aggregate([
+      { $match: bonusFilter },
+      {
+        $group: {
+          _id: null,
+          totalEarnings: { $sum: "$amount" },
+          pendingEarnings: {
+            $sum: {
+              $cond: [
+                { $eq: ["$payoutCreationDate", null] },
+                "$amount",
+                0
+              ]
+            }
+          },
+          requestedEarnings: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ["$payoutCreationDate", null] },
+                    { $eq: ["$payoutDoneAt", null] }
+                  ]
+                },
+                "$amount",
+                0
+              ]
+            }
+          },
+          approvedEarnings: {
+            $sum: {
+              $cond: [
+                { $ne: ["$payoutDoneAt", null] },
+                "$amount",
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    // console.log("earnings",earnings);
+    // console.log("bonusEarnings",bonusEarnings);
+
+    const base = {
       totalEarnings: 0,
       pendingEarnings: 0,
-      approvedEarnings: 0
+      requestedEarnings: 0,
+      approvedEarnings: 0,
+    };
+
+    const mainEarnings = earnings[0] || base;
+    const bonus = bonusEarnings[0] || base;
+
+    const earningsSummary = {
+      totalEarnings: (mainEarnings.totalEarnings || 0) + (bonus.totalEarnings || 0),
+      pendingEarnings: (mainEarnings.pendingEarnings || 0) + (bonus.pendingEarnings || 0),
+      requestedEarnings: (mainEarnings.requestedEarnings || 0) + (bonus.requestedEarnings || 0),
+      approvedEarnings: (mainEarnings.approvedEarnings || 0) + (bonus.approvedEarnings || 0),
     };
 
     successResponse(res, "User Get successfully!", 200, {
       bookings: data,
-      earningsSummary
+      earningsSummary,
+      bonusData
     });
   } catch (error) {
     console.log(error);
@@ -598,6 +686,8 @@ exports.BookingsGet = catchAsync(async (req, res) => {
       .populate('paypalpaymentId')
       .populate('UserId')
       .populate('LessonId')
+      .populate('ReviewId')
+      .populate('BonusId')
       .populate('zoom');
 
     // Apply search filter on populated fields
@@ -633,7 +723,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
 
     // console.log("objectId",objectId);
 
-    const Reviews = await Review.find({}).populate("lessonId");
+    const Reviews = await Review.find({}).populate("lessonId").sort({createdAt: -1});
     const ReviewesCount = Reviews.filter(
       review => review?.lessonId?.teacher?.toString() === objectId.toString()
     ).length;
@@ -723,10 +813,62 @@ exports.DashboardApi = catchAsync(async (req, res) => {
         }
       }
     ]);
-    const earningsSummary = earnings[0] || {
+    const bonusEarnings = await Bonus.aggregate([
+      { $match: { teacherId: objectId, createdAt: { $gte: from, $lte: now } } },
+      {
+        $group: {
+          _id: null,
+          totalEarnings: { $sum: "$amount" },
+          pendingEarnings: {
+            $sum: {
+              $cond: [
+                { $eq: ["$payoutCreationDate", null] },
+                "$amount",
+                0
+              ]
+            }
+          },
+          requestedEarnings: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ["$payoutCreationDate", null] },
+                    { $eq: ["$payoutDoneAt", null] }
+                  ]
+                },
+                "$amount",
+                0
+              ]
+            }
+          },
+          approvedEarnings: {
+            $sum: {
+              $cond: [
+                { $ne: ["$payoutDoneAt", null] },
+                "$amount",
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+    // console.log("earnings",earnings);
+    // console.log("bonusEarnings",bonusEarnings);
+    const base = {
       totalEarnings: 0,
       pendingEarnings: 0,
-      approvedEarnings: 0
+      requestedEarnings: 0,
+      approvedEarnings: 0,
+    };
+    const mainEarnings = earnings[0] || base;
+    const bonus = bonusEarnings[0] || base;
+    const earningsSummary = {
+      totalEarnings: (mainEarnings.totalEarnings || 0) + (bonus.totalEarnings || 0),
+      pendingEarnings: (mainEarnings.pendingEarnings || 0) + (bonus.pendingEarnings || 0),
+      requestedEarnings: (mainEarnings.requestedEarnings || 0) + (bonus.requestedEarnings || 0),
+      approvedEarnings: (mainEarnings.approvedEarnings || 0) + (bonus.approvedEarnings || 0),
     };
 
     const paypalamount = await Bookings.aggregate([
@@ -959,7 +1101,7 @@ exports.GetReview = catchAsync(async (req, res) => {
     }).populate("lessonId").populate({
       path: "userId",
       select: "name profile_photo"
-    });
+    }).sort({createdAt: -1});
     return successResponse(res, "Lessons and accepted reviews retrieved successfully", 200, reviews);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
