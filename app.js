@@ -96,7 +96,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           bookingId: metadata.BookingId,
           amount: metadata.amount,
           currency: pi.currency,
-          stripePaymentId: payment._id, // ✅ updated to reflect Stripe
+          StripepaymentId: payment._id, // ✅ updated to reflect Stripe
         });
         // Update Booking with Bonus
         await Bookings.findOneAndUpdate(

@@ -377,7 +377,7 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
       { path: "UserId" },
       { path: "LessonId" },
       { path: "zoom" },
-      { path: "zoom" },
+      { path: "BonusId" },
     ]).sort({createdAt: -1});
 
     const payoutdata = await Payouts.find({ userId: id });
