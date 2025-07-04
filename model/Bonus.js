@@ -50,8 +50,16 @@ const bonusSchema = new  mongoose.Schema({
       type: Date,
       default: null,
     },
-},
-{ timestamps: true }
+    paypalpaymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "paypalpayments"
+    },
+    StripepaymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "stripepayments",
+    },
+  },
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("bonus", bonusSchema);
