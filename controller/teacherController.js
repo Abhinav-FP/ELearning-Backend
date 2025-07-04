@@ -674,10 +674,10 @@ exports.BookingsGet = catchAsync(async (req, res) => {
     const { type, search } = req.query;
     const now = Date.now();
     if (type === "upcoming") {
-      filter.startDateTime = { $gt: now };
+      filter.endDateTime = { $gt: now };
       sort.startDateTime = 1;
     } else if (type === "past") {
-      filter.startDateTime = { $lte: now };
+      filter.endDateTime = { $lte: now };
       sort.startDateTime = -1;
     }
 
