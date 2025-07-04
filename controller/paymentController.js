@@ -95,7 +95,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone, totalAmount, adminCommission, email,
       isSpecialSlot, processingFee
     } = req.body;
-    console.log("req.body in paypal approve",req.body)
+    console.log("req.body in paypal approve", req.body)
     const accessToken = await generateAccessToken();
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
@@ -131,7 +131,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
       endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
     }
-    const teacherEarning = (totalAmount- processingFee) * 0.90; // 90% to teacher, 10% to admin as discussed with client
+    const teacherEarning = (totalAmount - processingFee) * 0.90; // 90% to teacher, 10% to admin as discussed with client
     const Bookingsave = new Bookings({
       teacherId,
       totalAmount,
@@ -490,11 +490,11 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
     const { amount, LessonId, currency, teacherId,
-       startDateTime, endDateTime, timezone, adminCommission,
-        email, isSpecial, IsBonus ,
-        BookingId, processingFee      
-      } = req?.body;
-      console.log("req?.body" ,req?.body)
+      startDateTime, endDateTime, timezone, adminCommission,
+      email, isSpecial, IsBonus,
+      BookingId, processingFee
+    } = req?.body;
+    console.log("req?.body", req?.body)
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
@@ -514,8 +514,8 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
         amount,
         currency,
         srNo: srNo.toString(),
-        isSpecial, 
-        BookingId, 
+        isSpecial,
+        BookingId,
         IsBonus,
         processingFee,
       }

@@ -21,7 +21,7 @@ const createZoomMeeting = require("./zoommeeting");
 const logger = require("./utils/Logger");
 const { uploadFileToSpaces } = require("./utils/FileUploader");
 const Loggers = require("./utils/Logger");
-const  Bonus =  require("./model/Bonus");
+const Bonus = require("./model/Bonus");
 
 const corsOptions = {
   origin: "*", // Allowed origins
@@ -76,7 +76,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const pi = event.data.object;
       Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
       const metadata = pi.metadata;
-      if (metadata.IsBonus ) {
+      if (metadata.IsBonus) {
         const payment = await StripePayment.create({
           srNo: parseInt(metadata.srNo),
           payment_type: "card",
@@ -110,7 +110,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         return;
       }
       // Bonus Case ends here
-      
+
 
       Loggers.info("📦 Metadata:", metadata)
       let startUTC, endUTC;
@@ -135,7 +135,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         payment_status: pi.status
       });
       const savedPayment = await payment.save();
-      const teacherEarning = ((pi.amount / 100) - metadata.processingFee )* 0.90; // 90% to teacher, 10% to admin as discussed with client
+      const teacherEarning = ((pi.amount / 100) - metadata.processingFee) * 0.90; // 90% to teacher, 10% to admin as discussed with client
       // Save booking record
       const booking = new Bookings({
         teacherId: metadata.teacherId,
@@ -196,6 +196,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 
   res.json({ received: true });
 });
+
 
 app.use(express.json({ limit: '2000mb' }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
@@ -265,10 +266,8 @@ app.post("/zoom-webhook", async (req, res) => {
 
       // Fetch current Zoom record for deduplication
       const zoomRecord = await Zoom.findOne({ meetingId: String(meetingId) });
-
       for (const file of files) {
         if (!file.download_url) continue;
-
         const fileExtension = file.file_type.toLowerCase();
         logger.info("fileExtension", fileExtension);
         console.log("fileExtension", fileExtension);
