@@ -251,7 +251,10 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
       .populate('UserId')
       .populate('teacherId')
       .populate('LessonId')
-      .populate('zoom');
+      .populate('zoom')
+      .populate('ReviewId')
+      .populate('BonusId');
+
     if (!data) {
       return errorResponse(res, "Bookings not Found", 401);
     }
