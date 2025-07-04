@@ -12,8 +12,7 @@ const teacherSchema =  mongoose.Schema({
   },
   gender: {
     type: String,
-    enum: ['M', 'F', "O"],
-    default: null
+    default: null,
   },
   experience: {
     type: Number,

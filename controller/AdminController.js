@@ -300,7 +300,7 @@ exports.AdminEarning = catchAsync(async (req, res) => {
         filter.startDateTime = { $gte: startOfYear, $lte: endOfYear };
       }
     }
-    const count = await Bookings.aggregate([
+    let count = await Bookings.aggregate([
       { $match: filter },
       {
         $group: {
@@ -308,7 +308,7 @@ exports.AdminEarning = catchAsync(async (req, res) => {
           totalAmount: { $sum: "$totalAmount" },
           teacherEarning: { $sum: "$teacherEarning" },
           adminCommission: { $sum: "$adminCommission" },
-          bonus: { $sum: "$bonus" }
+          processingFee: { $sum: "$processingFee" }
         }
       }
     ]);
@@ -319,6 +319,16 @@ exports.AdminEarning = catchAsync(async (req, res) => {
       .populate('teacherId')
       .populate('LessonId');
 
+    const bonus = await Bonus.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalAmount: { $sum: "$amount" }
+      }
+    }
+    ]);
+
+    const totalBonus = bonus.length > 0 ? bonus[0].totalAmount : 0;
     if (search && search.trim() !== "") {
       const regex = new RegExp(search.trim(), "i"); // case-insensitive match
 
@@ -338,10 +348,12 @@ exports.AdminEarning = catchAsync(async (req, res) => {
         );
       });
     }
-
     if (!bookings) {
       return errorResponse(res, "Bookings not Found", 401);
     }
+    count[0].totalAmount+=totalBonus;
+    count[0].teacherEarning+=totalBonus;
+    count[0].bonus=totalBonus;
     successResponse(res, "Bookings retrieved successfully!", 200, {
       count: count[0],
       bookings
@@ -398,7 +410,7 @@ exports.Admindashbaord = catchAsync(async (req, res) => {
     const pendingreview = await Review.countDocuments({ review_status: "Pending" })
     const totalbooking = await Bookings.countDocuments({ lessonCompletedStudent: true, lessonCompletedTeacher: true });
     const TeacherData = await Teacher.find({ admin_approved: true }).limit(5).populate("userId");
-    const ReviewData = await Review.find({}).limit(5).populate("userId").populate("lessonId");
+    const ReviewData = await Review.find({}).populate("userId").populate("lessonId").sort({createdAt: -1}).limit(5);
     return successResponse(res, "Admin Dashboard Data Get", 200, {
       ReviewData, countstudent, Countteacher, pendingreview, TeacherData, totalbooking
     });

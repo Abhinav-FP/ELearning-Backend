@@ -118,13 +118,13 @@ exports.LessonDone = catchAsync(async (req, res) => {
       });
     }
 
-    // ✅ If both already done, exit early
-    if (booking.lessonCompletedTeacher && booking.lessonCompletedStudent) {
-      return res.status(200).json({
-        status: true,
-        msg: "Lesson already marked as done",
-      });
-    }
+    // // ✅ If both already done, exit early
+    // if (booking.lessonCompletedTeacher && booking.lessonCompletedStudent) {
+    //   return res.status(200).json({
+    //     status: true,
+    //     msg: "Lesson already marked as done",
+    //   });
+    // }
 
     let updatedBooking = booking;
 

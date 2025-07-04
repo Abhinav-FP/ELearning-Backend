@@ -523,6 +523,7 @@ exports.EarningsGet = catchAsync(async (req, res) => {
     let bonusData = await Bonus.find(bonusFilter)
       .sort({ startDateTime: -1 })
       .populate('userId')
+      .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('bookingId')
       .populate('LessonId');
@@ -673,10 +674,10 @@ exports.BookingsGet = catchAsync(async (req, res) => {
     const { type, search } = req.query;
     const now = Date.now();
     if (type === "upcoming") {
-      filter.startDateTime = { $gt: now };
+      filter.endDateTime = { $gt: now };
       sort.startDateTime = 1;
     } else if (type === "past") {
-      filter.startDateTime = { $lte: now };
+      filter.endDateTime = { $lte: now };
       sort.startDateTime = -1;
     }
 
@@ -887,7 +888,22 @@ exports.DashboardApi = catchAsync(async (req, res) => {
         }
       }
     ]);
-    const paypalpay = paypalamount.length > 0 ? paypalamount[0].totalPaypalAmount : 0;
+    const paypalBonusAmount = await Bonus.aggregate([
+      {
+        $match: { teacherId: objectId, paypalpaymentId: { $exists: true, $ne: null }, createdAt: { $gte: from, $lte: now }}
+      },
+      {
+        $group: {
+          _id: null,
+          totalPaypalAmount: { $sum: '$amount' }
+        }
+      }
+    ]);
+    console.log("paypalamount",paypalamount);
+    console.log("paypalBonusAmount",paypalBonusAmount);
+    const totalPaypalAmount = paypalamount.length > 0 ? paypalamount[0].totalPaypalAmount : 0;
+    const totalPaypalBonusAmount = paypalBonusAmount.length > 0 ? paypalBonusAmount[0].totalPaypalAmount : 0;
+    const paypalpay = totalPaypalAmount + totalPaypalBonusAmount;
 
     const stripeamount = await Bookings.aggregate([
       {
@@ -906,7 +922,26 @@ exports.DashboardApi = catchAsync(async (req, res) => {
         }
       }
     ]);
-    const stripepay = stripeamount.length > 0 ? stripeamount[0].totalstripeAmount : 0;
+    const stripeBonusamount = await Bonus.aggregate([
+      {
+        $match: {
+          teacherId: objectId,
+          StripepaymentId: { $exists: true, $ne: null },
+          createdAt: { $gte: from, $lte: now }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalstripeAmount: { $sum: '$amount' }
+        }
+      }
+    ]);
+    console.log("stripeamount",stripeamount);
+    console.log("stripeBonusamount",stripeBonusamount);
+    const totalStripeAmount = stripeamount.length > 0 ? stripeamount[0].totalstripeAmount : 0;
+    const totalStripeBonusAmount = stripeBonusamount.length > 0 ? stripeBonusamount[0].totalstripeAmount : 0;
+    const stripepay = totalStripeAmount + totalStripeBonusAmount;
 
     const today = new Date();
 
