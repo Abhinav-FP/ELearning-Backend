@@ -205,7 +205,7 @@ exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
           Authorization: `Bearer ${accessToken}`,
         },
 
-        
+
       }
     );
 
