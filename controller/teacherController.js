@@ -343,12 +343,11 @@ exports.updateProfile = catchAsync(async (req, res) => {
     }
 
     // Checking if the changed email already exists
-    if(user.email !== email)
-    {
-      const exists= await User.exists({email: email});
-      if(exists){
+    if (user.email !== email) {
+      const exists = await User.exists({ email: email });
+      if (exists) {
         return errorResponse(res, "A User with the same email already exists", 404);
-      }        
+      }
     }
 
     let profile_photo = null;
@@ -689,6 +688,7 @@ exports.BookingsGet = catchAsync(async (req, res) => {
       .populate('LessonId')
       .populate('ReviewId')
       .populate('BonusId')
+      .populate("teacherId")
       .populate('zoom');
 
     // Apply search filter on populated fields
@@ -724,7 +724,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
 
     // console.log("objectId",objectId);
 
-    const Reviews = await Review.find({}).populate("lessonId").sort({createdAt: -1});
+    const Reviews = await Review.find({}).populate("lessonId").sort({ createdAt: -1 });
     const ReviewesCount = Reviews.filter(
       review => review?.lessonId?.teacher?.toString() === objectId.toString()
     ).length;
@@ -890,7 +890,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
     ]);
     const paypalBonusAmount = await Bonus.aggregate([
       {
-        $match: { teacherId: objectId, paypalpaymentId: { $exists: true, $ne: null }, createdAt: { $gte: from, $lte: now }}
+        $match: { teacherId: objectId, paypalpaymentId: { $exists: true, $ne: null }, createdAt: { $gte: from, $lte: now } }
       },
       {
         $group: {
@@ -1136,7 +1136,7 @@ exports.GetReview = catchAsync(async (req, res) => {
     }).populate("lessonId").populate({
       path: "userId",
       select: "name profile_photo"
-    }).sort({createdAt: -1});
+    }).sort({ createdAt: -1 });
     return successResponse(res, "Lessons and accepted reviews retrieved successfully", 200, reviews);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
