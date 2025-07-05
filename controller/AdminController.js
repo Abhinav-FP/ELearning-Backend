@@ -254,7 +254,6 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
       .populate('zoom')
       .populate('ReviewId')
       .populate('BonusId');
-
     if (!data) {
       return errorResponse(res, "Bookings not Found", 401);
     }
@@ -289,12 +288,10 @@ exports.AdminEarning = catchAsync(async (req, res) => {
         const from = new Date();
         from.setDate(now.getDate() - 7);
         filter.startDateTime = { $gte: from, $lte: now };
-
       } else if (date === "last30") {
         const from = new Date();
         from.setDate(now.getDate() - 30);
         filter.startDateTime = { $gte: from, $lte: now };
-
       } else if (!isNaN(date)) {
         // If it's a year like "2024"
         const year = parseInt(date, 10);
@@ -321,16 +318,14 @@ exports.AdminEarning = catchAsync(async (req, res) => {
       .populate('UserId')
       .populate('teacherId')
       .populate('LessonId');
-
     const bonus = await Bonus.aggregate([
-    {
-      $group: {
-        _id: null,
-        totalAmount: { $sum: "$amount" }
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" }
+        }
       }
-    }
     ]);
-
     const totalBonus = bonus.length > 0 ? bonus[0].totalAmount : 0;
     if (search && search.trim() !== "") {
       const regex = new RegExp(search.trim(), "i"); // case-insensitive match
@@ -354,9 +349,9 @@ exports.AdminEarning = catchAsync(async (req, res) => {
     if (!bookings) {
       return errorResponse(res, "Bookings not Found", 401);
     }
-    count[0].totalAmount+=totalBonus;
-    count[0].teacherEarning+=totalBonus;
-    count[0].bonus=totalBonus;
+    count[0].totalAmount += totalBonus;
+    count[0].teacherEarning += totalBonus;
+    count[0].bonus = totalBonus;
     successResponse(res, "Bookings retrieved successfully!", 200, {
       count: count[0],
       bookings
@@ -381,16 +376,16 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
       { path: "LessonId" },
       { path: "zoom" },
       { path: "BonusId" },
-    ]).sort({createdAt: -1});
+    ]).sort({ createdAt: -1 });
 
     const payoutdata = await Payouts.find({ userId: id });
-    const lessondata = await Lessons.find({ teacher: id }).sort({is_deleted: 1});
+    const lessondata = await Lessons.find({ teacher: id }).sort({ is_deleted: 1 });
     const reviews = await Review.find()
       .populate({
         path: "lessonId",
         select: "teacher title description",
       })
-      .populate("userId").sort({createdAt: -1});
+      .populate("userId").sort({ createdAt: -1 });
 
     const filteredReviews = reviews.filter(
       (review) =>
@@ -413,7 +408,7 @@ exports.Admindashbaord = catchAsync(async (req, res) => {
     const pendingreview = await Review.countDocuments({ review_status: "Pending" })
     const totalbooking = await Bookings.countDocuments({ lessonCompletedStudent: true, lessonCompletedTeacher: true });
     const TeacherData = await Teacher.find({ admin_approved: true }).limit(5).populate("userId");
-    const ReviewData = await Review.find({}).populate("userId").populate("lessonId").sort({createdAt: -1}).limit(5);
+    const ReviewData = await Review.find({}).populate("userId").populate("lessonId").sort({ createdAt: -1 }).limit(5);
     return successResponse(res, "Admin Dashboard Data Get", 200, {
       ReviewData, countstudent, Countteacher, pendingreview, TeacherData, totalbooking
     });
@@ -431,21 +426,16 @@ exports.AistrainedApprove = catchAsync(async (req, res) => {
     if (!user) {
       return errorResponse(res, "User not found", 404);
     }
-
     // toggle ais_trained
     const newStatus = user.ais_trained === true ? false : true;
-
     const teacher = await Teacher.findByIdAndUpdate(
       id,
       { ais_trained: newStatus },
       { new: true }
     );
-
     if (!teacher) {
       return errorResponse(res, "Teacher not found.", 404);
     }
-
-
     const message = teacher.ais_trained === true
       ? "Teacher has been successfully marked as AI-trained."
       : "Teacher has been rejected successfully.";
