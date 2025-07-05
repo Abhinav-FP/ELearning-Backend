@@ -899,8 +899,8 @@ exports.DashboardApi = catchAsync(async (req, res) => {
         }
       }
     ]);
-    console.log("paypalamount",paypalamount);
-    console.log("paypalBonusAmount",paypalBonusAmount);
+    // console.log("paypalamount",paypalamount);
+    // console.log("paypalBonusAmount",paypalBonusAmount);
     const totalPaypalAmount = paypalamount.length > 0 ? paypalamount[0].totalPaypalAmount : 0;
     const totalPaypalBonusAmount = paypalBonusAmount.length > 0 ? paypalBonusAmount[0].totalPaypalAmount : 0;
     const paypalpay = totalPaypalAmount + totalPaypalBonusAmount;
@@ -937,8 +937,8 @@ exports.DashboardApi = catchAsync(async (req, res) => {
         }
       }
     ]);
-    console.log("stripeamount",stripeamount);
-    console.log("stripeBonusamount",stripeBonusamount);
+    // console.log("stripeamount",stripeamount);
+    // console.log("stripeBonusamount",stripeBonusamount);
     const totalStripeAmount = stripeamount.length > 0 ? stripeamount[0].totalstripeAmount : 0;
     const totalStripeBonusAmount = stripeBonusamount.length > 0 ? stripeBonusamount[0].totalstripeAmount : 0;
     const stripepay = totalStripeAmount + totalStripeBonusAmount;

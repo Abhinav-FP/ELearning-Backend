@@ -166,16 +166,22 @@ exports.studentDashboard = catchAsync(async (req, res) => {
       .limit(3)
       .sort({ createdAt: -1 });
 
-    const userIds = wishlistResult
-      .map((item) => item.teacher?._id?.toString())
-      .filter(Boolean);
+    // console.log("wishlistResult", wishlistResult);
 
-    const teacherProfiles = await Teacher.find({ userId: { $in: userIds } });
+    for (let i = 0; i < wishlistResult.length; i++) {
+      const teacherId = wishlistResult[i]?.teacher?._id;
+      const data = await Teacher.findOne({ userId: teacherId }); 
 
-    const teacherMap = {};
-    teacherProfiles.forEach((teacher) => {
-      teacherMap[teacher.userId.toString()] = teacher.toObject();
-    });
+      if (data) {
+        wishlistResult[i] = {
+          ...wishlistResult[i].toObject(),
+          extra: data
+        };
+      } else {
+        // still convert to object to keep consistency
+        wishlistResult[i] = wishlistResult[i].toObject();
+      }
+    }
 
     const data = await Bookings.findOne({
       UserId: userId,
