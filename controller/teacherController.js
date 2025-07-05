@@ -309,6 +309,28 @@ exports.TeacherGet = catchAsync(async (req, res) => {
   }
 });
 
+// Normalizing req.body to resolve the null issue
+const normalizeFormData = (body) => {
+  const parse = (value) => {
+    if (value === 'null') return null;
+    if (value === 'undefined') return undefined;
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+
+    try {
+      const parsed = JSON.parse(value);
+      // Return arrays/objects parsed from JSON
+      if (typeof parsed === 'object') return parsed;
+    } catch (_) {}
+
+    return value; // keep as string
+  };
+
+  return Object.fromEntries(
+    Object.entries(body).map(([key, value]) => [key, parse(value)])
+  );
+};
+
 exports.updateProfile = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
@@ -317,6 +339,9 @@ exports.updateProfile = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid User", 401);
     }
 
+    console.log("req.body",req.body);
+    const normalizedBody = normalizeFormData(req.body);
+    console.log("normalizedBody",normalizedBody);
     const {
       name,
       email,
@@ -331,7 +356,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
       description,
       qualifications,
       tags,
-    } = req.body;
+    } = normalizedBody;
 
     const userUpdates = {};
     const teacherUpdates = {};
@@ -391,25 +416,25 @@ exports.updateProfile = catchAsync(async (req, res) => {
     // }
 
     // Explicit field mapping
-    if (name !== undefined) userUpdates.name = name;
-    if (email !== undefined) userUpdates.email = email;
-    if (timezone !== undefined) userUpdates.time_zone = timezone;
-    if (nationality !== undefined) userUpdates.nationality = nationality;
+    if (name !== undefined && name !== null && name !== '') userUpdates.name = name;
+    if (email !== undefined && email !== null && email !== '') userUpdates.email = email;
+    if (timezone !== undefined && timezone !== null && timezone !== '') userUpdates.time_zone = timezone;
+    if (nationality !== undefined && nationality !== null && nationality !== '') userUpdates.nationality = nationality;
     if (profile_photo !== undefined && profile_photo !== null && profile_photo !== "") {
       userUpdates.profile_photo = profile_photo;
     }
 
-    if (languages_spoken !== undefined) teacherUpdates.languages_spoken = JSON.parse(languages_spoken);
-    if (gender !== undefined) teacherUpdates.gender = gender;
-    if (ais_trained !== undefined) teacherUpdates.ais_trained = ais_trained;
-    if (intro_video !== undefined) teacherUpdates.intro_video = intro_video;
-    if (interest !== undefined) teacherUpdates.interest = interest;
-    if (experience !== undefined) teacherUpdates.experience = experience;
-    if (description !== undefined) teacherUpdates.description = description;
+    if (languages_spoken !== undefined && languages_spoken !== null && languages_spoken !== '[]') teacherUpdates.languages_spoken = languages_spoken;
+    if (gender !== undefined && gender !== null && gender !== '') teacherUpdates.gender = gender;
+    if (ais_trained !== undefined && ais_trained !== null && ais_trained !== '') teacherUpdates.ais_trained = ais_trained;
+    if (intro_video !== undefined && intro_video !== null && intro_video !== '') teacherUpdates.intro_video = intro_video;
+    if (interest !== undefined && interest !== null && interest !== '') teacherUpdates.interest = interest;
+    if (experience !== undefined && experience !== null && experience !== '') teacherUpdates.experience = experience;
+    if (description !== undefined && description !== null && description !== '') teacherUpdates.description = description;
     // if (average_price !== undefined) teacherUpdates.average_price = average_price;
     // if (average_time !== undefined) teacherUpdates.average_time = average_time;
-    if (tags !== undefined) teacherUpdates.tags = JSON.parse(tags);
-    if (qualifications !== undefined) teacherUpdates.qualifications = qualifications;
+    if (tags !== undefined && tags !== null && tags !=='[]') teacherUpdates.tags = tags;
+    if (qualifications !== undefined && qualifications !== null && qualifications !== '') teacherUpdates.qualifications = qualifications;
     if (documentlink !== undefined && documentlink !== null && documentlink !== "") {
       teacherUpdates.documentlink = documentlink;
     }
