@@ -5,7 +5,7 @@ module.exports = (userName, link) => {
         <tr>
             <td style="padding: .5rem  1rem;text-align: center;"> 
                 <a href="https://www.japaneseforme.com/" style="text-decoration: none;">
-                  <img style="logo.png" src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="">
+                  <img style="logo.png" src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Japanese For Me">
                 </a>
              </td> 
         </tr>

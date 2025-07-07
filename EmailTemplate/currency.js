@@ -8,7 +8,7 @@ module.exports = (statusText = 'Success', isSuccess = true, errorMessage = '', )
     <tr>
       <td style="padding: .5rem  1rem;text-align: center;"> 
         <a href="https://www.yourcompany.com/" style="text-decoration: none;">
-          <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="logo" style="max-width: 150px;">
+          <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Japanese For Me" style="max-width: 150px;">
         </a>
       </td> 
     </tr>
