@@ -21,7 +21,7 @@ exports.reviewAdd = catchAsync(async (req, res) => {
             { new: true }
         );
         if (!updatedBooking) {
-            return res.status(404).json({ message: 'Booking not found' });
+            return validationErrorResponse(res, "Booking not found", 404);
         }
         return successResponse(res, "Review submitted successfully", 201, { reviews });
     } catch (error) {
