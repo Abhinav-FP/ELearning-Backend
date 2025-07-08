@@ -96,6 +96,31 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       isSpecialSlot, processingFee
     } = req.body;
     console.log("req.body in paypal approve", req.body)
+    
+    // Checking if the booking with the same slot already exists
+    let startUTCs, endUTCs;
+    if (isSpecial) {
+      startUTCs = startDateTime;
+      endUTCs = endDateTime;
+    }
+    else {
+      startUTCs = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+      endUTCs = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+    }
+    // Check for booking conflict for the same teacher
+    const existingBooking = await Bookings.findOne({
+      teacherId: new mongoose.Types.ObjectId(teacherId),
+      cancelled: false, // Only consider active bookings
+      startDateTime: { $lt: endUTC },
+      endDateTime: { $gt: startUTC },
+    });
+    if (existingBooking) {
+      return res.status(400).json({
+        status:false,
+        error: "Booking already exists at the given slot for this teacher.",
+      });
+    }
+
     const accessToken = await generateAccessToken();
     const response = await axios.post(
       `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
@@ -496,7 +521,33 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
       email, isSpecial, IsBonus,
       BookingId, processingFee
     } = req?.body;
-    console.log("req?.body", req?.body)
+    // console.log("req?.body", req?.body)
+    
+    // Checking if the booking with the same slot already exists
+    let startUTC, endUTC;
+    if (isSpecial) {
+      startUTC = startDateTime;
+      endUTC = endDateTime;
+    }
+    else {
+      startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+      endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+    }
+    // Check for booking conflict for the same teacher
+    const existingBooking = await Bookings.findOne({
+      teacherId: new mongoose.Types.ObjectId(teacherId),
+      cancelled: false, // Only consider active bookings
+      startDateTime: { $lt: endUTC },
+      endDateTime: { $gt: startUTC },
+    });
+
+    if (existingBooking) {
+      return res.status(400).json({
+        status:false,
+        error: "Booking already exists at the given slot for this teacher.",
+      });
+    }
+
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);

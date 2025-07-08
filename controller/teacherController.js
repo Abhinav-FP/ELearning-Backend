@@ -674,10 +674,59 @@ exports.EarningsGet = catchAsync(async (req, res) => {
       approvedEarnings: (mainEarnings.approvedEarnings || 0) + (bonus.approvedEarnings || 0),
     };
 
+    // Get total pending earning
+    const EarningsPending = await Bookings.aggregate([
+      // { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true } },
+      { $match: { teacherId: objectId, lessonCompletedStudent: true, lessonCompletedTeacher: true } },
+      {
+        $group: {
+          _id: null,
+          pendingEarnings: {
+            $sum: {
+              $cond: [
+                { $eq: ["$payoutCreationDate", null] },
+                "$teacherEarning",
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    const bonusPending = await Bonus.aggregate([
+      { $match: { teacherId: objectId } },
+      {
+        $group: {
+          _id: null,
+          pendingEarnings: {
+            $sum: {
+              $cond: [
+                { $eq: ["$payoutCreationDate", null] },
+                "$amount",
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+
+    const base1 = {
+      pendingEarnings: 0
+    };
+
+    const mainPendingEarnings = EarningsPending[0] || base1;
+    const bonusPendings = bonusPending[0] || base1;
+
+    const totalPendingEarning = (mainPendingEarnings.pendingEarnings || 0) + (bonusPendings.pendingEarnings || 0);
+
     successResponse(res, "User Get successfully!", 200, {
       bookings: data,
       earningsSummary,
-      bonusData
+      bonusData,
+      totalPendingEarning,
     });
   } catch (error) {
     console.log(error);
