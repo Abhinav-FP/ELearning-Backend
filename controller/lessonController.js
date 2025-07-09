@@ -7,9 +7,15 @@ const Review = require("../EmailTemplate/Review");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/EmailMailler");
 const logger = require("../utils/Logger");
+const Teacher = require("../model/teacher");
 
 exports.AddLesson = catchAsync(async (req, res) => {
     try {
+        const data = await Teacher.findOne({userId : req.user?.id});        
+        if(!data?.admin_approved){
+          return errorResponse(res, "Your account is not yet approved", 403);
+        }
+        
         const { title, description, duration, price } = req.body;
 
         if (!title || !description || !duration || !price) {

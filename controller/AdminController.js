@@ -8,6 +8,8 @@ const Payouts = require("../model/Payout");
 const Lessons = require("../model/lesson");
 const Review = require("../model/review");
 const Bonus = require("../model/Bonus");
+const TeacherApprove = require("../EmailTemplate/TeacherApprove");
+const sendEmail = require("../utils/EmailMailler");
 
 exports.TeacherList = catchAsync(async (req, res) => {
   try {
@@ -58,7 +60,17 @@ exports.ApproveRejectTeacher = catchAsync(async (req, res) => {
       id,
       { admin_approved: approved },
       { new: true }
-    );
+    ).populate('userId', 'name email');
+    if(approved){
+      const registrationSubject =
+        "Your Account Has Been Approved! 🎉";
+      const emailHtml = TeacherApprove(teacher?.userId?.name || "");
+      await sendEmail({
+        email: teacher?.userId?.email,
+        subject: registrationSubject,
+        emailHtml: emailHtml,
+      });
+    }
     if (!teacher) {
       return errorResponse(res, "Teacher not found", 404);
     }
