@@ -36,7 +36,7 @@ exports.AddMessage = catchAsync(async (req, res) => {
     await createNotification({
       body: {
         ReceiverId: receiver,
-        text: `You have received a new message from ${req.user.name || ""}`
+        text: `You have received a new message from ${req.user.name || ""}`,
       },
     });
 
@@ -119,8 +119,8 @@ exports.GetMessage = catchAsync(async (req, res) => {
       ReciverUser: ReciverUser,
       messages: messages,
       status: 200,
-      message: "Messages fetched successfully"
-    })
+      message: "Messages fetched successfully",
+    });
     // return successResponse(res, "Messages fetched successfully", 200, messages);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
@@ -128,45 +128,68 @@ exports.GetMessage = catchAsync(async (req, res) => {
 });
 
 exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
-  // Merge teacher and message jsons
+  // Helper to merge users and messages (ensures users with no messages are included)
   function mergeUsersWithMessages(users, messages, role) {
     const messagesMap = new Map();
     const field = role === "teacher" ? "student" : "teacher";
-    messages.forEach(msg => {
+
+    // Put all message-based entries in the map
+    messages.forEach((msg) => {
       const userId = msg[field]?._id?.toString();
       if (userId) {
         messagesMap.set(userId, msg);
       }
     });
-    users.forEach(user => {
+
+    // Add users who have no messages
+    users.forEach((user) => {
       const userId = user._id.toString();
       if (!messagesMap.has(userId)) {
         messagesMap.set(userId, {
           count: 0,
+          latestMessageTime: null,
           [field]: user,
         });
       }
     });
-    return Array.from(messagesMap.values());
+
+    // Convert map to array and sort by latestMessageTime descending
+    return Array.from(messagesMap.values()).sort(
+      (a, b) =>
+        new Date(b.latestMessageTime || 0) - new Date(a.latestMessageTime || 0)
+    );
   }
 
   try {
     let aggregationPipeline = [];
+
+    // If the logged-in user is a TEACHER
     if (req.user.role === "teacher") {
       aggregationPipeline = [
         {
           $match: {
             teacher: new mongoose.Types.ObjectId(req.user.id),
-            is_read: false,
-            sent_by: "student",
             is_deleted: false,
           },
         },
         {
           $group: {
             _id: "$student",
-            count: { $sum: 1 },
-            teacher: { $first: "$teacher" },
+            count: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ["$is_read", false] },
+                      { $eq: ["$sent_by", "student"] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            latestMessageTime: { $max: "$createdAt" },
           },
         },
         {
@@ -184,23 +207,39 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
             _id: 0,
             student: 1,
             count: 1,
+            latestMessageTime: 1,
           },
         },
+        { $sort: { latestMessageTime: -1 } },
       ];
-    } else if (req.user.role === "student") {
+    }
+    // If the logged-in user is a STUDENT
+    else if (req.user.role === "student") {
       aggregationPipeline = [
         {
           $match: {
             student: new mongoose.Types.ObjectId(req.user.id),
-            is_read: false,
-            sent_by: "teacher",
             is_deleted: false,
           },
         },
         {
           $group: {
             _id: "$teacher",
-            count: { $sum: 1 },
+            count: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ["$is_read", false] },
+                      { $eq: ["$sent_by", "teacher"] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            latestMessageTime: { $max: "$createdAt" },
           },
         },
         {
@@ -218,18 +257,35 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
             _id: 0,
             teacher: 1,
             count: 1,
+            latestMessageTime: 1,
           },
         },
+        { $sort: { latestMessageTime: -1 } },
       ];
     } else {
       return errorResponse(res, "Invalid user role", 400);
     }
 
+    // Run aggregation
     const messages = await Message.aggregate(aggregationPipeline);
-    let roletoSearch = req.user.role === "teacher" ? "student" : "teacher";
-    const users = await User.find({ role: roletoSearch });
-    const mergedMessages = mergeUsersWithMessages(users, messages, req.user.role);
-    return successResponse(res, "Message count fetched successfully", 200, mergedMessages);
+
+    // Get all users of the opposite role
+    const roleToSearch = req.user.role === "teacher" ? "student" : "teacher";
+    const users = await User.find({ role: roleToSearch });
+
+    // Merge messages and users, then sort by recency
+    const mergedMessages = mergeUsersWithMessages(
+      users,
+      messages,
+      req.user.role
+    );
+
+    return successResponse(
+      res,
+      "Message count fetched successfully",
+      200,
+      mergedMessages
+    );
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
