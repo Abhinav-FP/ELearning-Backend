@@ -1,6 +1,7 @@
 const User = require("../model/user");
 const Teacher = require("../model/teacher");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const { errorResponse, successResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
 const Loggers = require("../utils/Logger");
@@ -21,10 +22,14 @@ exports.signup = catchAsync(async (req, res) => {
     if (!email || !password || !role || !name || !time_zone) {
       return errorResponse(res, "All fields are required", 401, "false");
     }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     const userRecord = new User({
       name,
       email,
-      password,
+      password: hashedPassword,
       role,
       gender,
       nationality,
@@ -167,9 +172,15 @@ exports.login = catchAsync(async (req, res) => {
     if (user?.block) {
       return errorResponse(res, "Your account is blocked", 401);
     }
-    if (password != user.password) {
-      return errorResponse(res, "Invalid password", 401);
+    // if (password != user.password) {
+    //   return errorResponse(res, "Invalid password", 401);
+    // }
+    // Validate password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return errorResponse(res, "Invalid password", 400);
     }
+
     if (user?.role === "teacher") {
       const teacher = await Teacher.findOne({ userId: user._id });
       if (!teacher) {
@@ -308,11 +319,15 @@ exports.resetPassword = catchAsync(async (req, res) => {
       return errorResponse(res, "User not found", 404);
     }
 
-    if (existingPassword !== user.password) {
-      return errorResponse(res, "Existing password is incorrect", 401);
+    const isPasswordValid = await bcrypt.compare(existingPassword, user.password);
+    if (!isPasswordValid) {
+      return errorResponse(res, "Existing password is incorrect", 400);
     }
 
-    user.password = newPassword;
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    user.password = hashedPassword;
     await user.save();
 
     return successResponse(res, "Password updated successfully!", 200);

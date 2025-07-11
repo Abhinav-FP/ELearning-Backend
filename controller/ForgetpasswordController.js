@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../model/user");
 const { validationErrorResponse, errorResponse, successResponse } = require("../utils/ErrorHandling");
+const bcrypt = require("bcrypt");
 const catchAsync = require("../utils/catchAsync");
 const { promisify } = require("util");
 const nodemailer = require("nodemailer");
@@ -55,7 +56,9 @@ exports.forgotpassword = catchAsync(
       if (!user) {
         return errorResponse(res, "User not found", 404);
       }
-      user.password = newPassword;
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      user.password = hashedPassword;
       const record = await user.save();
       return successResponse(res, "Password has been successfully reset");
     } catch (error) {
