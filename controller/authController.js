@@ -176,7 +176,10 @@ exports.login = catchAsync(async (req, res) => {
         return errorResponse(res, "Teacher not found", 401);
       }
       if (teacher?.admin_approved === false) {
-        return errorResponse(res, "Account not approved yet", 401);
+        return errorResponse(res, "Account not approved", 401);
+      }
+      if (teacher?.admin_approved === null) {
+        return errorResponse(res, "Awaiting admin approval", 401);
       }
     }
 
