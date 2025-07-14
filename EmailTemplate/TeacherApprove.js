@@ -1,4 +1,4 @@
-module.exports = (teacherName) => {
+module.exports = (teacherName, link) => {
   return `
     <div id="email" style="background: #fdf6f7;padding: 20px 0;">
   <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">
@@ -28,8 +28,8 @@ module.exports = (teacherName) => {
         </p>
 
         <p style="margin: 1.2rem 0;text-align: center;">
-          <a href="https://japaneseforme.com/teacher-dashboard/profile" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">
-            Add Your First Lesson
+          <a href=${link} style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">
+            Verify Your Email
           </a>
         </p>
 

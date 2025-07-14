@@ -11,6 +11,13 @@ const Bonus = require("../model/Bonus");
 const TeacherApprove = require("../EmailTemplate/TeacherApprove");
 const sendEmail = require("../utils/EmailMailler");
 
+const signEmail = async (id) => {
+  const token = jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
+    expiresIn: "24h",
+  });
+  return token;
+};
+
 exports.TeacherList = catchAsync(async (req, res) => {
   try {
     const { search, block } = req.query;
@@ -62,9 +69,11 @@ exports.ApproveRejectTeacher = catchAsync(async (req, res) => {
       { new: true }
     ).populate('userId', 'name email');
     if(approved){
+      const token = await signEmail(teacher.userId);
+      const link = `https://japaneseforme.com/verify/${token}`;
       const registrationSubject =
         "Your Account Has Been Approved! 🎉";
-      const emailHtml = TeacherApprove(teacher?.userId?.name || "");
+      const emailHtml = TeacherApprove(teacher?.userId?.name || "", link);
       await sendEmail({
         email: teacher?.userId?.email,
         subject: registrationSubject,

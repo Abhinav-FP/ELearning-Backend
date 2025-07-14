@@ -30,6 +30,7 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200, // for legacy browsers
 }
+
 app.use(cors(corsOptions));
 
 //stripe Webhook
@@ -428,34 +429,6 @@ app.post("/zoom-webhook", async (req, res) => {
 
   return res.sendStatus(200);
 });
-
-// Testing route for zoom meeting creation
-// app.get("/zoom", async(req, res) => {
-//   const meetingDetails = {
-//   topic: "Demo Application",
-//   type: 2,
-//   start_time: "2025-06-18T11:40:00+05:30",
-//   duration: 5,
-//   password: "12334",
-//   timezone: "Asia/Kolkata",
-//   settings: {
-//     auto_recording: "cloud",
-//     host_video: true,
-//     participant_video: true,
-//     mute_upon_entry: true,
-//     join_before_host: true,
-//     waiting_room: false,
-//     registrants_capacity: 2,
-//   },
-// };
-// const result = await createZoomMeeting(meetingDetails);
-// return res.json({
-//     msg: 'Hello World',
-//     status: 200,
-//     data:result,
-//   });
-
-// });
 
 app.get("/", (req, res) => {
   res.json({

@@ -7,23 +7,127 @@ const catchAsync = require("../utils/catchAsync");
 const Loggers = require("../utils/Logger");
 const sendEmail = require("../utils/EmailMailler");
 const Welcome = require("../EmailTemplate/Welcome");
+const TeacherWelcome = require("../EmailTemplate/TeacherWelcome");
 const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
 
 const signEmail = async (id) => {
   const token = jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
-    expiresIn: "15m",
+    expiresIn: "24h",
   });
   return token;
 };
 
-exports.signup = catchAsync(async (req, res) => {
+// exports.signup = catchAsync(async (req, res) => {
+//   try {
+//     const { name, email, password, role, gender, nationality, time_zone } = req.body;
+//     if (!email || !password || !role || !name || !time_zone) {
+//       return errorResponse(res, "All fields are required", 401, "false");
+//     }
+
+//     // Hash the password
+//     const hashedPassword = await bcrypt.hash(password, 12);
+
+//     const userRecord = new User({
+//       name,
+//       email,
+//       password: hashedPassword,
+//       role,
+//       gender,
+//       nationality,
+//       time_zone,
+//     });
+
+//     const userResult = await userRecord.save();
+
+//     if (!userResult) {
+//       return errorResponse(res, "Failed to create user.", 500);
+//     }
+//     // Teacher Register
+//     // if (role === "teacher") {
+//     //   if ((!description, !experience, !city, !intro_video, !qualifications, !languages_spoken, !ais_trained, !payment_method)) {
+//     //     return errorResponse(res, "All fields are required", 401, "false");
+//     //   }
+//     // }
+//     const token = await signEmail(userResult._id);
+//     const link = `https://japaneseforme.com/verify/${token}`;
+
+//     if (role !== "teacher") {
+//       // Send email logic for student
+//       const registrationSubject =
+//         "Welcome to Japanese for Me!🎉 Your account has been created.";
+//       const emailHtml = Welcome(name, link);
+//       await sendEmail({
+//         email: email,
+//         subject: registrationSubject,
+//         emailHtml: emailHtml,
+//       });
+//       return successResponse(res, "User created successfully!", 201, {
+//         user: userResult,
+//       });
+//     }
+
+//     // Save remaining data to Carrier table with reference to User
+
+//     const teacherRecord = new Teacher({
+//       userId: userResult._id,
+//       // description: description,
+//       // experience,
+//       // city,
+//       // intro_video,
+//       // qualifications,
+//       // languages_spoken,
+//       // ais_trained,
+//       // payment_method,
+//       // profile_photo: req.file?.location || null,
+//     });
+
+//     const teacherResult = await teacherRecord.save();
+
+//     if (!teacherResult) {
+//       await User.findByIdAndDelete(userResult._id);
+//       return errorResponse(res, "Failed to create carrier.", 500);
+//     }
+
+//     const registrationSubject =
+//       "Welcome to E-learning! 🎉 Your account has been created.";
+//     const emailHtml = Welcome(name, link);
+//     await sendEmail({
+//       email: email,
+//       subject: registrationSubject,
+//       emailHtml: emailHtml,
+//     });
+//     successResponse(res, "Teacher created successfully!", 201, {
+//       user: userResult,
+//       carrier: teacherResult,
+//     });
+
+//   } catch (error) {
+//     console.log("error", error);
+//     Loggers.error(error);
+//     if (error.code === 11000 && error.keyPattern?.email) {
+//       return errorResponse(
+//         res,
+//         "This email is already registered. Please log in or use a different email.",
+//         400
+//       );
+//     }
+//     if (error.name === "ValidationError") {
+//       const errors = Object.values(error.errors).map((el) => el.message);
+//       console.log("errors", errors);
+//       return validationErrorResponse(res, errors.join(", "), 400, "error");
+//     }
+//     return errorResponse(res, error.message || "Internal Server Error", 500);
+//   }
+// });
+
+exports.studentSignup = catchAsync(async (req, res) => {
   try {
-    const { name, email, password, role, gender, nationality, time_zone } = req.body;
+    const { name, email, password, role, time_zone } = req.body;
+
     if (!email || !password || !role || !name || !time_zone) {
       return errorResponse(res, "All fields are required", 401, "false");
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const userRecord = new User({
@@ -31,77 +135,32 @@ exports.signup = catchAsync(async (req, res) => {
       email,
       password: hashedPassword,
       role,
-      gender,
-      nationality,
       time_zone,
     });
 
     const userResult = await userRecord.save();
-
     if (!userResult) {
       return errorResponse(res, "Failed to create user.", 500);
     }
-    // Teacher Register
-    // if (role === "teacher") {
-    //   if ((!description, !experience, !city, !intro_video, !qualifications, !languages_spoken, !ais_trained, !payment_method)) {
-    //     return errorResponse(res, "All fields are required", 401, "false");
-    //   }
-    // }
+
     const token = await signEmail(userResult._id);
     const link = `https://japaneseforme.com/verify/${token}`;
 
-    if (role !== "teacher") {
-      // Send email logic for student
-      const registrationSubject =
-        "Welcome to Japanese for Me!🎉 Your account has been created.";
-      const emailHtml = Welcome(name, link);
-      await sendEmail({
-        email: email,
-        subject: registrationSubject,
-        emailHtml: emailHtml,
-      });
-      return successResponse(res, "User created successfully!", 201, {
-        user: userResult,
-      });
-    }
-
-    // Save remaining data to Carrier table with reference to User
-
-    const teacherRecord = new Teacher({
-      userId: userResult._id,
-      // description: description,
-      // experience,
-      // city,
-      // intro_video,
-      // qualifications,
-      // languages_spoken,
-      // ais_trained,
-      // payment_method,
-      // profile_photo: req.file?.location || null,
-    });
-
-    const teacherResult = await teacherRecord.save();
-
-    if (!teacherResult) {
-      await User.findByIdAndDelete(userResult._id);
-      return errorResponse(res, "Failed to create carrier.", 500);
-    }
-
-    const registrationSubject =
-      "Welcome to E-learning! 🎉 Your account has been created.";
+    const registrationSubject = "Welcome to Japanese for Me!🎉 Your account has been created.";
     const emailHtml = Welcome(name, link);
+
     await sendEmail({
       email: email,
       subject: registrationSubject,
       emailHtml: emailHtml,
     });
-    successResponse(res, "Teacher created successfully!", 201, {
+
+    return successResponse(res, "User created successfully!", 201, {
       user: userResult,
-      carrier: teacherResult,
     });
 
   } catch (error) {
-    console.log("error", error);
+   console.log("error", error);
     Loggers.error(error);
     if (error.code === 11000 && error.keyPattern?.email) {
       return errorResponse(
@@ -115,6 +174,85 @@ exports.signup = catchAsync(async (req, res) => {
       console.log("errors", errors);
       return validationErrorResponse(res, errors.join(", "), 400, "error");
     }
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.teacherSignup = catchAsync(async (req, res) => {
+  try {
+    const { name, email, password, role, time_zone } = req.body;
+
+    console.log("Incoming teacher signup request:", { name, email, role, time_zone });
+
+    if (!email || !password || !role || !name || !time_zone) {
+      console.warn("Missing required fields.");
+      return errorResponse(res, "All fields are required", 401, "false");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    console.log("Password hashed successfully");
+
+    const userRecord = new User({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      time_zone,
+    });
+
+    const userResult = await userRecord.save();
+    console.log("User saved in DB:", userResult?._id);
+
+    if (!userResult) {
+      return errorResponse(res, "Failed to create user.", 500);
+    }
+
+    const teacherRecord = new Teacher({
+      userId: userResult._id,
+    });
+
+    const teacherResult = await teacherRecord.save();
+    console.log("Teacher profile saved:", teacherResult?._id);
+
+    if (!teacherResult) {
+      await User.findByIdAndDelete(userResult._id);
+      return errorResponse(res, "Failed to create teacher profile.", 500);
+    }
+
+    const registrationSubject = "Welcome to E-learning! 🎉 Your account has been created.";
+    const emailHtml = TeacherWelcome(name);
+
+    console.log("Preparing to send email to:", email);
+    await sendEmail({
+      email: email,
+      subject: registrationSubject,
+      emailHtml: emailHtml,
+    });
+    console.log("Email sent successfully to:", email);
+
+    return successResponse(res, "Teacher created successfully!", 201, {
+      user: userResult,
+      carrier: teacherResult,
+    });
+
+  } catch (error) {
+    console.error("Signup error occurred:", error);
+    Loggers.error(error);
+
+    if (error.code === 11000 && error.keyPattern?.email) {
+      return errorResponse(
+        res,
+        "This email is already registered. Please log in or use a different email.",
+        400
+      );
+    }
+
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((el) => el.message);
+      console.warn("Validation errors:", errors);
+      return validationErrorResponse(res, errors.join(", "), 400, "error");
+    }
+
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
