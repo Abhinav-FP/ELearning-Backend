@@ -116,6 +116,29 @@ exports.StudentList = catchAsync(async (req, res) => {
   }
 });
 
+exports.DeleteUser = catchAsync(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return errorResponse(res, "User ID is required", 400);
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    return errorResponse(res, "User not found", 404);
+  }
+
+  const timestamp = Date.now();
+  user.deleted_at = new Date();
+  user.email = `email_deleted_${timestamp}`;
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "User deleted successfully",
+  });
+});
 
 exports.AdminBlockUser = catchAsync(async (req, res) => {
   try {

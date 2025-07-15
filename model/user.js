@@ -41,7 +41,11 @@ const userSchema = mongoose.Schema({
   email_verify: {
     type: Boolean,
     default: false,
-  }
+  },
+  deleted_at: {
+    type: String,
+    default: null,
+  },
 }, { timestamps: true });
 
 userSchema.index({ email: 1 }, { unique: [true, 'Unique email is required!'] });
