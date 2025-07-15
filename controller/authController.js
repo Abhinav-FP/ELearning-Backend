@@ -142,25 +142,35 @@ exports.studentSignup = catchAsync(async (req, res) => {
     if (!userResult) {
       return errorResponse(res, "Failed to create user.", 500);
     }
+    console.log("userResult", userResult)
 
     const token = await signEmail(userResult._id);
+    console.log("token", token)
     const link = `https://japaneseforme.com/verify/${token}`;
 
     const registrationSubject = "Welcome to Japanese for Me!🎉 Your account has been created.";
     const emailHtml = Welcome(name, link);
+    console.log("signup emailHtml", emailHtml);
 
-    await sendEmail({
+
+
+    console.log("About to send email");
+    const record = await sendEmail({
       email: email,
       subject: registrationSubject,
       emailHtml: emailHtml,
     });
+    console.log("Email record:", record);
+    console.log("Sending signup email to", email);
+
+
 
     return successResponse(res, "User created successfully!", 201, {
       user: userResult,
     });
 
   } catch (error) {
-   console.log("error", error);
+    console.log("error", error);
     Loggers.error(error);
     if (error.code === 11000 && error.keyPattern?.email) {
       return errorResponse(
@@ -392,13 +402,12 @@ exports.updateProfile = catchAsync(async (req, res) => {
       return errorResponse(res, "Password cannot be updated", 401);
     }
 
-     // Checking if the changed email already exists
-    if(user.email !== updates?.email)
-    {
-      const exists = await User.exists({email: updates?.email});
-      if(exists){
+    // Checking if the changed email already exists
+    if (user.email !== updates?.email) {
+      const exists = await User.exists({ email: updates?.email });
+      if (exists) {
         return errorResponse(res, "A User with the same email already exists", 404);
-      }        
+      }
     }
 
     let photo = null;

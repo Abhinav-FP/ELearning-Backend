@@ -17,7 +17,7 @@ module.exports = (userName, link) => {
         <tr>
             <td style="padding: .1rem 1rem 1rem ;border-bottom: 1px solid rgba(0,0,0,.1)">
                 <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.6rem; text-align: left;color: #CC2828;margin: 0 0 .6rem;">Welcome to Japanese for Me</p> 
-                <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: left;color: #333333;margin: 0 0 .7rem;">Hi ${userName},</p>
+                <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: left;color: #333333;margin: 0 0 .7rem;">Hi ${userName} ,</p>
 
                 <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: left;color: #333333;margin: 0 0 1.3rem;">
                     Thanks for joining Japanese for Me. Please click the below button to verify your email and start your journey with us.
