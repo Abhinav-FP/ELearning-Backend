@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const { BankAddOrEdit, BankList } = require("../controller/BankController");
 const { PayoutAdd, payoutList } = require("../controller/PayoutController");
-const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck, TeacherGet, EarningsGet, BookingsGet, updateProfile, DashboardApi, SpecialSlotCreate, StudentLessonListing, SpecialSlotList, SpecialSlotData, DeleteGetLesson, GetReview } = require("../controller/teacherController");
+const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck, TeacherGet, EarningsGet, BookingsGet, updateProfile, DashboardApi, SpecialSlotCreate, StudentLessonListing, SpecialSlotList, SpecialSlotData, DeleteGetLesson, GetReview, EmailCheck } = require("../controller/teacherController");
 const { verifyToken } = require("../middleware/tokenVerify");
 const { upload } = require("../utils/FileUploader");
 
@@ -17,9 +17,10 @@ router.get("/teacher/lesson/get", verifyToken, GetLessons);
 
 router.post("/teacher/lesson/delete", verifyToken, DeleteGetLesson);
 
-// The below 2 are test routes only don't use them
+// The below 3 are test routes only don't use them
 router.post("/teacher/test/upload", upload.single('file'), UploadCheck);
 router.post("/teacher/test/delete", DeleteCheck);
+router.post("/teacher/test/email", EmailCheck);
 
 router.post("/teacher/payout", verifyToken, PayoutAdd);
 

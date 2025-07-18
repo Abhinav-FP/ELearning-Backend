@@ -16,6 +16,7 @@ const SpecialSlotEmail = require("../EmailTemplate/SpecialSlot");
 const jwt = require("jsonwebtoken");
 const review = require("../model/review");
 const Bonus = require("../model/Bonus");
+const Welcome = require("../EmailTemplate/Welcome");
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
@@ -282,6 +283,26 @@ exports.DeleteCheck = catchAsync(async (req, res) => {
       status: false,
       message: "File deleted successfully!"
     })
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.EmailCheck = catchAsync(async (req, res) => {
+  try {
+        const link = `https://japaneseforme.com/verify/123456`;
+        const registrationSubject = "Welcome to Japanese for Me!🎉 Your account has been created.";
+        const emailHtml = Welcome("Abhinav", link);
+        console.log("About to send email");
+        const record = await sendEmail({
+          email: "mathur.abhinav1108@gmail.com",
+          subject: registrationSubject,
+          emailHtml: emailHtml,
+        });
+        res.status(200).json({
+          status: false,
+          message: "Email sent successfully!"
+        })
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
