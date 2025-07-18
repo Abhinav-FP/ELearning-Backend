@@ -10,6 +10,7 @@ const Review = require("../model/review");
 const Bonus = require("../model/Bonus");
 const TeacherApprove = require("../EmailTemplate/TeacherApprove");
 const sendEmail = require("../utils/EmailMailler");
+const jwt = require("jsonwebtoken");
 
 const signEmail = async (id) => {
   const token = jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
