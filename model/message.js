@@ -13,7 +13,20 @@ const messageSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: [true, "Content is required"],
+    // required: [true, "Content is required"],
+    default: null
+  },
+  file_url: {
+    type: String,
+    default: null,
+  },
+  file_name: {
+    type: String,
+    default: null,
+  },
+  file_type: {
+    type: String,
+    default: null,
   },
   is_read: {
     type: Boolean,

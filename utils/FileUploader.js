@@ -16,7 +16,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const uploadFileToSpaces = async (file) => {
   try {
-    const fileName = `${uuidv4()}-${file.originalname}`; // Unique filename
+    const fileName = `${uuidv4()}-${file.originalname.replaceAll(" ", "_")}`; // Unique filename
 
     const uploadParams = {
       Bucket: process.env.bucketName, // Your Space Name

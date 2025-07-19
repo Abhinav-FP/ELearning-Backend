@@ -4,13 +4,33 @@ const catchAsync = require("../utils/catchAsync");
 const Message = require("../model/message");
 const User = require("../model/user");
 const { createNotification } = require("./NotificationController");
+const { uploadFileToSpaces } = require("../utils/FileUploader");
 
 exports.AddMessage = catchAsync(async (req, res) => {
   try {
     const { receiver, content } = req.body;
 
-    if (!receiver || !content) {
-      return errorResponse(res, "Receiver and content are required", 400);
+    if (!receiver) {
+      return errorResponse(res, "Receiver is required", 400);
+    }
+
+    if (!req.file && !content) {
+      return errorResponse(res, "File or message is required", 400);
+    }
+
+    let fileDetails = {
+      file_url: null,
+      file_name: null,
+      file_type: null,
+    };
+
+    if (req.file) {
+      const fileKey = await uploadFileToSpaces(req.file);
+      fileDetails = {
+        file_url: fileKey,
+        file_name: req.file.originalname,
+        file_type: req.file.mimetype,
+      };
     }
 
     let student, teacher;
@@ -28,11 +48,13 @@ exports.AddMessage = catchAsync(async (req, res) => {
     const messageRecord = new Message({
       student,
       teacher,
-      content,
-      sent_by: req.user.role, // Derived automatically from req.user.role
+      content: content || null,
+      sent_by: req.user.role,
+      ...fileDetails,
     });
 
     const messageResult = await messageRecord.save();
+
     await createNotification({
       body: {
         ReceiverId: receiver,
