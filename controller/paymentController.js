@@ -95,11 +95,9 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone, totalAmount, adminCommission, email,
       isSpecialSlot, processingFee
     } = req.body;
-    console.log("req.body in paypal approve", req.body)
-    
-    // Checking if the booking with the same slot already exists
+
     let startUTCs, endUTCs;
-    if (isSpecial) {
+    if (isSpecialSlot) {
       startUTCs = startDateTime;
       endUTCs = endDateTime;
     }
@@ -111,12 +109,12 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     const existingBooking = await Bookings.findOne({
       teacherId: new mongoose.Types.ObjectId(teacherId),
       cancelled: false, // Only consider active bookings
-      startDateTime: { $lt: endUTC },
-      endDateTime: { $gt: startUTC },
+      startDateTime: { $lt: endUTCs },
+      endDateTime: { $gt: startUTCs },
     });
     if (existingBooking) {
       return res.status(400).json({
-        status:false,
+        status: false,
         error: "Booking already exists at the given slot for this teacher.",
       });
     }
@@ -193,7 +191,8 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     // Send confirmation email to student
     const registrationSubject = "Booking Confirmed 🎉";
     const Username = user?.name;
-    const emailHtml = BookingSuccess(startDateTime, Username, teacher?.name);
+    console.log("startDateTime" , startDateTime)
+    const emailHtml = BookingSuccess(startDateTime , Username, teacher?.name);
     await sendEmail({
       email: email,
       subject: registrationSubject,
@@ -216,66 +215,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   }
 });
 
-exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
-  try {
-    const UserId = req.user.id;
-    const { orderID, teacherId, LessonId, totalAmount, IsBonus, BookingId } = req.body;
-    const accessToken = await generateAccessToken();
-    const response = await axios.post(
-      `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
-      {},
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
 
-
-      }
-    );
-
-    const captureData = response.data;
-    const newPayment = new Payment({
-      orderID: captureData.id,
-      intent: captureData.intent,
-      status: captureData.status,
-      purchase_units: captureData.purchase_units,
-      payer: captureData.payer,
-      payment_source: captureData.payment_source,
-      capturedAt: new Date(),
-      LessonId: LessonId || undefined,
-      UserId: UserId || undefined,
-      amount: captureData.purchase_units[0].payments.captures[0].amount.value, // "100.00"
-      currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
-      IsBonus: IsBonus,
-    });
-
-    const savedPayment = await newPayment.save();
-    const record = await Bonus.create({
-      userId: UserId,
-      teacherId,
-      LessonId,
-      bookingId: BookingId,
-      amount: totalAmount,
-      currency: "USD",
-      paypalpaymentId: savedPayment?._id,
-    });
-
-
-    const BookingData = await Bookings.findOneAndUpdate(
-      { _id: BookingId },
-      {
-        IsBonus: true,
-        BonusId: record._id,
-      },
-      { new: true }
-    );
-    res.status(200).json(savedPayment);
-  } catch (error) {
-    console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
-    res.status(500).json({ error: "Failed to capture and save PayPal order" });
-  }
-});
 
 exports.PaymentcancelOrder = catchAsync(async (req, res) => {
   try {
@@ -322,6 +262,144 @@ exports.PaymentcancelOrder = catchAsync(async (req, res) => {
   }
 }
 );
+
+
+// For Tips  teacher given  by student 
+
+exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
+  try {
+    const UserId = req.user.id;
+    const { orderID, teacherId, LessonId, totalAmount, IsBonus, BookingId } = req.body;
+    const accessToken = await generateAccessToken();
+    const response = await axios.post(
+      `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    const captureData = response.data;
+    const newPayment = new Payment({
+      orderID: captureData.id,
+      intent: captureData.intent,
+      status: captureData.status,
+      purchase_units: captureData.purchase_units,
+      payer: captureData.payer,
+      payment_source: captureData.payment_source,
+      capturedAt: new Date(),
+      LessonId: LessonId || undefined,
+      UserId: UserId || undefined,
+      amount: captureData.purchase_units[0].payments.captures[0].amount.value, // "100.00"
+      currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
+      IsBonus: IsBonus,
+    });
+
+    const savedPayment = await newPayment.save();
+    const record = await Bonus.create({
+      userId: UserId,
+      teacherId,
+      LessonId,
+      bookingId: BookingId,
+      amount: totalAmount,
+      currency: "USD",
+      paypalpaymentId: savedPayment?._id,
+    });
+
+
+    const BookingData = await Bookings.findOneAndUpdate(
+      { _id: BookingId },
+      {
+        IsBonus: true,
+        BonusId: record._id,
+      },
+      { new: true }
+    );
+    res.status(200).json(savedPayment);
+  } catch (error) {
+    console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
+    res.status(500).json({ error: "Failed to capture and save PayPal order" });
+  }
+});
+
+
+exports.PaymentCreate = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { amount, LessonId, currency, teacherId,
+      startDateTime, endDateTime, timezone, adminCommission,
+      email, isSpecial, IsBonus,
+      BookingId, processingFee
+    } = req?.body;
+    // console.log("req?.body", req?.body)
+
+    // Checking if the booking with the same slot already exists
+    let startUTC, endUTC;
+    if (isSpecial) {
+      startUTC = startDateTime;
+      endUTC = endDateTime;
+    }
+    else {
+      startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+      endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+    }
+    // Check for booking conflict for the same teacher
+    const existingBooking = await Bookings.findOne({
+      teacherId: new mongoose.Types.ObjectId(teacherId),
+      cancelled: false, // Only consider active bookings
+      startDateTime: { $lt: endUTC },
+      endDateTime: { $gt: startUTC },
+    });
+
+    if (existingBooking) {
+      return res.status(400).json({
+        status: false,
+        error: "Booking already exists at the given slot for this teacher.",
+      });
+    }
+
+    const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
+    const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
+    const amountInCents = Math.round(amount * 100);
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency: currency,
+      payment_method_types: ['card'],
+      metadata: {
+        userId,
+        LessonId,
+        teacherId,
+        startDateTime,
+        endDateTime,
+        timezone,
+        adminCommission,
+        email,
+        amount,
+        currency,
+        srNo: srNo.toString(),
+        isSpecial,
+        BookingId,
+        IsBonus,
+        processingFee,
+      }
+    });
+    res.json({ clientSecret: paymentIntent.client_secret });
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+
+
+
+
+
 
 // Stripe Checkout Sytem 
 // const fetchPaymentId = async (sessionId, srNo) => {
@@ -511,74 +589,3 @@ exports.PaymentcancelOrder = catchAsync(async (req, res) => {
 //     return res.status(500).json({ error: err.message });
 //   }
 // }
-
-
-exports.PaymentCreate = catchAsync(async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { amount, LessonId, currency, teacherId,
-      startDateTime, endDateTime, timezone, adminCommission,
-      email, isSpecial, IsBonus,
-      BookingId, processingFee
-    } = req?.body;
-    // console.log("req?.body", req?.body)
-    
-    // Checking if the booking with the same slot already exists
-    let startUTC, endUTC;
-    if (isSpecial) {
-      startUTC = startDateTime;
-      endUTC = endDateTime;
-    }
-    else {
-      startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
-      endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
-    }
-    // Check for booking conflict for the same teacher
-    const existingBooking = await Bookings.findOne({
-      teacherId: new mongoose.Types.ObjectId(teacherId),
-      cancelled: false, // Only consider active bookings
-      startDateTime: { $lt: endUTC },
-      endDateTime: { $gt: startUTC },
-    });
-
-    if (existingBooking) {
-      return res.status(400).json({
-        status:false,
-        error: "Booking already exists at the given slot for this teacher.",
-      });
-    }
-
-    const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
-    const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
-    const amountInCents = Math.round(amount * 100);
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
-      currency: currency,
-      payment_method_types: ['card'],
-      metadata: {
-        userId,
-        LessonId,
-        teacherId,
-        startDateTime,
-        endDateTime,
-        timezone,
-        adminCommission,
-        email,
-        amount,
-        currency,
-        srNo: srNo.toString(),
-        isSpecial,
-        BookingId,
-        IsBonus,
-        processingFee,
-      }
-    });
-    res.json({ clientSecret: paymentIntent.client_secret });
-  } catch (error) {
-    console.error('Error creating payment intent:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
-
-
