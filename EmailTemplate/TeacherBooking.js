@@ -27,11 +27,11 @@ module.exports = (startDateTime, userName, teacherName) => {
                         <table cellspacing="0" cellpadding="0" style="width: 100%;margin: 0">
                         <tr>
                             <td width="30%" style="font-size: 1rem; font-weight: 600; line-height: 18px;text-align: left;color: #333333;padding: 1rem 1.3rem;border-bottom: 1px solid #CC2828;">Date:</td> 
-                            <td width="70%" style="font-size: 1rem; font-weight: 400; line-height: 1.3rem;text-align: left;color: #CC2828;padding: 1rem 1.3rem;border-bottom: 1px solid #CC2828;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/date.png" style="max-width:100%;vertical-align: text-bottom;"> ${moment(startDateTime).format("DD MMM. YYYY")}</td> 
+                            <td width="70%" style="font-size: 1rem; font-weight: 400; line-height: 1.3rem;text-align: left;color: #CC2828;padding: 1rem 1.3rem;border-bottom: 1px solid #CC2828;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/date.png" style="max-width:100%;vertical-align: text-bottom;"> ${moment.parseZone(startDateTime).format("DD MMM. YYYY")}</td> 
                         </tr>
                          <tr>
                             <td width="30%" style="font-size: 1rem; font-weight: 600; line-height: 18px;text-align: left;color: #333333;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;">Time:</td> 
-                            <td width="70%" style="font-size: 1rem; font-weight: 400; line-height: 1.3rem;text-align: left;color: #CC2828;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/time.png" style="max-width:100%;vertical-align: text-bottom;"> ${moment(startDateTime).format("hh:mm A")}</td> 
+                            <td width="70%" style="font-size: 1rem; font-weight: 400; line-height: 1.3rem;text-align: left;color: #CC2828;padding: .6rem 1.3rem;border-bottom: 1px solid #CC2828;"><img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/time.png" style="max-width:100%;vertical-align: text-bottom;"> ${moment.parseZone(startDateTime).format("hh:mm A")}</td> 
                         </tr>
                                           
                     </table>
