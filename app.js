@@ -169,11 +169,23 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           { new: true, runValidators: true }
         );
       }
+
       // Send confirmation email to student
       const user = await User.findById(metadata.userId);
       const teacher = await User.findById(metadata.teacherId);
       const registrationSubject = "Booking Confirmed 🎉";
-      const emailHtml = BookingSuccess(startUTC, user?.name, teacher?.name);
+      
+      // Convert to ISO format for moment parsing in email templates
+      const utcDateTime = DateTime.fromISO(startUTC, { zone: "utc" });
+      const userTimeISO = user?.time_zone
+        ? utcDateTime.setZone(user.time_zone).toISO()
+        : utcDateTime.toISO();
+
+      const teacherTimeISO = teacher?.time_zone
+        ? utcDateTime.setZone(teacher.time_zone).toISO()
+        : utcDateTime.toISO();
+
+      const emailHtml = BookingSuccess(userTimeISO, user?.name, teacher?.name);
       await sendEmail({
         email: metadata.email,
         subject: registrationSubject,
@@ -181,7 +193,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       });
       // Send Confirmation email to teacher
       const TeacherSubject = "New Booking 🎉";
-      const TeacheremailHtml = TeacherBooking(startUTC, user?.name, teacher?.name);
+      const TeacheremailHtml = TeacherBooking(teacherTimeISO, user?.name, teacher?.name);
       await sendEmail({
         email: teacher.email,
         subject: TeacherSubject,

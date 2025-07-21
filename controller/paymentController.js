@@ -191,8 +191,18 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     // Send confirmation email to student
     const registrationSubject = "Booking Confirmed 🎉";
     const Username = user?.name;
-    console.log("startDateTime" , startDateTime)
-    const emailHtml = BookingSuccess(startDateTime , Username, teacher?.name);
+
+    // Convert to ISO format for moment parsing in email templates
+    const utcDateTime = DateTime.fromISO(startUTC, { zone: "utc" });
+    const userTimeISO = user?.time_zone
+      ? utcDateTime.setZone(user.time_zone).toISO()
+      : utcDateTime.toISO();
+
+    const teacherTimeISO = teacher?.time_zone
+      ? utcDateTime.setZone(teacher.time_zone).toISO()
+      : utcDateTime.toISO();
+      
+    const emailHtml = BookingSuccess(userTimeISO , Username, teacher?.name);
     await sendEmail({
       email: email,
       subject: registrationSubject,
@@ -201,7 +211,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 
     // Send Confirmation email to teacher
     const TeacherSubject = "New Booking 🎉";
-    const TeacheremailHtml = TeacherBooking(startUTC, Username, teacher?.name);
+    const TeacheremailHtml = TeacherBooking(teacherTimeISO, Username, teacher?.name);
     await sendEmail({
       email: teacher.email,
       subject: TeacherSubject,
