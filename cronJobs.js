@@ -44,10 +44,12 @@ module.exports = () => {
         else if (diffInMinutes === 120) time = "2 hours";
         else if (diffInMinutes === 30) time = "30 minutes";
         else continue; // skip if not one of the 3 target intervals
+        let zoomLink = null;
 
         // Zoom Code
         if(diffInMinutes === 30)
         {
+          console.log(`email aa raha hai ready raho`);
           logger.info(`Creating Zoom meeting for booking ID: ${booking._id}`);
           // console.log(`Creating Zoom meeting for booking ID: ${booking._id}`);
           const meetingDetails = {
@@ -68,6 +70,7 @@ module.exports = () => {
             },
           };
           const result = await createZoomMeeting(meetingDetails);
+          zoomLink = result?.meeting_url || "";
           // console.log("result",result);
           const zoomRecord = new Zoom({
             meetingId: result?.meeting_id || "",
@@ -93,7 +96,7 @@ module.exports = () => {
         // Sending email to student
         const emailHtml = Reminder(
             userName,
-            "https://japaneseforme.com/student/lessons",
+            zoomLink || "https://japaneseforme.com/student/lessons",
             time,
             teacherName,
             lessonName
@@ -108,7 +111,7 @@ module.exports = () => {
         // Sending email to teacher
         const TeacherEmailHtml = TeacherReminder(
             userName,
-            "https://japaneseforme.com/teacher-dashboard/booking",
+            zoomLink || "https://japaneseforme.com/teacher-dashboard/booking",
             time,
             teacherName,
             lessonName

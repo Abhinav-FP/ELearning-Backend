@@ -193,14 +193,15 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     const Username = user?.name;
 
     // Convert to ISO format for moment parsing in email templates
-    const utcDateTime = DateTime.fromISO(startUTC, { zone: "utc" });
+    const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
+    
     const userTimeISO = user?.time_zone
-      ? utcDateTime.setZone(user.time_zone).toISO()
-      : utcDateTime.toISO();
+        ? utcDateTime.setZone(user.time_zone).toISO()
+        : utcDateTime.toISO();
 
-    const teacherTimeISO = teacher?.time_zone
-      ? utcDateTime.setZone(teacher.time_zone).toISO()
-      : utcDateTime.toISO();
+      const teacherTimeISO = teacher?.time_zone
+        ? utcDateTime.setZone(teacher.time_zone).toISO()
+        : utcDateTime.toISO();
       
     const emailHtml = BookingSuccess(userTimeISO , Username, teacher?.name);
     await sendEmail({
