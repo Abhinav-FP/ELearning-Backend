@@ -99,7 +99,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     
     // Checking if the booking with the same slot already exists
     let startUTCs, endUTCs;
-    if (isSpecial) {
+    if (isSpecialSlot) {
       startUTCs = startDateTime;
       endUTCs = endDateTime;
     }
@@ -111,8 +111,8 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     const existingBooking = await Bookings.findOne({
       teacherId: new mongoose.Types.ObjectId(teacherId),
       cancelled: false, // Only consider active bookings
-      startDateTime: { $lt: endUTC },
-      endDateTime: { $gt: startUTC },
+      startDateTime: { $lt: endUTCs },
+      endDateTime: { $gt: startUTCs },
     });
     if (existingBooking) {
       return res.status(400).json({
@@ -216,66 +216,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   }
 });
 
-exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
-  try {
-    const UserId = req.user.id;
-    const { orderID, teacherId, LessonId, totalAmount, IsBonus, BookingId } = req.body;
-    const accessToken = await generateAccessToken();
-    const response = await axios.post(
-      `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
-      {},
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
 
-
-      }
-    );
-
-    const captureData = response.data;
-    const newPayment = new Payment({
-      orderID: captureData.id,
-      intent: captureData.intent,
-      status: captureData.status,
-      purchase_units: captureData.purchase_units,
-      payer: captureData.payer,
-      payment_source: captureData.payment_source,
-      capturedAt: new Date(),
-      LessonId: LessonId || undefined,
-      UserId: UserId || undefined,
-      amount: captureData.purchase_units[0].payments.captures[0].amount.value, // "100.00"
-      currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
-      IsBonus: IsBonus,
-    });
-
-    const savedPayment = await newPayment.save();
-    const record = await Bonus.create({
-      userId: UserId,
-      teacherId,
-      LessonId,
-      bookingId: BookingId,
-      amount: totalAmount,
-      currency: "USD",
-      paypalpaymentId: savedPayment?._id,
-    });
-
-
-    const BookingData = await Bookings.findOneAndUpdate(
-      { _id: BookingId },
-      {
-        IsBonus: true,
-        BonusId: record._id,
-      },
-      { new: true }
-    );
-    res.status(200).json(savedPayment);
-  } catch (error) {
-    console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
-    res.status(500).json({ error: "Failed to capture and save PayPal order" });
-  }
-});
 
 exports.PaymentcancelOrder = catchAsync(async (req, res) => {
   try {
@@ -322,6 +263,68 @@ exports.PaymentcancelOrder = catchAsync(async (req, res) => {
   }
 }
 );
+
+
+// For Tips  teacher given  by student 
+
+exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
+  try {
+    const UserId = req.user.id;
+    const { orderID, teacherId, LessonId, totalAmount, IsBonus, BookingId } = req.body;
+    const accessToken = await generateAccessToken();
+    const response = await axios.post(
+      `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    const captureData = response.data;
+    const newPayment = new Payment({
+      orderID: captureData.id,
+      intent: captureData.intent,
+      status: captureData.status,
+      purchase_units: captureData.purchase_units,
+      payer: captureData.payer,
+      payment_source: captureData.payment_source,
+      capturedAt: new Date(),
+      LessonId: LessonId || undefined,
+      UserId: UserId || undefined,
+      amount: captureData.purchase_units[0].payments.captures[0].amount.value, // "100.00"
+      currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
+      IsBonus: IsBonus,
+    });
+
+    const savedPayment = await newPayment.save();
+    const record = await Bonus.create({
+      userId: UserId,
+      teacherId,
+      LessonId,
+      bookingId: BookingId,
+      amount: totalAmount,
+      currency: "USD",
+      paypalpaymentId: savedPayment?._id,
+    });
+
+
+    const BookingData = await Bookings.findOneAndUpdate(
+      { _id: BookingId },
+      {
+        IsBonus: true,
+        BonusId: record._id,
+      },
+      { new: true }
+    );
+    res.status(200).json(savedPayment);
+  } catch (error) {
+    console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
+    res.status(500).json({ error: "Failed to capture and save PayPal order" });
+  }
+});
 
 // Stripe Checkout Sytem 
 // const fetchPaymentId = async (sessionId, srNo) => {
