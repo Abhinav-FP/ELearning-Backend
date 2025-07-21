@@ -176,7 +176,12 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const registrationSubject = "Booking Confirmed 🎉";
       
       // Convert to ISO format for moment parsing in email templates
-      const utcDateTime = DateTime.fromISO(startUTC, { zone: "utc" });
+      console.log("startUTC", startUTC);
+      const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
+      console.log("utcDateTime", utcDateTime);
+      console.log("user",user);
+      console.log("teacher",teacher);
+      
       const userTimeISO = user?.time_zone
         ? utcDateTime.setZone(user.time_zone).toISO()
         : utcDateTime.toISO();
@@ -184,6 +189,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       const teacherTimeISO = teacher?.time_zone
         ? utcDateTime.setZone(teacher.time_zone).toISO()
         : utcDateTime.toISO();
+    console.log("userTimeISO", userTimeISO);
+    console.log("teacherTimeISO", teacherTimeISO);
 
       const emailHtml = BookingSuccess(userTimeISO, user?.name, teacher?.name);
       await sendEmail({
@@ -449,7 +456,7 @@ app.get("/", (req, res) => {
   });
 });
 
-require('./cronJobs')();
+// require('./cronJobs')();
 
 const server = app.listen(PORT, () => console.log("Server is running at port : " + PORT));
 server.timeout = 360000;

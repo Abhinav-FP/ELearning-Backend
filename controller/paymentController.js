@@ -371,6 +371,23 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
       });
     }
 
+    // Temporarry code for testing
+    console.log("startUTC", startUTC);
+    const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
+    console.log("utcDateTime",utcDateTime);
+    const userTimeISO = utcDateTime.setZone("Asia/Kolkata").toISO();
+    const teacherTimeISO = utcDateTime.setZone("Asia/Kolkata").toISO();
+    console.log("userTimeISO", userTimeISO);
+    console.log("teacherTimeISO", teacherTimeISO);
+
+    return res.status(200).json({ message: 'Code working till here' });
+    
+    
+    // Temporarry code for testing ends here
+
+
+    
+
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
