@@ -33,31 +33,70 @@ exports.paymentget = catchAsync(async (req, res) => {
 exports.teacherget = catchAsync(async (req, res) => {
   try {
     const { search } = req.query;
+
+    // Step 1: Get all teachers with userId populated
     let teachers = await Teacher.find({}).populate({
       path: "userId",
       select: "-password",
     });
+
+    // Step 2: Filter for verified and not blocked users
     teachers = teachers.filter(
       (item) =>
-        (item?.userId?.email_verify === true && item?.userId?.block === false)
+        item?.userId?.email_verify === true && item?.userId?.block === false
     );
+
+    // Step 3: Get valid teacher userIds
+    const teacherUserIds = teachers.map(t => t?.userId?._id).filter(Boolean);
+
+    // Step 4: Aggregate lessons grouped by teacher (userId)
+    const lessonsAgg = await Lesson.aggregate([
+      {
+        $match: {
+          is_deleted: false,
+          teacher: { $in: teacherUserIds },
+        },
+      },
+      {
+        $group: {
+          _id: "$teacher",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Step 5: Map lesson counts by teacherId
+    const lessonCountMap = {};
+    lessonsAgg.forEach(entry => {
+      lessonCountMap[entry._id.toString()] = entry.count;
+    });
+
+    // Step 6: Remove teachers with 0 lessons
+    teachers = teachers.filter(t => {
+      const teacherId = t?.userId?._id?.toString();
+      return lessonCountMap[teacherId] > 0;
+    });
+
+    // Step 7: Apply search filter (if provided)
     if (search && search.trim() !== "") {
       const regex = new RegExp(search.trim(), "i");
-
       teachers = teachers.filter((item) => {
         const teacherName = item?.userId?.name || "";
-
-        return (
-          regex.test(teacherName)
-        );
+        return regex.test(teacherName);
       });
     }
+
+    // Step 8: Get wishlist for current student
     const wishlistResult = await Wishlist.find({ student: req.user.id }).populate("teacher");
-    if (!teachers) {
+
+    if (!teachers.length) {
       return validationErrorResponse(res, "No teacher found", 400);
     }
-    const size = wishlistResult.length === 0 ? 0 : wishlistResult.length;
+
+    const size = wishlistResult.length;
     const wishlistEmails = wishlistResult.map((w) => w.teacher?.email);
+
+    // Step 9: Add "isLiked" flag to teachers
     const updatedTeachers = teachers.map((t) => {
       const isLiked = wishlistEmails.includes(t.userId?.email);
       return {

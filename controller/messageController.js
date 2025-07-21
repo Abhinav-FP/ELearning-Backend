@@ -290,9 +290,19 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
 
     // Run aggregation
     const messages = await Message.aggregate(aggregationPipeline);
+    
+    // For teachers, skip merging users with no messages
+    if (req.user.role === "teacher") {
+      return successResponse(
+        res,
+        "Message count fetched successfully",
+        200,
+        messages
+      );
+    }
 
     // Get all users of the opposite role
-    const roleToSearch = req.user.role === "teacher" ? "student" : "teacher";
+    const roleToSearch = "teacher";
     const users = await User.find({ role: roleToSearch });
 
     // Merge messages and users, then sort by recency

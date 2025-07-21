@@ -235,12 +235,12 @@ exports.GetLessons = catchAsync(async (req, res) => {
     const teacherId = req.user.id;
     const profile = await Teacher.findOne({ userId: teacherId }).populate("userId");
     const lessons = await Lesson.find({ teacher: teacherId }).sort({ is_deleted: 1 }).populate("teacher");
-    if (!lessons || lessons.length === 0) {
-      return errorResponse(res, "No lessons found", 404);
-    }
+    // if (!lessons || lessons.length === 0) {
+    //   return errorResponse(res, "No lessons found", 404);
+    // }
     return successResponse(res, "Lessons retrieved successfully", 200, {
       profile,
-      lessons
+      lessons: lessons || [],
     });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
