@@ -21,7 +21,7 @@ module.exports = (userName, link, time, teacherName, lessonName) => {
 
                 <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 1.3rem;">You’re just ${time} away from your session with ${teacherName}. Get ready!</p>  
                 <p style="margin: 0 0 .5rem;text-align: center;"><a href="${link}" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">
-                ${time == "30 minutes" ? "Join Session" :"View Booking"}
+                ${(time == "30 minutes" || time == "5 minutes") ? "Join Session" :"View Booking"}
                 </a></p>  
                 </td>
             </tr>

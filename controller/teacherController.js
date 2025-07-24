@@ -1079,6 +1079,14 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
     const startUTC = start.toUTC().toJSDate();
     const endUTC = end.toUTC().toJSDate();
 
+    // ⛔ Check if start time is in the past or less than 3 hours from now
+    const nowUTC = new Date();
+    const threeHoursLater = new Date(nowUTC.getTime() + 3 * 60 * 60 * 1000);
+
+    if (startUTC <= nowUTC || startUTC < threeHoursLater) {
+      return errorResponse(res, "Start time must be at least 3 hours from now.", 400);
+    }
+
     const availabilityBlocks = await TeacherAvailability.find({ teacher: objectId });
     // Check for overlap with availability
     const slotOverlaps = availabilityBlocks.some((block) => {

@@ -257,7 +257,7 @@ async function getZoomAccessToken() {
 const emptyMeetingTimeouts = new Map();
 
 app.post("/zoom-webhook", async (req, res) => {
-  logger.info("Zoom webhook received", req.body);
+  // logger.info("Zoom webhook received", req.body);
   const event = req.body.event;
 
   // Step 1: Validate Zoom endpoint

@@ -27,6 +27,7 @@ module.exports = () => {
         .populate('teacherId')
         .populate('UserId')
         .populate('LessonId')
+        .populate('zoom')
         .sort({ startDateTime: 1 });
         // console.log("data",data);
 
@@ -43,13 +44,14 @@ module.exports = () => {
         if (diffInMinutes === 1440) time = "24 hours";
         else if (diffInMinutes === 120) time = "2 hours";
         else if (diffInMinutes === 30) time = "30 minutes";
+        else if (diffInMinutes === 5) time = "5 minutes";
         else continue; // skip if not one of the 3 target intervals
         let zoomLink = null;
 
         // Zoom Code
-        if(diffInMinutes === 30)
+        if(diffInMinutes === 30 || (diffInMinutes === 5 && !booking.zoom))
         {
-          console.log(`email aa raha hai ready raho`);
+          console.log(`Creating Zoom meeting for booking ID: ${booking._id}`);
           logger.info(`Creating Zoom meeting for booking ID: ${booking._id}`);
           // console.log(`Creating Zoom meeting for booking ID: ${booking._id}`);
           const meetingDetails = {
@@ -80,6 +82,7 @@ module.exports = () => {
           booking.zoom = zoomResult._id; // Save the Zoom meeting ID in the booking
           await booking.save();
         }
+
         
         logger.info("Sending email for booking",booking._id);
         // console.log("Sending email for booking",booking._id);
@@ -96,7 +99,7 @@ module.exports = () => {
         // Sending email to student
         const emailHtml = Reminder(
             userName,
-            zoomLink || "https://japaneseforme.com/student/lessons",
+            zoomLink || booking.zoom?.meetingLink || "https://japaneseforme.com/student/lessons",
             time,
             teacherName,
             lessonName
@@ -108,10 +111,12 @@ module.exports = () => {
             emailHtml: emailHtml,
         });
 
+        logger.info(`📧 Reminder email sent to user ${user.email}`);
+
         // Sending email to teacher
         const TeacherEmailHtml = TeacherReminder(
             userName,
-            zoomLink || "https://japaneseforme.com/teacher-dashboard/booking",
+            zoomLink || booking.zoom?.meetingLink || "https://japaneseforme.com/teacher-dashboard/booking",
             time,
             teacherName,
             lessonName
@@ -123,7 +128,7 @@ module.exports = () => {
             emailHtml: TeacherEmailHtml,
         });        
 
-        logger.info(`📧 Reminder email sent to ${user.email}`);
+        logger.info(`📧 Reminder email sent to teacher ${teacher.email}`);
         }
 
         // Sending lesson done emails to user and teacher

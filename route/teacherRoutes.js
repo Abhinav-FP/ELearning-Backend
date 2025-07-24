@@ -19,7 +19,9 @@ router.post("/teacher/lesson/delete", verifyToken, DeleteGetLesson);
 
 // The below 3 are test routes only don't use them
 router.post("/teacher/test/upload", upload.single('file'), UploadCheck);
+
 router.post("/teacher/test/delete", DeleteCheck);
+
 router.post("/teacher/test/email", EmailCheck);
 
 router.post("/teacher/payout", verifyToken, PayoutAdd);

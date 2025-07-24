@@ -98,13 +98,27 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 
     let startUTCs, endUTCs;
     if (isSpecialSlot) {
-      startUTCs = startDateTime;
-      endUTCs = endDateTime;
+      startUTCs =  new Date(startDateTime);
+      endUTCs =  new Date(endDateTime);
     }
     else {
       startUTCs = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
       endUTCs = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
     }
+
+     // ✅ Get current UTC time
+    const nowUTC = new Date();
+
+    // ✅ Check if slot is in the past or less than 10 minutes from now
+    const timeDiffInMs = startUTCs - nowUTC;
+    const timeDiffInMinutes = timeDiffInMs / (1000 * 60);
+    if (timeDiffInMinutes < 10) {
+      return res.status(400).json({
+        status: false,
+        error: "Cannot select a slot that starts in less than 10 minutes or is in the past"
+      });
+    }
+
     // Check for booking conflict for the same teacher
     const existingBooking = await Bookings.findOne({
       teacherId: new mongoose.Types.ObjectId(teacherId),
@@ -148,8 +162,8 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     const savedPayment = await newPayment.save();
     let startUTC, endUTC;
     if (isSpecialSlot) {
-      startUTC = startDateTime;
-      endUTC = endDateTime;
+      startUTC = new Date(startDateTime);
+      endUTC = new Date(endDateTime);
     } else {
       startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
       endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
@@ -350,13 +364,27 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
     // Checking if the booking with the same slot already exists
     let startUTC, endUTC;
     if (isSpecial) {
-      startUTC = startDateTime;
-      endUTC = endDateTime;
+      startUTC = new Date(startDateTime);
+      endUTC = new Date(endDateTime);
     }
     else {
       startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
       endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
     }
+
+    // ✅ Get current UTC time
+    const nowUTC = new Date();
+
+    // ✅ Check if slot is in the past or less than 10 minutes from now
+    const timeDiffInMs = startUTC - nowUTC;
+    const timeDiffInMinutes = timeDiffInMs / (1000 * 60);
+    if (timeDiffInMinutes < 10) {
+      return res.status(400).json({
+        status: false,
+        error: "Cannot select a slot that starts in less than 10 minutes or is in the past"
+      });
+    }
+
     // Check for booking conflict for the same teacher
     const existingBooking = await Bookings.findOne({
       teacherId: new mongoose.Types.ObjectId(teacherId),
