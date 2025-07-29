@@ -239,6 +239,7 @@ const ZOOM_WEBHOOK_SECRET = process.env.ZOOM_WEBHOOK_SECRET;
 const ZOOM_CLIENT_ID = process.env.ZOOM_clientId;
 const ZOOM_CLIENT_SECRET = process.env.ZOOM_clientSecret;
 const ZOOM_ACCOUNT_ID = process.env.ZOOM_accountId;
+const ZOOM_REDIRECT_URI = process.env.ZOOM_REDIRECT_URI;
 
 // Helper: Get Zoom OAuth token
 async function getZoomAccessToken() {
@@ -447,6 +448,59 @@ app.post("/zoom-webhook", async (req, res) => {
   }
 
   return res.sendStatus(200);
+});
+
+// OAuth Route used for zoom account connecting
+app.post("/api/zoom/oauth-callback", async (req, res) => {
+  console.log("Zoom account connection route opened");
+  const code = req.query.code;
+  console.log("code", code);
+  if (!code) return res.status(400).send('No code in request');
+
+  try {
+    const tokenRes = await axios.post('https://zoom.us/oauth/token', null, {
+      params: {
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: ZOOM_REDIRECT_URI,
+      },
+      headers: {
+        Authorization:
+          'Basic ' +
+          Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString('base64'),
+      },
+    });
+    console.log("tokenRes.data",tokenRes.data);
+
+    const { access_token, refresh_token } = tokenRes.data;
+    console.log("access_token",access_token);
+    console.log("refresh_token",refresh_token);
+
+    // Fetch Zoom user profile
+    const userRes = await axios.get('https://api.zoom.us/v2/users/me', {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    console.log("userRes",userRes);
+
+    const zoomEmail = userRes.data.email;
+
+    // Save to DB (example)
+    // await Teacher.updateOne(
+    //   { email: zoomEmail }, // or use your authenticated user ID
+    //   {
+    //     $set: {
+    //       'zoom.access_token': access_token,
+    //       'zoom.refresh_token': refresh_token,
+    //       'zoom.email': zoomEmail,
+    //     },
+    //   }
+    // );
+
+    return res.redirect('/'); 
+  } catch (err) {
+    console.error('Zoom OAuth error:', err.response?.data || err.message);
+    return res.status(500).send('Zoom OAuth failed');
+  }
 });
 
 app.get("/", (req, res) => {
