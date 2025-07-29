@@ -451,7 +451,7 @@ app.post("/zoom-webhook", async (req, res) => {
 });
 
 // OAuth Route used for zoom account connecting
-app.post("/api/zoom/oauth-callback", async (req, res) => {
+app.get("/api/zoom/oauth-callback", async (req, res) => {
   console.log("Zoom account connection route opened");
   const code = req.query.code;
   console.log("code", code);
