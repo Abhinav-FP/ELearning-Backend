@@ -292,32 +292,32 @@ exports.GetAllMessageCountWithNames = catchAsync(async (req, res) => {
     const messages = await Message.aggregate(aggregationPipeline);
     
     // For teachers, skip merging users with no messages
-    if (req.user.role === "teacher") {
+    // if (req.user.role === "teacher") {
       return successResponse(
         res,
         "Message count fetched successfully",
         200,
         messages
       );
-    }
+    // }
 
-    // Get all users of the opposite role
-    const roleToSearch = "teacher";
-    const users = await User.find({ role: roleToSearch });
+    // // Get all users of the opposite role
+    // const roleToSearch = "teacher";
+    // const users = await User.find({ role: roleToSearch });
 
-    // Merge messages and users, then sort by recency
-    const mergedMessages = mergeUsersWithMessages(
-      users,
-      messages,
-      req.user.role
-    );
+    // // Merge messages and users, then sort by recency
+    // const mergedMessages = mergeUsersWithMessages(
+    //   users,
+    //   messages,
+    //   req.user.role
+    // );
 
-    return successResponse(
-      res,
-      "Message count fetched successfully",
-      200,
-      mergedMessages
-    );
+    // return successResponse(
+    //   res,
+    //   "Message count fetched successfully",
+    //   200,
+    //   mergedMessages
+    // );
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }

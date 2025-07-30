@@ -101,6 +101,9 @@ exports.CancelBooking = catchAsync(async (req, res) => {
     if (!booking) {
       return errorResponse(res, "Booking not found", 404);
     }
+     if (booking.cancelled) {
+       return successResponse(res, "Booking is already cancelled", 200);
+     }
     booking.cancelled = true;
     await booking.save();
     return successResponse(res, "Booking updated successfully", 200);
