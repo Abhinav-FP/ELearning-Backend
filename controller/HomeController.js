@@ -107,11 +107,11 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
         select: "-password",
         match: { block: false, email_verify: true },
       })
-      .lean(); // Still includes teachers with userId: null if match fails
+      .lean();
 
-    // Step 2: Count lessons grouped by teacher.userId._id
-    const teacherUserIds = teachers.map(t => t?.userId?._id).filter(Boolean); // Skip nulls from unmatched populate
+    const teacherUserIds = teachers.map(t => t?.userId?._id).filter(Boolean);
 
+    // Step 2: Get all lessons for these teachers
     const lessonsAgg = await Lesson.aggregate([
       {
         $match: {
@@ -122,23 +122,41 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
       {
         $group: {
           _id: "$teacher",
-          count: { $sum: 1 },
-          lessons: {
+          allLessons: {
             $push: {
               _id: "$_id",
               price: "$price",
+              duration: "$duration",
             },
           },
+          count: { $sum: 1 },
         },
       },
     ]);
 
     const lessonsMap = {};
     lessonsAgg.forEach((entry) => {
-      const lowestLesson = entry.lessons.reduce((min, curr) =>
-        curr.price < min.price ? curr : min,
-        entry.lessons[0]
-      );
+      const lessons = entry.allLessons;
+
+      // Get lowest-priced 60 min lesson
+      const lowest60Min = lessons
+        .filter(lesson => lesson.duration === 60)
+        .reduce((min, curr) => curr.price < min.price ? curr : min, { price: Infinity });
+
+      let lowestLesson = null;
+
+      if (lowest60Min.price !== Infinity) {
+        lowestLesson = lowest60Min;
+      } else {
+        // Fallback to 30 min lesson
+        const lowest30Min = lessons
+          .filter(lesson => lesson.duration === 30)
+          .reduce((min, curr) => curr.price < min.price ? curr : min, { price: Infinity });
+
+        if (lowest30Min.price !== Infinity) {
+          lowestLesson = lowest30Min;
+        }
+      }
 
       lessonsMap[entry._id.toString()] = {
         count: entry.count,
@@ -146,7 +164,7 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
       };
     });
 
-    // Step 3 & 4: Merge data and exclude teachers with 0 lessons
+    // Step 3 & 4: Merge data and exclude teachers with 0 lessons or unmatched user
     const finalTeachers = teachers
       .map((teacher) => {
         const teacherId = teacher?.userId?._id?.toString();
