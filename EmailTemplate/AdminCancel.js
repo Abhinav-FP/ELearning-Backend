@@ -19,25 +19,23 @@ module.exports = (studentName, teacherName, date) => {
 
     <tr>
       <td style="padding: .1rem 1rem 1rem ;border-bottom: 1px solid rgba(0,0,0,.1);">
-        <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #CC2828;margin: 0 0 .6rem;">Your Lesson with ${teacherName} Has Been Cancelled</p>
-        <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: center;color: #333333;margin: 0 0 .7rem;">Hi ${studentName},</p>
+        <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #CC2828;margin: 0 0 .6rem;">
+          Lesson Cancelled by ${teacherName}
+        </p>
 
-        <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 1.3rem;">
-          Your scheduled session with ${teacherName} on <strong style="white-space: nowrap;">${moment.parseZone(date).format("D MMM YYYY hh:mm A")}</strong> has been cancelled.
+        <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: center;color: #333333;margin: 0 0 .7rem;">
+          Hello Admin,
         </p>
 
         <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 1.3rem;">
-          A refund will be issued shortly. If this was unexpected, feel free to book a new lesson at your convenience.
+          ${teacherName} has cancelled their scheduled lesson with ${studentName} on <strong style="white-space: nowrap;">${moment.parseZone(date).format("D MMM YYYY hh:mm A")}</strong>.
         </p>
 
-        <p style="margin: 0 0 0;text-align: center;">
-          <a href="https://japaneseforme.com/" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">
-            Find Another Time
-          </a>
+        <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 0;">
+          Please don't forget to issue a refund to the student.
         </p>
       </td>
     </tr>
-
     <tr>
       <td style="padding:0;">
         <div style="padding: 1.3rem  1rem;background: #EFD1D1;">

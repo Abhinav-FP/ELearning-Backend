@@ -122,7 +122,7 @@ const signEmail = async (id) => {
 
 exports.studentSignup = catchAsync(async (req, res) => {
   try {
-    console.log("Hi");
+    // console.log("Hi");
     const { name, email, password, role, time_zone } = req.body;
 
     if (!email || !password || !role || !name || !time_zone) {

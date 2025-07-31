@@ -22,7 +22,8 @@ module.exports = () => {
         const now = new Date(); // current time in UTC
 
         const data = await Bookings.find({
-        startDateTime: { $gt: now }
+        startDateTime: { $gt: now },
+        cancelled: false,
         })
         .populate('teacherId')
         .populate('UserId')

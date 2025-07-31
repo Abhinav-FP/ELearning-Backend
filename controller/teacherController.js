@@ -770,8 +770,14 @@ exports.BookingsGet = catchAsync(async (req, res) => {
     if (type === "upcoming") {
       filter.endDateTime = { $gt: now };
       sort.startDateTime = 1;
+      filter.cancelled = false;
     } else if (type === "past") {
       filter.endDateTime = { $lte: now };
+      sort.startDateTime = -1;
+      filter.cancelled = false;
+    }
+    else if (type === "cancelled"){
+      filter.cancelled = true;
       sort.startDateTime = -1;
     }
 
