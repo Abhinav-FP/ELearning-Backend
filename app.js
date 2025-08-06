@@ -10,6 +10,7 @@ const Bookings = require("./model/booking");
 const Zoom = require("./model/Zoom");
 const crypto = require("crypto");
 const User = require("./model/user");
+const Teacher = require("./model/teacher");
 const SpecialSlot = require("./model/SpecialSlot");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("./EmailTemplate/BookingSuccess");
@@ -452,54 +453,50 @@ app.post("/zoom-webhook", async (req, res) => {
 
 // OAuth Route used for zoom account connecting
 app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
-  console.log("Zoom account connection route opened");
+  logger.info("Zoom account connection route opened");
   const code = req.query.code;
-  console.log("code", code);
-  if (!code) return res.status(400).send('No code in request');
-
+  if (!code) return res.status(400).send("No code in request");
   try {
-    const tokenRes = await axios.post('https://zoom.us/oauth/token', null, {
+    const tokenRes = await axios.post("https://zoom.us/oauth/token", null, {
       params: {
-        grant_type: 'authorization_code',
+        grant_type: "authorization_code",
         code,
         redirect_uri: ZOOM_REDIRECT_URI,
       },
       headers: {
         Authorization:
-          'Basic ' +
-          Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString('base64'),
+          "Basic " +
+          Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString("base64"),
       },
     });
-    console.log("tokenRes.data",tokenRes.data);
 
     const { access_token, refresh_token } = tokenRes.data;
-    console.log("access_token",access_token);
-    console.log("refresh_token",refresh_token);
-
-    // Fetch Zoom user profile
-    const userRes = await axios.get('https://api.zoom.us/v2/users/me', {
+    logger.info("Zoom tokens received");
+    const userRes = await axios.get("https://api.zoom.us/v2/users/me", {
       headers: { Authorization: `Bearer ${access_token}` },
     });
-    console.log("userRes",userRes);
-
     const zoomEmail = userRes.data.email;
+    logger.info("Zoom email:", zoomEmail);
+    // const user = await User.findOne({ email: zoomEmail });
+    const user = await User.findOne({ email: "mathur.abhinav1108@gmail.com" });
+    if (!user){
+      logger.info("User not fund with zoom email");
+      return res.status(404).send("User not found");
+    } 
 
-    // Save to DB (example)
-    // await Teacher.updateOne(
-    //   { email: zoomEmail }, // or use your authenticated user ID
-    //   {
-    //     $set: {
-    //       'zoom.access_token': access_token,
-    //       'zoom.refresh_token': refresh_token,
-    //       'zoom.email': zoomEmail,
-    //     },
-    //   }
-    // );
-
-    return res.redirect('/'); 
+    await Teacher.findOneAndUpdate(
+      { userId: user._id },
+      {
+        access_token,
+        refresh_token,
+      },
+      { new: true }
+    );
+    logger.info("Zoom tokens saved to Teacher");
+    return res.redirect("https://japaneseforme.com");
   } catch (err) {
-    console.error('Zoom OAuth error:', err.response?.data || err.message);
-    return res.status(500).send('Zoom OAuth failed');
+    logger.error("Zoom OAuth error:", err.response?.data || err.message);
+    return res.status(500).send("Zoom OAuth failed");
   }
 });
 

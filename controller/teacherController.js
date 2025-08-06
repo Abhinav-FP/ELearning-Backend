@@ -1251,3 +1251,12 @@ exports.GetReview = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
+
+exports.GetZoomTeacher = catchAsync(async (req, res) => {
+  try {
+    const data = await Teacher.findById("6879d84df1853235ae9b2b70");    
+    return successResponse(res, "Teacher get successfully", 200, data);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});

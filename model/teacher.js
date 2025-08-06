@@ -54,14 +54,14 @@ const teacherSchema =  mongoose.Schema({
     type: [String],
     default: [],
   },
-  // average_time: {
-  //   type: String,
-  //   default: null,
-  // },
-  // average_price: {
-  //   type: String,
-  //   default: null,
-  // },
+  access_token: {
+    type: String,
+    default: null,
+  },
+  refresh_token: {
+    type: String,
+    default: null,
+  },
 }, { timestamps: true });
 
 const Teacher = mongoose.model('Teacher', teacherSchema);
