@@ -455,6 +455,7 @@ app.post("/zoom-webhook", async (req, res) => {
 app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
   logger.info("Zoom account connection route opened");
   const code = req.query.code;
+  console.log("Code",code);
   if (!code) return res.status(400).send("No code in request");
   try {
     const tokenRes = await axios.post("https://zoom.us/oauth/token", null, {
