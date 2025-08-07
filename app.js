@@ -496,6 +496,7 @@ app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
     return res.redirect("https://japaneseforme.com");
   } catch (err) {
     logger.error("Zoom OAuth error:", err.response?.data || err.message);
+    logger.error("err",err);
     return res.status(500).send("Zoom OAuth failed");
   }
 });
