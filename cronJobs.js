@@ -1,6 +1,7 @@
 // cronJobs.js
 const cron = require('node-cron');
 const Bookings = require("./model/booking");
+const Teacher = require("./model/teacher");
 const Zoom = require("./model/Zoom");
 const TeacherAvailability = require("./model/TeacherAvailability");
 const { updateCurrencyRatesJob } = require("./controller/currencycontroller");
@@ -10,10 +11,11 @@ const Reminder = require("./EmailTemplate/Reminder");
 const TeacherReminder = require("./EmailTemplate/TeacherReminder");
 const StudentLessonDone = require("./EmailTemplate/StudentLessonDone");
 const TeacherLessonDone = require("./EmailTemplate/TeacherLessonDone");
-const { DateTime } = require("luxon"); // Already in your project
-const createZoomMeeting = require('./zoommeeting');
+const { DateTime } = require("luxon"); 
+const { createZoomMeeting } = require('./zoommeeting');
 const logger = require("./utils/Logger");
 const jwt = require("jsonwebtoken");
+const mongoose = require('mongoose');
 
 module.exports = () => {
   cron.schedule('* * * * *', async () => {
@@ -24,6 +26,7 @@ module.exports = () => {
         const data = await Bookings.find({
         startDateTime: { $gt: now },
         cancelled: false,
+        // _id: "68924c90795dd1d2abaee90a",
         })
         .populate('teacherId')
         .populate('UserId')
@@ -31,10 +34,13 @@ module.exports = () => {
         .populate('zoom')
         .sort({ startDateTime: 1 });
         // console.log("data",data);
-
+        
         const registrationSubject = "Reminder for Booking ⏰";
-
+        
         for (const booking of data) {
+        const objectId = new mongoose.Types.ObjectId(booking?.teacherId?._id);
+        const teacherData = await Teacher.findOne({userId: objectId});
+        // console.log("TeacherData",teacherData);
         const nowTime = DateTime.utc();
         const startUTC = DateTime.fromJSDate(booking.startDateTime).toUTC();
         const diffInMinutes = Math.round(startUTC.diff(nowTime, 'minutes').minutes);
@@ -46,7 +52,7 @@ module.exports = () => {
         else if (diffInMinutes === 120) time = "2 hours";
         else if (diffInMinutes === 30) time = "30 minutes";
         else if (diffInMinutes === 5) time = "5 minutes";
-        else continue; // skip if not one of the 3 target intervals
+        else continue; // skip if not one of the 4 target intervals
         let zoomLink = null;
 
         // Zoom Code
@@ -72,9 +78,12 @@ module.exports = () => {
               registrants_capacity: 2,
             },
           };
-          const result = await createZoomMeeting(meetingDetails);
+          // const result = await createZoomMeeting(meetingDetails);
+          const result = await createZoomMeeting(meetingDetails, teacherData, Teacher);
           zoomLink = result?.meeting_url || "";
           // console.log("result",result);
+          logger.info("Meeting link generated successfully with",result?.meeting_id);
+          // console.log("Sending email for booking",booking._id);
           const zoomRecord = new Zoom({
             meetingId: result?.meeting_id || "",
             meetingLink: result?.meeting_url || "",
@@ -82,9 +91,7 @@ module.exports = () => {
           const zoomResult = await zoomRecord.save();
           booking.zoom = zoomResult._id; // Save the Zoom meeting ID in the booking
           await booking.save();
-        }
-
-        
+        }        
         logger.info("Sending email for booking",booking._id);
         // console.log("Sending email for booking",booking._id);
         // continue;

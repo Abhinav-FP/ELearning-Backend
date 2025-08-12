@@ -360,9 +360,9 @@ exports.updateProfile = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid User", 401);
     }
 
-    console.log("req.body",req.body);
+    // console.log("req.body",req.body);
     const normalizedBody = normalizeFormData(req.body);
-    console.log("normalizedBody",normalizedBody);
+    // console.log("normalizedBody",normalizedBody);
     const {
       name,
       email,
@@ -1247,6 +1247,26 @@ exports.GetReview = catchAsync(async (req, res) => {
       select: "name profile_photo"
     }).sort({ createdAt: -1 });
     return successResponse(res, "Lessons and accepted reviews retrieved successfully", 200, reviews);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.DisconnectZoom = catchAsync(async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    if (!teacherId) {
+      return errorResponse(res, "Teacher ID is required", 400);
+    }
+    const updatedTeacher = await Teacher.findOneAndUpdate(
+     { userId: teacherId },
+     { access_token: null, refresh_token: null },
+     { new: true }
+    );
+    if (!updatedTeacher) {
+      return errorResponse(res, "Teacher not found", 404);
+    }
+    return successResponse(res, "Zoom disconnected successfully", 200, updatedTeacher);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
