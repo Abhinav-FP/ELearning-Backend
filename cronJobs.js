@@ -24,16 +24,16 @@ module.exports = () => {
         const now = new Date(); // current time in UTC
 
         const data = await Bookings.find({
-        // startDateTime: { $gt: now },
-        // cancelled: false,
-        _id: "689c43b87e13d7ace615bbcc",
+        startDateTime: { $gt: now },
+        cancelled: false,
+        // _id: "68924c90795dd1d2abaee90a",
         })
         .populate('teacherId')
         .populate('UserId')
         .populate('LessonId')
         .populate('zoom')
         .sort({ startDateTime: 1 });
-        console.log("data",data);
+        // console.log("data",data);
         
         const registrationSubject = "Reminder for Booking ⏰";
         
@@ -52,11 +52,11 @@ module.exports = () => {
         else if (diffInMinutes === 120) time = "2 hours";
         else if (diffInMinutes === 30) time = "30 minutes";
         else if (diffInMinutes === 5) time = "5 minutes";
-        // else continue; // skip if not one of the 4 target intervals
+        else continue; // skip if not one of the 4 target intervals
         let zoomLink = null;
 
         // Zoom Code
-        if(true)
+        if(diffInMinutes === 30 || (diffInMinutes === 5 && !booking.zoom))
         {
           console.log(`Creating Zoom meeting for booking ID: ${booking._id}`);
           logger.info(`Creating Zoom meeting for booking ID: ${booking._id}`);
@@ -81,7 +81,7 @@ module.exports = () => {
           // const result = await createZoomMeeting(meetingDetails);
           const result = await createZoomMeeting(meetingDetails, teacherData, Teacher);
           zoomLink = result?.meeting_url || "";
-          console.log("result",result);
+          // console.log("result",result);
           logger.info("Meeting link generated successfully with",result?.meeting_id);
           // console.log("Sending email for booking",booking._id);
           const zoomRecord = new Zoom({
