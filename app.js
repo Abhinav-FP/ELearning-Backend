@@ -1,6 +1,6 @@
 const dotenv = require("dotenv");
 dotenv.config();
-const stripe = require("./utils/stripe")
+const stripe = require("./utils/stripe");
 require("./dbconfigration");
 const express = require("express");
 const app = express();
@@ -26,60 +26,118 @@ const Bonus = require("./model/Bonus");
 
 const corsOptions = {
   origin: "*", // Allowed origins
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  allowedHeaders: '*', // Allow all headers
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders: "*", // Allow all headers
   credentials: true,
   optionsSuccessStatus: 200, // for legacy browsers
-}
+};
 
 app.use(cors(corsOptions));
 
 //stripe Webhook
-app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  Loggers.info("Headers received:", req.headers)
-  const sig = req.headers['stripe-signature'];
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-  } catch (err) {
-    Loggers.error(`❌ Webhook signature verification failed: ${err.message}`)
-    return res.status(400).json(`Webhook Error: ${err.message}`);
-  }
-
-  Loggers.silly(`✅ Webhook event received: ${event.type}`)
-  // Handle event
-  switch (event.type) {
-    case 'charge.succeeded': {
-      const charge = event.data.object;
-      Loggers.warn(`💰 Charge succeeded for amount: ${charge.amount}`)
-      break;
+app.post(
+  "/api/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    Loggers.info("Headers received:", req.headers);
+    const sig = req.headers["stripe-signature"];
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    } catch (err) {
+      Loggers.error(`❌ Webhook signature verification failed: ${err.message}`);
+      return res.status(400).json(`Webhook Error: ${err.message}`);
     }
 
-    case 'charge.failed': {
-      const charge = event.data.object;
-      Loggers.debug(`❌ Charge failed: ${charge.failure_message}`)
-      break;
-    }
+    Loggers.silly(`✅ Webhook event received: ${event.type}`);
+    // Handle event
+    switch (event.type) {
+      case "charge.succeeded": {
+        const charge = event.data.object;
+        Loggers.warn(`💰 Charge succeeded for amount: ${charge.amount}`);
+        break;
+      }
 
-    case 'payment_intent.created': {
-      const pi = event.data.object;
-      Loggers.silly(`🕐 PaymentIntent created: ${pi.id}`)
-      break;
-    }
+      case "charge.failed": {
+        const charge = event.data.object;
+        Loggers.debug(`❌ Charge failed: ${charge.failure_message}`);
+        break;
+      }
 
-    case 'payment_intent.payment_failed': {
-      const pi = event.data.object;
-      Loggers.debug(`❌ PaymentIntent failed: ${pi.last_payment_error?.message}`)
-      break;
-    }
+      case "payment_intent.created": {
+        const pi = event.data.object;
+        Loggers.silly(`🕐 PaymentIntent created: ${pi.id}`);
+        break;
+      }
 
-    case 'payment_intent.succeeded': {
-      const pi = event.data.object;
-      Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`)
-      const metadata = pi.metadata;
-      if (metadata.IsBonus) {
-        const payment = await StripePayment.create({
+      case "payment_intent.payment_failed": {
+        const pi = event.data.object;
+        Loggers.debug(
+          `❌ PaymentIntent failed: ${pi.last_payment_error?.message}`
+        );
+        break;
+      }
+
+      case "payment_intent.succeeded": {
+        const pi = event.data.object;
+        Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
+        const metadata = pi.metadata;
+        if (metadata.IsBonus) {
+          const payment = await StripePayment.create({
+            srNo: parseInt(metadata.srNo),
+            payment_type: "card",
+            payment_id: pi.id,
+            currency: pi.currency,
+            LessonId: metadata.LessonId,
+            amount: pi.amount / 100,
+            UserId: metadata.userId,
+            payment_status: pi.status,
+            IsBonus: true,
+          });
+          // Create Bonus record
+          const record = await Bonus.create({
+            userId: metadata.userId,
+            teacherId: metadata.teacherId,
+            LessonId: metadata.LessonId,
+            bookingId: metadata.BookingId,
+            amount: metadata.amount,
+            currency: pi.currency,
+            StripepaymentId: payment._id, // ✅ updated to reflect Stripe
+          });
+          // Update Booking with Bonus
+          await Bookings.findOneAndUpdate(
+            { _id: metadata.BookingId },
+            {
+              IsBonus: true,
+              BonusId: record._id,
+            },
+            { new: true }
+          );
+          return;
+        }
+        // Bonus Case ends here
+
+        Loggers.info("📦 Metadata:", metadata);
+        let startUTC, endUTC;
+        // Convert times to UTC
+        if (metadata?.isSpecial) {
+          startUTC = metadata.startDateTime;
+          endUTC = metadata.endDateTime;
+        } else {
+          startUTC = DateTime.fromISO(metadata.startDateTime, {
+            zone: metadata.timezone,
+          })
+            .toUTC()
+            .toJSDate();
+          endUTC = DateTime.fromISO(metadata.endDateTime, {
+            zone: metadata.timezone,
+          })
+            .toUTC()
+            .toJSDate();
+        }
+        // Save payment record
+        const payment = new StripePayment({
           srNo: parseInt(metadata.srNo),
           payment_type: "card",
           payment_id: pi.id,
@@ -88,138 +146,103 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           amount: pi.amount / 100,
           UserId: metadata.userId,
           payment_status: pi.status,
-          IsBonus: true,
         });
-        // Create Bonus record
-        const record = await Bonus.create({
-          userId: metadata.userId,
+        const savedPayment = await payment.save();
+        const teacherEarning = (pi.amount / 100 - metadata.processingFee) * 0.9; // 90% to teacher, 10% to admin as discussed with client
+        // Save booking record
+        const booking = new Bookings({
           teacherId: metadata.teacherId,
+          UserId: metadata.userId,
+          teacherEarning,
+          adminCommission: metadata.adminCommission,
           LessonId: metadata.LessonId,
-          bookingId: metadata.BookingId,
-          amount: metadata.amount,
+          StripepaymentId: savedPayment._id,
+          startDateTime: startUTC,
+          endDateTime: endUTC,
           currency: pi.currency,
-          StripepaymentId: payment._id, // ✅ updated to reflect Stripe
+          totalAmount: pi.amount / 100,
+          srNo: parseInt(metadata.srNo),
+          processingFee: metadata.processingFee || 0,
+          notes: metadata.notes || "",
         });
-        // Update Booking with Bonus
-        await Bookings.findOneAndUpdate(
-          { _id: metadata.BookingId },
-          {
-            IsBonus: true,
-            BonusId: record._id,
-          },
-          { new: true }
+        const record = await booking.save();
+
+        // Updating Specialslot
+        if (metadata?.isSpecial) {
+          const studentId = new mongoose.Types.ObjectId(metadata.userId);
+          const lessonId = new mongoose.Types.ObjectId(metadata.LessonId);
+          const updatedSlot = await SpecialSlot.findOneAndUpdate(
+            {
+              student: studentId,
+              lesson: lessonId,
+              startDateTime: startUTC,
+            },
+            { paymentStatus: "paid" },
+            { new: true, runValidators: true }
+          );
+        }
+
+        // Send confirmation email to student
+        const user = await User.findById(metadata.userId);
+        const teacher = await User.findById(metadata.teacherId);
+        const registrationSubject = "Booking Confirmed 🎉";
+
+        // Convert to ISO format for moment parsing in email templates
+        // console.log("startUTC", startUTC);
+        const utcDateTime = DateTime.fromJSDate(new Date(startUTC), {
+          zone: "utc",
+        });
+        // console.log("utcDateTime", utcDateTime);
+        // console.log("user",user);
+        // console.log("teacher",teacher);
+
+        const userTimeISO = user?.time_zone
+          ? utcDateTime.setZone(user.time_zone).toISO()
+          : utcDateTime.toISO();
+
+        const teacherTimeISO = teacher?.time_zone
+          ? utcDateTime.setZone(teacher.time_zone).toISO()
+          : utcDateTime.toISO();
+        // console.log("userTimeISO", userTimeISO);
+        // console.log("teacherTimeISO", teacherTimeISO);
+
+        const emailHtml = BookingSuccess(
+          userTimeISO,
+          user?.name,
+          teacher?.name
         );
-        return;
-      }
-      // Bonus Case ends here
-
-
-      Loggers.info("📦 Metadata:", metadata)
-      let startUTC, endUTC;
-      // Convert times to UTC
-      if (metadata?.isSpecial) {
-        startUTC = metadata.startDateTime;
-        endUTC = metadata.endDateTime;
-      }
-      else {
-        startUTC = DateTime.fromISO(metadata.startDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
-        endUTC = DateTime.fromISO(metadata.endDateTime, { zone: metadata.timezone }).toUTC().toJSDate();
-      }
-      // Save payment record
-      const payment = new StripePayment({
-        srNo: parseInt(metadata.srNo),
-        payment_type: "card",
-        payment_id: pi.id,
-        currency: pi.currency,
-        LessonId: metadata.LessonId,
-        amount: pi.amount / 100,
-        UserId: metadata.userId,
-        payment_status: pi.status
-      });
-      const savedPayment = await payment.save();
-      const teacherEarning = ((pi.amount / 100) - metadata.processingFee) * 0.90; // 90% to teacher, 10% to admin as discussed with client
-      // Save booking record
-      const booking = new Bookings({
-        teacherId: metadata.teacherId,
-        UserId: metadata.userId,
-        teacherEarning,
-        adminCommission: metadata.adminCommission,
-        LessonId: metadata.LessonId,
-        StripepaymentId: savedPayment._id,
-        startDateTime: startUTC,
-        endDateTime: endUTC,
-        currency: pi.currency,
-        totalAmount: pi.amount / 100,
-        srNo: parseInt(metadata.srNo),
-        processingFee: metadata.processingFee || 0,
-        notes: metadata.notes || ""
-      });
-      const record = await booking.save();
-
-      // Updating Specialslot
-      if (metadata?.isSpecial) {
-        const studentId = new mongoose.Types.ObjectId(metadata.userId);
-        const lessonId = new mongoose.Types.ObjectId(metadata.LessonId);
-        const updatedSlot = await SpecialSlot.findOneAndUpdate(
-          {
-            student: studentId,
-            lesson: lessonId,
-            startDateTime: startUTC,
-          },
-          { paymentStatus: "paid" },
-          { new: true, runValidators: true }
+        await sendEmail({
+          email: metadata.email,
+          subject: registrationSubject,
+          emailHtml,
+        });
+        // Send Confirmation email to teacher
+        const TeacherSubject = "New Booking 🎉";
+        const TeacheremailHtml = TeacherBooking(
+          teacherTimeISO,
+          user?.name,
+          teacher?.name
         );
+        await sendEmail({
+          email: teacher.email,
+          subject: TeacherSubject,
+          emailHtml: TeacheremailHtml,
+        });
+        Loggers.info(
+          "Stripe webhook received successfully. Payment processed and booking with special slot completed."
+        );
+        break;
       }
 
-      // Send confirmation email to student
-      const user = await User.findById(metadata.userId);
-      const teacher = await User.findById(metadata.teacherId);
-      const registrationSubject = "Booking Confirmed 🎉";
-      
-      // Convert to ISO format for moment parsing in email templates
-      // console.log("startUTC", startUTC);
-      const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
-      // console.log("utcDateTime", utcDateTime);
-      // console.log("user",user);
-      // console.log("teacher",teacher);
-      
-      const userTimeISO = user?.time_zone
-        ? utcDateTime.setZone(user.time_zone).toISO()
-        : utcDateTime.toISO();
-
-      const teacherTimeISO = teacher?.time_zone
-        ? utcDateTime.setZone(teacher.time_zone).toISO()
-        : utcDateTime.toISO();
-    // console.log("userTimeISO", userTimeISO);
-    // console.log("teacherTimeISO", teacherTimeISO);
-
-      const emailHtml = BookingSuccess(userTimeISO, user?.name, teacher?.name);
-      await sendEmail({
-        email: metadata.email,
-        subject: registrationSubject,
-        emailHtml
-      });
-      // Send Confirmation email to teacher
-      const TeacherSubject = "New Booking 🎉";
-      const TeacheremailHtml = TeacherBooking(teacherTimeISO, user?.name, teacher?.name);
-      await sendEmail({
-        email: teacher.email,
-        subject: TeacherSubject,
-        emailHtml: TeacheremailHtml
-      });
-      Loggers.info("Stripe webhook received successfully. Payment processed and booking with special slot completed.");
-      break;
+      default:
+        Loggers.error(`⚠️ Unhandled event type: ${event.type}`);
     }
 
-    default:
-      Loggers.error(`⚠️ Unhandled event type: ${event.type}`)
+    res.json({ received: true });
   }
+);
 
-  res.json({ received: true });
-});
-
-
-app.use(express.json({ limit: '2000mb' }));
+app.use(express.json({ limit: "2000mb" }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
 const PORT = process.env.REACT_APP_SERVER_DOMAIN || 5000;
@@ -244,7 +267,9 @@ const ZOOM_REDIRECT_URI = process.env.ZOOM_REDIRECT_URI;
 
 // Helper: Get Zoom OAuth token
 async function getZoomAccessToken() {
-  const base64 = Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString("base64");
+  const base64 = Buffer.from(
+    `${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`
+  ).toString("base64");
   const res = await axios.post(
     `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${ZOOM_ACCOUNT_ID}`,
     {},
@@ -256,7 +281,9 @@ async function getZoomAccessToken() {
 }
 
 async function refreshTeacherZoomToken(teacher) {
-  const base64 = Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString("base64");
+  const base64 = Buffer.from(
+    `${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`
+  ).toString("base64");
 
   const res = await axios.post(
     `https://zoom.us/oauth/token?grant_type=refresh_token&refresh_token=${teacher.refresh_token}`,
@@ -266,7 +293,10 @@ async function refreshTeacherZoomToken(teacher) {
 
   await Teacher.updateOne(
     { _id: teacher._id },
-    { access_token: res.data.access_token, refresh_token: res.data.refresh_token }
+    {
+      access_token: res.data.access_token,
+      refresh_token: res.data.refresh_token,
+    }
   );
 
   return res.data.access_token;
@@ -282,33 +312,37 @@ app.post("/zoom-webhook", async (req, res) => {
   // Step 1: Validate Zoom endpoint
   if (event === "endpoint.url_validation") {
     const plainToken = req.body.payload.plainToken;
-    const encryptedToken = crypto.createHmac("sha256", ZOOM_WEBHOOK_SECRET)
+    const encryptedToken = crypto
+      .createHmac("sha256", ZOOM_WEBHOOK_SECRET)
       .update(plainToken)
       .digest("hex");
     return res.status(200).json({ plainToken, encryptedToken });
   }
 
+  const uploadedFileCache = new Set();
   // Recording complete route
   if (event === "recording.completed") {
     logger.info("Recording completed event received");
-    const { id: meetingId, recording_files: files = [] } = req.body.payload.object;
+    const { id: meetingId, recording_files: files = [] } =
+      req.body.payload.object;
     const downloadToken = req.body.download_token;
     const uploadedUrls = [];
 
     try {
-      // Find Zoom record & related booking
       const zoomRecord = await Zoom.findOne({ meetingId: String(meetingId) });
       const booking = zoomRecord
         ? await Bookings.findOne({ zoom: zoomRecord._id }).populate("teacherId")
         : null;
 
-      // Determine access token fallback (if needed)
       let teacherAccessToken = null;
       if (booking?.teacherId) {
         try {
           teacherAccessToken = await refreshTeacherZoomToken(booking.teacherId);
         } catch (err) {
-          logger.error(`Failed to refresh token for teacher ${booking.teacherId._id}`, err?.response?.data || err.message);
+          logger.error(
+            `Failed to refresh token for teacher ${booking.teacherId._id}`,
+            err?.response?.data || err.message
+          );
         }
       }
 
@@ -316,24 +350,43 @@ app.post("/zoom-webhook", async (req, res) => {
         if (!file.download_url) continue;
         const ext = file.file_type.toLowerCase();
         const fileName = `recording-${meetingId}-${file.id}.${ext}`;
+        const uniqueKey = `${meetingId}-${file.id}`;
 
-        // 🗨 Chat files
-        if (ext === "chat") {
-          const url = `${file.download_url}?access_token=${downloadToken || teacherAccessToken}`;
-          const response = await axios.get(url, { responseType: "text" });
-          const chatLines = (response.data || "").split("\n").filter(Boolean).map(line => {
-            const [time, name, ...messageParts] = line.split("\t");
-            return { time, name, message: messageParts.join(" ") };
-          });
-          await Zoom.findOneAndUpdate({ meetingId: String(meetingId) }, { chat: JSON.stringify(chatLines) });
+        // Skip duplicates (cache + DB)
+        if (
+          uploadedFileCache.has(uniqueKey) ||
+          zoomRecord?.download?.some((u) => u.includes(file.id))
+        ) {
+          logger.info(`Skipping duplicate file: ${fileName}`);
           continue;
         }
 
-        // 🎥 MP4 files
-        if (ext === "mp4") {
-          if (zoomRecord?.download?.some(u => u.includes(file.id))) continue;
+        // Mark as processed in cache
+        uploadedFileCache.add(uniqueKey);
 
-          const url = `${file.download_url}?access_token=${downloadToken || teacherAccessToken}`;
+        if (ext === "chat") {
+          const url = `${file.download_url}?access_token=${
+            downloadToken || teacherAccessToken
+          }`;
+          const response = await axios.get(url, { responseType: "text" });
+          const chatLines = (response.data || "")
+            .split("\n")
+            .filter(Boolean)
+            .map((line) => {
+              const [time, name, ...messageParts] = line.split("\t");
+              return { time, name, message: messageParts.join(" ") };
+            });
+          await Zoom.findOneAndUpdate(
+            { meetingId: String(meetingId) },
+            { chat: JSON.stringify(chatLines) }
+          );
+          continue;
+        }
+
+        if (ext === "mp4") {
+          const url = `${file.download_url}?access_token=${
+            downloadToken || teacherAccessToken
+          }`;
           const resp = await axios.get(url, { responseType: "arraybuffer" });
 
           const uploadedUrl = await uploadFileToSpaces({
@@ -346,7 +399,6 @@ app.post("/zoom-webhook", async (req, res) => {
         }
       }
 
-      // Save uploaded URLs
       if (uploadedUrls.length) {
         await Zoom.findOneAndUpdate(
           { meetingId: String(meetingId) },
@@ -355,7 +407,10 @@ app.post("/zoom-webhook", async (req, res) => {
         logger.info(`Uploaded recordings for ${meetingId}: ${uploadedUrls}`);
       }
     } catch (err) {
-      logger.error("Error uploading Zoom recordings:", err?.response?.data || err.message);
+      logger.error(
+        "Error uploading Zoom recordings:",
+        err?.response?.data || err.message
+      );
     }
 
     return res.sendStatus(200);
@@ -379,7 +434,9 @@ app.post("/zoom-webhook", async (req, res) => {
       // If no one is left, set a 5 min timeout to verify and end meeting
       if (participants.length === 0) {
         if (!emptyMeetingTimeouts.has(meetingId)) {
-          logger.info(`No one left in meeting ${meetingId}. Starting 5-min timer.`);
+          logger.info(
+            `No one left in meeting ${meetingId}. Starting 5-min timer.`
+          );
 
           const timeout = setTimeout(async () => {
             try {
@@ -396,7 +453,9 @@ app.post("/zoom-webhook", async (req, res) => {
 
               // Only end if endDateTime has passed
               if (now >= endTime) {
-                logger.info(`Ending Zoom meeting ${meetingId} after empty timeout.`);
+                logger.info(
+                  `Ending Zoom meeting ${meetingId} after empty timeout.`
+                );
 
                 await axios.delete(
                   `https://api.zoom.us/v2/meetings/${meetingId}`,
@@ -404,7 +463,10 @@ app.post("/zoom-webhook", async (req, res) => {
                 );
               }
             } catch (err) {
-              logger.error("Error ending Zoom meeting:", err?.response?.data || err.message);
+              logger.error(
+                "Error ending Zoom meeting:",
+                err?.response?.data || err.message
+              );
             } finally {
               emptyMeetingTimeouts.delete(meetingId);
             }
@@ -417,11 +479,16 @@ app.post("/zoom-webhook", async (req, res) => {
         if (emptyMeetingTimeouts.has(meetingId)) {
           clearTimeout(emptyMeetingTimeouts.get(meetingId));
           emptyMeetingTimeouts.delete(meetingId);
-          logger.info(`Participant rejoined meeting ${meetingId}. Timer cleared.`);
+          logger.info(
+            `Participant rejoined meeting ${meetingId}. Timer cleared.`
+          );
         }
       }
     } catch (error) {
-      logger.error("Zoom participant check failed:", error?.response?.data || error.message);
+      logger.error(
+        "Zoom participant check failed:",
+        error?.response?.data || error.message
+      );
     }
   }
 
@@ -432,7 +499,7 @@ app.post("/zoom-webhook", async (req, res) => {
 app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
   logger.info("Zoom account connection route opened");
   const code = req.query.code;
-  logger.info("Code",code);
+  logger.info("Code", code);
   if (!code) return res.status(400).send("No code in request");
   try {
     const tokenRes = await axios.post("https://zoom.us/oauth/token", null, {
@@ -444,7 +511,9 @@ app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
       headers: {
         Authorization:
           "Basic " +
-          Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString("base64"),
+          Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString(
+            "base64"
+          ),
       },
     });
 
@@ -457,10 +526,10 @@ app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
     logger.info("Zoom email:", zoomEmail);
     // const user = await User.findOne({ email: zoomEmail });
     const user = await User.findOne({ email: "mathur.abhinav1108@gmail.com" });
-    if (!user){
+    if (!user) {
       logger.info("User not fund with zoom email");
       return res.status(404).send("User not found");
-    } 
+    }
 
     await Teacher.findOneAndUpdate(
       { userId: user._id },
@@ -474,19 +543,21 @@ app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
     return res.redirect("https://japaneseforme.com");
   } catch (err) {
     logger.error("Zoom OAuth error:", err.response?.data || err.message);
-    logger.error("err",err);
+    logger.error("err", err);
     return res.status(500).send("Zoom OAuth failed");
   }
 });
 
 app.get("/", (req, res) => {
   res.json({
-    msg: 'Hello World',
+    msg: "Hello World",
     status: 200,
   });
 });
 
-require('./cronJobs')();
+require("./cronJobs")();
 
-const server = app.listen(PORT, () => console.log("Server is running at port : " + PORT));
+const server = app.listen(PORT, () =>
+  console.log("Server is running at port : " + PORT)
+);
 server.timeout = 360000;
