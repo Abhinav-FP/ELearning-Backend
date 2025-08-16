@@ -1,7 +1,7 @@
 const  axios = require("axios");
 const dotenv =  require("dotenv");
 const btoa = require("btoa");
-
+const logger = require("./utils/Logger");
 dotenv.config();
 
 const auth_token_url = "https://zoom.us/oauth/token";
