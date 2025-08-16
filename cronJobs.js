@@ -60,13 +60,15 @@ module.exports = () => {
         {
           console.log(`Creating Zoom meeting for booking ID: ${booking._id}`);
           logger.info(`Creating Zoom meeting for booking ID: ${booking._id}`);
-          // console.log(`Creating Zoom meeting for booking ID: ${booking._id}`);
+          
+          // Generate a safe random password (>= 8 alphanumeric chars)
+          const generatedPassword = Math.random().toString(36).slice(-8);
           const meetingDetails = {
-            topic: booking?.LessonId?.title || "Title not available",
-            type: 2,
-            start_time: booking?.startDateTime,
-            duration: booking?.LessonId?.duration,
-            password: "12334",
+            topic: booking?.LessonId?.title || "Lesson booking",
+            type: 2, // Scheduled meeting
+            start_time: booking.startDateTime.toISOString(),
+            duration: booking?.LessonId?.duration || 60,
+            password: generatedPassword,
             timezone: "UTC",
             settings: {
               auto_recording: "cloud",
@@ -75,11 +77,14 @@ module.exports = () => {
               mute_upon_entry: true,
               join_before_host: true,
               waiting_room: false,
-              registrants_capacity: 2,
             },
           };
           // const result = await createZoomMeeting(meetingDetails);
           const result = await createZoomMeeting(meetingDetails, teacherData, Teacher);
+           if (!result?.meeting_id) {
+            logger.error(`❌ Failed to create meeting for booking ${booking._id}`);
+            continue; // skip email sending if meeting wasn't created
+           }
           zoomLink = result?.meeting_url || "";
           // console.log("result",result);
           logger.info("Meeting link generated successfully with",result?.meeting_id);

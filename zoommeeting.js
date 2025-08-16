@@ -112,7 +112,7 @@ const createZoomMeeting = async (meetingDetails, teacherData, TeacherModel) => {
 
     // If token invalid, refresh it
     if (!tokenValid) {
-      console.log("Token invalid generating new one");
+      logger.info("Token invalid generating new one");
       const newTokens = await refreshZoomToken(teacherData.refresh_token);
       if (!newTokens) throw new Error("Failed to refresh Zoom token");
 
@@ -125,10 +125,28 @@ const createZoomMeeting = async (meetingDetails, teacherData, TeacherModel) => {
       );
     }
 
+     // Sanitize payload before sending
+    const sanitizedDetails = {
+      topic: meetingDetails.topic || "Lesson booking",
+      type: meetingDetails.type || 2,
+      start_time: meetingDetails.start_time || new Date().toISOString(),
+      duration: meetingDetails.duration || 60,
+      password: meetingDetails.password || Math.random().toString(36).slice(-8),
+      timezone: "UTC",
+      settings: meetingDetails.settings || {
+       auto_recording: "cloud",
+       host_video: true,
+       participant_video: true,
+       mute_upon_entry: true,
+       join_before_host: true,
+       waiting_room: false,
+      },
+    };
+
     // Create Zoom meeting
     const response = await axios.post(
       `${api_base_url}/users/me/meetings`,
-      meetingDetails,
+      sanitizedDetails,
       {
         headers: {
           Authorization: `Bearer ${access_token}`,
