@@ -417,80 +417,82 @@ app.post("/zoom-webhook", async (req, res) => {
   }
 
   // Step 2: Handle "participant_left" event
-  if (event === "meeting.participant_left") {
-    const meetingId = req.body.payload.object.id;
+  // if (event === "meeting.participant_left") {
+  //   const meetingId = req.body.payload.object.id;
 
-    // Check how many participants are still in the meeting
-    const accessToken = await getZoomAccessToken();
+  //   // Check how many participants are still in the meeting
+  //   const accessToken = await getZoomAccessToken();
 
-    try {
-      const resp = await axios.get(
-        `https://api.zoom.us/v2/metrics/meetings/${meetingId}/participants?type=live`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+  //   try {
+  //     const resp = await axios.get(
+  //       `https://api.zoom.us/v2/metrics/meetings/${meetingId}/participants?type=live`,
+  //       { headers: { Authorization: `Bearer ${accessToken}` } }
+  //     );
 
-      const participants = resp.data?.participants || [];
+  //     const participants = resp.data?.participants || [];
 
-      // If no one is left, set a 5 min timeout to verify and end meeting
-      if (participants.length === 0) {
-        if (!emptyMeetingTimeouts.has(meetingId)) {
-          logger.info(
-            `No one left in meeting ${meetingId}. Starting 5-min timer.`
-          );
+  //     // If no one is left, set a 5 min timeout to verify and end meeting
+  //     if (participants.length === 0) {
+  //       if (!emptyMeetingTimeouts.has(meetingId)) {
+  //         logger.info(
+  //           `No one left in meeting ${meetingId}. Starting 5-min timer.`
+  //         );
 
-          const timeout = setTimeout(async () => {
-            try {
-              // Get Zoom entry
-              const zoom = await Zoom.findOne({ meetingId });
-              if (!zoom) return;
+  //         const timeout = setTimeout(async () => {
+  //           try {
+  //             // Get Zoom entry
+  //             const zoom = await Zoom.findOne({ meetingId });
+  //             if (!zoom) return;
 
-              // Populate associated booking
-              const booking = await Bookings.findOne({ zoom: zoom._id });
-              if (!booking) return;
+  //             // Populate associated booking
+  //             const booking = await Bookings.findOne({ zoom: zoom._id });
+  //             if (!booking) return;
 
-              const now = new Date();
-              const endTime = new Date(booking.endDateTime);
+  //             const now = new Date();
+  //             const endTime = new Date(booking.endDateTime);
 
-              // Only end if endDateTime has passed
-              if (now >= endTime) {
-                logger.info(
-                  `Ending Zoom meeting ${meetingId} after empty timeout.`
-                );
+  //             // Only end if endDateTime has passed
+  //             if (now >= endTime) {
+  //               logger.info(
+  //                 `Ending Zoom meeting ${meetingId} after empty timeout.`
+  //               );
 
-                await axios.delete(
-                  `https://api.zoom.us/v2/meetings/${meetingId}`,
-                  { headers: { Authorization: `Bearer ${accessToken}` } }
-                );
-              }
-            } catch (err) {
-              logger.error(
-                "Error ending Zoom meeting:",
-                err?.response?.data || err.message
-              );
-            } finally {
-              emptyMeetingTimeouts.delete(meetingId);
-            }
-          }, 5 * 60 * 1000); // 5 minutes
+  //               await axios.delete(
+  //                 `https://api.zoom.us/v2/meetings/${meetingId}`,
+  //                 { headers: { Authorization: `Bearer ${accessToken}` } }
+  //               );
+  //             }
+  //           } catch (err) {
+  //             logger.error(
+  //               "Error ending Zoom meeting:",
+  //               err?.response?.data || err.message
+  //             );
+  //           } finally {
+  //             emptyMeetingTimeouts.delete(meetingId);
+  //           }
+  //         }, 5 * 60 * 1000); // 5 minutes
 
-          emptyMeetingTimeouts.set(meetingId, timeout);
-        }
-      } else {
-        // If someone rejoined, clear the timeout
-        if (emptyMeetingTimeouts.has(meetingId)) {
-          clearTimeout(emptyMeetingTimeouts.get(meetingId));
-          emptyMeetingTimeouts.delete(meetingId);
-          logger.info(
-            `Participant rejoined meeting ${meetingId}. Timer cleared.`
-          );
-        }
-      }
-    } catch (error) {
-      logger.error(
-        "Zoom participant check failed:",
-        error?.response?.data || error.message
-      );
-    }
-  }
+  //         emptyMeetingTimeouts.set(meetingId, timeout);
+  //       }
+  //     } else {
+  //       // If someone rejoined, clear the timeout
+  //       if (emptyMeetingTimeouts.has(meetingId)) {
+  //         clearTimeout(emptyMeetingTimeouts.get(meetingId));
+  //         emptyMeetingTimeouts.delete(meetingId);
+  //         logger.info(
+  //           `Participant rejoined meeting ${meetingId}. Timer cleared.`
+  //         );
+  //       }
+  //     }
+  //   } catch (error) {
+  //     logger.error(
+  //       "Zoom participant check failed:",
+  //       error?.response?.data || error.message
+  //     );
+  //   }
+  // }
+
+  logger.info("Unknown zoom event received:", event);
 
   return res.sendStatus(200);
 });
