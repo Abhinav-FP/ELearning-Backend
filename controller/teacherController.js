@@ -17,7 +17,37 @@ const jwt = require("jsonwebtoken");
 const review = require("../model/review");
 const Bonus = require("../model/Bonus");
 const Welcome = require("../EmailTemplate/Welcome");
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 // const crypto = require("crypto");
+
+// configure DO Spaces S3 client (matches your uploader config)
+const s3Client = new S3Client({
+  region: process.env.region,
+  endpoint: `https://${process.env.endpoint}`, // Endpoint for your DigitalOcean Space
+  credentials: {
+    accessKeyId: process.env.accesskeyId, // Your DigitalOcean Space Access Key
+    secretAccessKey: process.env.secretAccess, // Your DigitalOcean Space Secret Key
+  },
+});
+
+/**
+ * Generate a temporary signed URL for a private recording key.
+ * key example: "recordings/xxx-recording.mp4"
+ */
+const getSignedRecordingUrl = async (key, expiresInSeconds = 60 * 5) => {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: process.env.bucketName,
+      Key: key,
+    });
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+    return signedUrl;
+  } catch (err) {
+    console.error(`Signed URL generation failed for key "${key}":`, err.message || err);
+    return null;
+  }
+};
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
@@ -759,15 +789,13 @@ exports.EarningsGet = catchAsync(async (req, res) => {
 exports.BookingsGet = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-
-    if (!userId) {
-      return errorResponse(res, "Invalid User", 401);
-    }
+    if (!userId) return errorResponse(res, "Invalid User", 401);
 
     const filter = { teacherId: userId };
     const sort = {};
     const { type, search } = req.query;
     const now = Date.now();
+
     if (type === "upcoming") {
       filter.endDateTime = { $gt: now };
       sort.startDateTime = 1;
@@ -776,24 +804,23 @@ exports.BookingsGet = catchAsync(async (req, res) => {
       filter.endDateTime = { $lte: now };
       sort.startDateTime = -1;
       filter.cancelled = false;
-    }
-    else if (type === "cancelled"){
+    } else if (type === "cancelled") {
       filter.cancelled = true;
       sort.startDateTime = -1;
     }
 
-    // Get detailed booking data
+    // Fetch bookings with populated relations
     let data = await Bookings.find(filter).sort(sort)
-      .populate('StripepaymentId')
-      .populate('paypalpaymentId')
-      .populate('UserId')
-      .populate('LessonId')
-      .populate('ReviewId')
-      .populate('BonusId')
+      .populate("StripepaymentId")
+      .populate("paypalpaymentId")
+      .populate("UserId")
+      .populate("LessonId")
+      .populate("ReviewId")
+      .populate("BonusId")
       .populate("teacherId")
-      .populate('zoom');
+      .populate("zoom");
 
-    // Apply search filter on populated fields
+    // Apply search filter (unchanged)
     if (search?.trim()) {
       const regex = new RegExp(search.trim(), "i");
       data = data.filter((item) => {
@@ -807,13 +834,54 @@ exports.BookingsGet = catchAsync(async (req, res) => {
       return errorResponse(res, "No bookings found", 404);
     }
 
+    // Replace private recording keys with temporary signed URLs (5 minutes).
+    // Keep old full URLs untouched.
+    await Promise.all(
+      data.map(async (booking) => {
+        try {
+          if (!booking?.zoom || !Array.isArray(booking.zoom.download)) return;
+
+          // Map files -> for each file, if it's a private key 'recordings/...' generate signed url
+          const mapped = await Promise.all(
+            booking.zoom.download.map(async (fileEntry) => {
+              try {
+                if (typeof fileEntry !== "string") return null;
+
+                // NEW private-style key (our convention): recordings/...
+                if (fileEntry.startsWith("recordings/")) {
+                  const signed = await getSignedRecordingUrl(fileEntry, 60 * 5); // 5 minutes
+                  return signed || null; // if signing failed, return null (will be filtered)
+                }
+
+                // OLD public URL (starts with http/https) -> ignore / return as-is
+                if (fileEntry.startsWith("http://") || fileEntry.startsWith("https://")) {
+                  return fileEntry;
+                }
+
+                // If value looks like an S3 key but not recordings/..., you can decide:
+                // For safety, leave it as-is. (Alternatively you may sign other prefixes.)
+                return fileEntry;
+              } catch (innerErr) {
+                console.error("Error processing recording entry:", innerErr.message || innerErr);
+                return null;
+              }
+            })
+          );
+
+          // Filter out any nulls (failed signings) and set back on booking.zoom.download
+          booking.zoom.download = mapped.filter(Boolean);
+        } catch (err) {
+          console.error("Error mapping booking zoom.download:", err.message || err);
+        }
+      })
+    );
+
     return successResponse(res, "Bookings retrieved successfully!", 200, data);
   } catch (error) {
     console.error(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
-
 
 exports.DashboardApi = catchAsync(async (req, res) => {
   try {
