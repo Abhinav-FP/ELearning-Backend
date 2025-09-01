@@ -3,6 +3,7 @@ dotenv.config();
 const stripe = require("./utils/stripe");
 require("./dbconfigration");
 const express = require("express");
+const helmet = require("helmet")
 const app = express();
 const cors = require("cors");
 const StripePayment = require("./model/StripePayment");
@@ -23,6 +24,15 @@ const logger = require("./utils/Logger");
 const { uploadFileToSpaces } = require("./utils/FileUploader");
 const Loggers = require("./utils/Logger");
 const Bonus = require("./model/Bonus");
+
+app.use(helmet.frameguard({ action: "sameorigin" })); // sets X-Frame-Options
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      "frame-ancestors": ["'self'"], // adjust if partners need to embed
+    },
+  })
+);
 
 const corsOptions = {
   origin: "*", // Allowed origins
