@@ -21,14 +21,18 @@ function encrypt(text) {
 }
 
 // 🔐 Decrypt function
-function decrypt(text) {
-  const parts = text.split(":");
-  const iv = Buffer.from(parts.shift(), "hex");
-  const encryptedText = Buffer.from(parts.join(":"), "hex");
-  const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(ENC_KEY), iv);
-  let decrypted = decipher.update(encryptedText);
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
-  return decrypted.toString();
+function decrypt(encryptedString) {
+    const parts = encryptedString.split(":");
+  if (parts.length !== 3) throw new Error("Invalid encrypted format for GCM");
+  const iv = Buffer.from(parts[0], "hex");
+  const authTag = Buffer.from(parts[1], "hex");
+  const encrypted = Buffer.from(parts[2], "hex");
+
+  const decipher = crypto.createDecipheriv("aes-256-gcm", Buffer.from(ENC_KEY), iv);
+  decipher.setAuthTag(authTag);
+
+  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+  return decrypted.toString("utf8");
 }
 
 // Old code for creating meeting using admin zoom account

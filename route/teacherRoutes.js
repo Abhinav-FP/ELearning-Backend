@@ -55,6 +55,6 @@ router.get("/teacher/studentLesson", verifyToken, StudentLessonListing);
 router.get("/teacher/review", verifyToken, GetReview);
 router.get("/teacher/disconnectZoom", verifyToken, DisconnectZoom);
 
-router.get("/teacher/zoom/test", GetZoomTeacher);
+// router.get("/teacher/zoom/test", GetZoomTeacher);
 
 module.exports = router;

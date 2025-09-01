@@ -17,6 +17,7 @@ const jwt = require("jsonwebtoken");
 const review = require("../model/review");
 const Bonus = require("../model/Bonus");
 const Welcome = require("../EmailTemplate/Welcome");
+// const crypto = require("crypto");
 
 exports.AddAvailability = catchAsync(async (req, res) => {
   try {
@@ -1272,11 +1273,42 @@ exports.DisconnectZoom = catchAsync(async (req, res) => {
   }
 });
 
-exports.GetZoomTeacher = catchAsync(async (req, res) => {
-  try {
-    const data = await Teacher.findById("6879d84df1853235ae9b2b70");    
-    return successResponse(res, "Teacher get successfully", 200, data);
-  } catch (error) {
-    return errorResponse(res, error.message || "Internal Server Error", 500);
-  }
-});
+// const ENC_KEY = process.env.TOKEN_ENC_KEY; // must be 32 chars
+// const IV_LENGTH = 16; // AES block size
+
+// function encrypt(text) {
+//   const iv = crypto.randomBytes(IV_LENGTH);
+//   const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(ENC_KEY), iv);
+
+//   let encrypted = cipher.update(text, "utf8", "hex");
+//   encrypted += cipher.final("hex");
+//   const authTag = cipher.getAuthTag().toString("hex");
+
+//   return iv.toString("hex") + ":" + authTag + ":" + encrypted;
+// }
+
+// function decrypt(encryptedString) {
+//   const parts = encryptedString.split(":");
+//   if (parts.length !== 3) throw new Error("Invalid encrypted format for GCM");
+//   const iv = Buffer.from(parts[0], "hex");
+//   const authTag = Buffer.from(parts[1], "hex");
+//   const encrypted = Buffer.from(parts[2], "hex");
+
+//   const decipher = crypto.createDecipheriv("aes-256-gcm", Buffer.from(ENC_KEY), iv);
+//   decipher.setAuthTag(authTag);
+
+//   const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+//   return decrypted.toString("utf8");
+// }
+
+// exports.GetZoomTeacher = catchAsync(async (req, res) => {
+//   try {
+//     const data = await Teacher.findById("6879d84df1853235ae9b2b70");
+//     console.log("token1", decrypt(data.access_token));
+//     console.log("token2", decrypt(data.refresh_token));    
+//     return successResponse(res, "Teacher get successfully", 200, data);
+//   } catch (error) {
+//     console.log("error", error);
+//     return errorResponse(res, error.message || "Internal Server Error", 500);
+//   }
+// });
