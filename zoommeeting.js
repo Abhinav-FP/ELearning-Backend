@@ -1,11 +1,35 @@
 const  axios = require("axios");
 const dotenv =  require("dotenv");
 const btoa = require("btoa");
+const crypto = require("crypto");
 const logger = require("./utils/Logger");
 dotenv.config();
 
 const auth_token_url = "https://zoom.us/oauth/token";
 const api_base_url = "https://api.zoom.us/v2";
+
+const ENC_KEY = process.env.TOKEN_ENC_KEY; // must be 32 chars
+const IV_LENGTH = 16; // AES block size
+
+// 🔐 Encrypt function
+function encrypt(text) {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(ENC_KEY), iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return iv.toString("hex") + ":" + encrypted.toString("hex");
+}
+
+// 🔐 Decrypt function
+function decrypt(text) {
+  const parts = text.split(":");
+  const iv = Buffer.from(parts.shift(), "hex");
+  const encryptedText = Buffer.from(parts.join(":"), "hex");
+  const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(ENC_KEY), iv);
+  let decrypted = decipher.update(encryptedText);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString();
+}
 
 // Old code for creating meeting using admin zoom account
 // const clientId = process.env.ZOOM_clientId;
@@ -98,7 +122,7 @@ const refreshZoomToken = async (refresh_token) => {
  */
 const createZoomMeeting = async (meetingDetails, teacherData, TeacherModel) => {
   try {
-    let access_token = teacherData.access_token;
+    let access_token = decrypt(teacherData.access_token);
 
     // Test if token works
     let tokenValid = true;
@@ -113,7 +137,8 @@ const createZoomMeeting = async (meetingDetails, teacherData, TeacherModel) => {
     // If token invalid, refresh it
     if (!tokenValid) {
       logger.info("Token invalid generating new one");
-      const newTokens = await refreshZoomToken(teacherData.refresh_token);
+      const decryptedRefreshToken = decrypt(teacherData.refresh_token);
+      const newTokens = await refreshZoomToken(decryptedRefreshToken);
       if (!newTokens) throw new Error("Failed to refresh Zoom token");
 
       access_token = newTokens.access_token;
@@ -121,7 +146,9 @@ const createZoomMeeting = async (meetingDetails, teacherData, TeacherModel) => {
       // Save updated tokens in teacherData
       await TeacherModel.updateOne(
         { _id: teacherData._id },
-        { access_token: newTokens.access_token, refresh_token: newTokens.refresh_token }
+        { access_token: encrypt(newTokens.access_token), 
+          refresh_token: encrypt(newTokens.refresh_token) 
+        }
       );
     }
 

@@ -14,28 +14,32 @@ const s3Client = new S3Client({
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-const uploadFileToSpaces = async (file) => {
+const uploadFileToSpaces = async (file, isRecording = false) => {
   try {
-    const fileName = `${uuidv4()}-${file.originalname.replaceAll(" ", "_")}`; // Unique filename
+    const fileName = `${uuidv4()}-${file.originalname.replaceAll(" ", "_")}`;
+    const folder = isRecording ? "recordings" : "uploads";
 
     const uploadParams = {
-      Bucket: process.env.bucketName, // Your Space Name
-      Key: `uploads/${fileName}`, // Path within the Space
+      Bucket: process.env.bucketName,
+      Key: `${folder}/${fileName}`,
       Body: file.buffer,
       ContentType: file.mimetype,
-      ACL: 'public-read', // Publicly accessible file
+      ...(isRecording ? {} : { ACL: "public-read" }), // public only if not recording
     };
 
-    // Using PutObjectCommand for uploading file
     const command = new PutObjectCommand(uploadParams);
     await s3Client.send(command);
 
-    // Construct and return the complete public URL
-    const fileUrl = `https://${process.env.bucketName}.${process.env.endpoint}/uploads/${fileName}`;
-    return fileUrl; // Full public URL
+    if (isRecording) {
+      // For recordings, return just the object key (private)
+      return `${folder}/${fileName}`;
+    } else {
+      // For normal files, return full public URL
+      return `https://${process.env.bucketName}.${process.env.endpoint}/${folder}/${fileName}`;
+    }
   } catch (err) {
-    console.error('Upload error:', err.message);
-    return null; // Return null on error
+    console.error("Upload error:", err.message);
+    return null;
   }
 };
 

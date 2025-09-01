@@ -403,7 +403,9 @@ app.post("/zoom-webhook", async (req, res) => {
             originalname: fileName,
             buffer: resp.data,
             mimetype: "video/mp4",
-          });
+          },
+          true 
+        );
 
           if (uploadedUrl) uploadedUrls.push(uploadedUrl);
         }
@@ -507,6 +509,21 @@ app.post("/zoom-webhook", async (req, res) => {
   return res.sendStatus(200);
 });
 
+const ENC_KEY = process.env.TOKEN_ENC_KEY; // must be 32 chars
+const IV_LENGTH = 16;
+
+// Encrypt function
+function encrypt(text) {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(ENC_KEY), iv);
+
+  let encrypted = cipher.update(text, "utf8", "hex");
+  encrypted += cipher.final("hex");
+  const authTag = cipher.getAuthTag().toString("hex");
+
+  return iv.toString("hex") + ":" + authTag + ":" + encrypted;
+}
+
 // OAuth Route used for zoom account connecting
 app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
   logger.info("Zoom account connection route opened");
@@ -546,8 +563,8 @@ app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
     await Teacher.findOneAndUpdate(
       { userId: user._id },
       {
-        access_token,
-        refresh_token,
+        access_token: encrypt(access_token),
+        refresh_token: encrypt(refresh_token),
       },
       { new: true }
     );
