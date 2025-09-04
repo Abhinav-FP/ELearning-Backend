@@ -19,6 +19,7 @@ const Bonus = require("../model/Bonus");
 const Welcome = require("../EmailTemplate/Welcome");
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const axios = require("axios");
 // const crypto = require("crypto");
 
 // configure DO Spaces S3 client (matches your uploader config)
@@ -31,10 +32,6 @@ const s3Client = new S3Client({
   },
 });
 
-/**
- * Generate a temporary signed URL for a private recording key.
- * key example: "recordings/xxx-recording.mp4"
- */
 const getSignedRecordingUrl = async (key, expiresInSeconds = 60 * 5) => {
   try {
     const command = new GetObjectCommand({
@@ -1341,42 +1338,18 @@ exports.DisconnectZoom = catchAsync(async (req, res) => {
   }
 });
 
-// const ENC_KEY = process.env.TOKEN_ENC_KEY; // must be 32 chars
-// const IV_LENGTH = 16; // AES block size
-
-// function encrypt(text) {
-//   const iv = crypto.randomBytes(IV_LENGTH);
-//   const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(ENC_KEY), iv);
-
-//   let encrypted = cipher.update(text, "utf8", "hex");
-//   encrypted += cipher.final("hex");
-//   const authTag = cipher.getAuthTag().toString("hex");
-
-//   return iv.toString("hex") + ":" + authTag + ":" + encrypted;
-// }
-
-// function decrypt(encryptedString) {
-//   const parts = encryptedString.split(":");
-//   if (parts.length !== 3) throw new Error("Invalid encrypted format for GCM");
-//   const iv = Buffer.from(parts[0], "hex");
-//   const authTag = Buffer.from(parts[1], "hex");
-//   const encrypted = Buffer.from(parts[2], "hex");
-
-//   const decipher = crypto.createDecipheriv("aes-256-gcm", Buffer.from(ENC_KEY), iv);
-//   decipher.setAuthTag(authTag);
-
-//   const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-//   return decrypted.toString("utf8");
-// }
-
-// exports.GetZoomTeacher = catchAsync(async (req, res) => {
-//   try {
-//     const data = await Teacher.findById("6879d84df1853235ae9b2b70");
-//     console.log("token1", decrypt(data.access_token));
-//     console.log("token2", decrypt(data.refresh_token));    
-//     return successResponse(res, "Teacher get successfully", 200, data);
-//   } catch (error) {
-//     console.log("error", error);
-//     return errorResponse(res, error.message || "Internal Server Error", 500);
-//   }
-// });
+exports.DownloadRecording = catchAsync(async (req, res) => {
+  try {
+    const { url, index } = req.query;
+    const response = await axios.get(url, { responseType: "stream" });
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="recording${index}.mp4"`
+    );
+    res.setHeader("Content-Type", "video/mp4");
+    response.data.pipe(res);
+  } catch (err) {
+    logger.info("Recording download error:", err.message);
+    return errorResponse(res, err.message || "Internal Server Error", 500);
+  }
+});
