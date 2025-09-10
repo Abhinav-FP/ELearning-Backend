@@ -43,6 +43,7 @@ app.use(
     },
     referrerPolicy: { policy: "no-referrer" },
     crossOriginEmbedderPolicy: false, // disable if using external iframes/videos
+    hsts: { maxAge: 31536000, includeSubDomains: true }, // ✅ HSTS
   })
 );
 
