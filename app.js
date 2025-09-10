@@ -47,7 +47,7 @@ app.use(
 );
 
 const corsOptions = {
-  origin: "*", // Allowed origins
+  origin: process.env.DOMAIN, // Allowed origins
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   allowedHeaders: "*", // Allow all headers
   credentials: true,
