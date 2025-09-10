@@ -833,45 +833,45 @@ exports.BookingsGet = catchAsync(async (req, res) => {
 
     // Replace private recording keys with temporary signed URLs (5 minutes).
     // Keep old full URLs untouched.
-    await Promise.all(
-      data.map(async (booking) => {
-        try {
-          if (!booking?.zoom || !Array.isArray(booking.zoom.download)) return;
+    // await Promise.all(
+    //   data.map(async (booking) => {
+    //     try {
+    //       if (!booking?.zoom || !Array.isArray(booking.zoom.download)) return;
 
-          // Map files -> for each file, if it's a private key 'recordings/...' generate signed url
-          const mapped = await Promise.all(
-            booking.zoom.download.map(async (fileEntry) => {
-              try {
-                if (typeof fileEntry !== "string") return null;
+    //       // Map files -> for each file, if it's a private key 'recordings/...' generate signed url
+    //       const mapped = await Promise.all(
+    //         booking.zoom.download.map(async (fileEntry) => {
+    //           try {
+    //             if (typeof fileEntry !== "string") return null;
 
-                // NEW private-style key (our convention): recordings/...
-                if (fileEntry.startsWith("recordings/")) {
-                  const signed = await getSignedRecordingUrl(fileEntry, 60 * 5); // 5 minutes
-                  return signed || null; // if signing failed, return null (will be filtered)
-                }
+    //             // NEW private-style key (our convention): recordings/...
+    //             if (fileEntry.startsWith("recordings/")) {
+    //               const signed = await getSignedRecordingUrl(fileEntry, 60 * 5); // 5 minutes
+    //               return signed || null; // if signing failed, return null (will be filtered)
+    //             }
 
-                // OLD public URL (starts with http/https) -> ignore / return as-is
-                if (fileEntry.startsWith("http://") || fileEntry.startsWith("https://")) {
-                  return fileEntry;
-                }
+    //             // OLD public URL (starts with http/https) -> ignore / return as-is
+    //             if (fileEntry.startsWith("http://") || fileEntry.startsWith("https://")) {
+    //               return fileEntry;
+    //             }
 
-                // If value looks like an S3 key but not recordings/..., you can decide:
-                // For safety, leave it as-is. (Alternatively you may sign other prefixes.)
-                return fileEntry;
-              } catch (innerErr) {
-                console.error("Error processing recording entry:", innerErr.message || innerErr);
-                return null;
-              }
-            })
-          );
+    //             // If value looks like an S3 key but not recordings/..., you can decide:
+    //             // For safety, leave it as-is. (Alternatively you may sign other prefixes.)
+    //             return fileEntry;
+    //           } catch (innerErr) {
+    //             console.error("Error processing recording entry:", innerErr.message || innerErr);
+    //             return null;
+    //           }
+    //         })
+    //       );
 
-          // Filter out any nulls (failed signings) and set back on booking.zoom.download
-          booking.zoom.download = mapped.filter(Boolean);
-        } catch (err) {
-          console.error("Error mapping booking zoom.download:", err.message || err);
-        }
-      })
-    );
+    //       // Filter out any nulls (failed signings) and set back on booking.zoom.download
+    //       booking.zoom.download = mapped.filter(Boolean);
+    //     } catch (err) {
+    //       console.error("Error mapping booking zoom.download:", err.message || err);
+    //     }
+    //   })
+    // );
 
     return successResponse(res, "Bookings retrieved successfully!", 200, data);
   } catch (error) {
@@ -1341,12 +1341,28 @@ exports.DisconnectZoom = catchAsync(async (req, res) => {
 exports.DownloadRecording = catchAsync(async (req, res) => {
   try {
     const { url, index } = req.query;
-    const response = await axios.get(url, { responseType: "stream" });
+    console.log("DownloadRecording url:", url);
+
+    let finalUrl = url;
+
+    // If it's a private key (recordings/...), sign it
+    if (url && url.startsWith("recordings/")) {
+      const signed = await getSignedRecordingUrl(url, 60 * 5);
+      if (!signed) {
+        return errorResponse(res, "Failed to generate download link", 500);
+      }
+      finalUrl = signed;
+    }
+
+    // Now fetch the file
+    const response = await axios.get(finalUrl, { responseType: "stream" });
+
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="recording${index}.mp4"`
     );
     res.setHeader("Content-Type", "video/mp4");
+
     response.data.pipe(res);
   } catch (err) {
     logger.info("Recording download error:", err.message);

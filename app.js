@@ -25,12 +25,24 @@ const { uploadFileToSpaces } = require("./utils/FileUploader");
 const Loggers = require("./utils/Logger");
 const Bonus = require("./model/Bonus");
 
-app.use(helmet.frameguard({ action: "sameorigin" })); // sets X-Frame-Options
+// ✅ Security Headers
 app.use(
-  helmet.contentSecurityPolicy({
-    directives: {
-      "frame-ancestors": ["'self'"], // adjust if partners need to embed
+  helmet({
+    frameguard: { action: "deny" }, // X-Frame-Options: DENY
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "*"], // allow APIs / websockets
+        fontSrc: ["'self'", "https:", "data:"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"], // ❌ prevent all iframes
+      },
     },
+    referrerPolicy: { policy: "no-referrer" },
+    crossOriginEmbedderPolicy: false, // disable if using external iframes/videos
   })
 );
 
