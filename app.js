@@ -48,7 +48,7 @@ app.use(
 );
 
 const corsOptions = {
-  origin: process.env.DOMAIN, // Allowed origins
+  origin:  [ "https://japaneseforme.com", "https://www.japaneseforme.com", "http://japaneseforme.com", "http://www.japaneseforme.com", "japaneseforme.com" ], 
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   allowedHeaders: "*", // Allow all headers
   credentials: true,
