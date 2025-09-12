@@ -51,6 +51,26 @@ exports.AddAvailability = catchAsync(async (req, res) => {
     let { startDateTime, endDateTime } = req.body;
     const time_zone = req.user.time_zone;
 
+    // Check if zoom is connected
+    const teacherId = req.user.id;
+    if (!teacherId) {
+      return errorResponse(res, "Teacher ID is required", 400);
+    }
+    // 🔎 Check if Zoom is connected for this teacher
+    const teacher = await Teacher.findOne({
+      userId: teacherId,
+      access_token: { $ne: null },
+      refresh_token: { $ne: null },
+    });
+
+    if (!teacher) {
+      return errorResponse(
+        res,
+        "Please connect Zoom account before creating slots",
+        400
+      );
+    }    
+
     if (!startDateTime || !endDateTime) {
       return errorResponse(res, "Start time and End time are required", 400);
     }
@@ -1137,6 +1157,26 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
     const userId = req.user.id;
     const objectId = new mongoose.Types.ObjectId(userId);
 
+    // Check if zoom is connected
+    const teacherId = req.user.id;
+    if (!teacherId) {
+      return errorResponse(res, "Teacher ID is required", 400);
+    }
+    // 🔎 Check if Zoom is connected for this teacher
+    const ZoomConnectedAccount = await Teacher.findOne({
+      userId: teacherId,
+      access_token: { $ne: null },
+      refresh_token: { $ne: null },
+    });
+
+    if (!ZoomConnectedAccount) {
+      return errorResponse(
+        res,
+        "Please connect Zoom account before creating special slot",
+        400
+      );
+    }  
+
     let { student, lesson, amount, startDateTime, endDateTime } = req.body;
     const time_zone = req.user.time_zone;
 
@@ -1323,6 +1363,21 @@ exports.DisconnectZoom = catchAsync(async (req, res) => {
     const teacherId = req.user.id;
     if (!teacherId) {
       return errorResponse(res, "Teacher ID is required", 400);
+    }
+    // 🔎 Check for any upcoming, non-cancelled bookings
+    const now = new Date();
+    const hasUpcomingBooking = await Bookings.exists({
+      teacherId: teacherId,
+      cancelled: false,
+      startDateTime: { $gt: now }  // booking starts in the future
+    });
+
+    if (hasUpcomingBooking) {
+      return errorResponse(
+        res,
+        "Zoom account can't be disconnected as you have upcoming bookings in the future.",
+        400
+      );
     }
     const updatedTeacher = await Teacher.findOneAndUpdate(
      { userId: teacherId },
