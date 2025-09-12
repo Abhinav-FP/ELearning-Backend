@@ -541,7 +541,7 @@ function encrypt(text) {
 app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
   logger.info("Zoom account connection route opened");
   const code = req.query.code;
-  logger.info("Code", code);
+  logger.info(`Code: ${code}`);
   if (!code) return res.status(400).send("No code in request");
   try {
     const tokenRes = await axios.post("https://zoom.us/oauth/token", null, {
@@ -565,7 +565,7 @@ app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
       headers: { Authorization: `Bearer ${access_token}` },
     });
     const zoomEmail = userRes.data.email;
-    logger.info("Zoom email:", zoomEmail);
+    logger.info(`Zoom email: ${zoomEmail}`);
     // const user = await User.findOne({ email: zoomEmail });
     const user = await User.findOne({ email: zoomEmail });
     if (!user) {
