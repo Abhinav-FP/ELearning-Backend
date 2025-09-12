@@ -48,7 +48,7 @@ app.use(
 );
 
 const corsOptions = {
-  origin:  [ "https://japaneseforme.com", "https://www.japaneseforme.com", "http://japaneseforme.com", "http://www.japaneseforme.com", "japaneseforme.com" ], 
+  origin:  [ "https://japaneseforme.com", "https://www.japaneseforme.com", "http://japaneseforme.com", "http://www.japaneseforme.com", "japaneseforme.com", "http://localhost:3000" ], 
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   allowedHeaders: "*", // Allow all headers
   credentials: true,
@@ -567,7 +567,7 @@ app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
     const zoomEmail = userRes.data.email;
     logger.info("Zoom email:", zoomEmail);
     // const user = await User.findOne({ email: zoomEmail });
-    const user = await User.findOne({ email: "mathur.abhinav1108@gmail.com" });
+    const user = await User.findOne({ email: zoomEmail });
     if (!user) {
       logger.info("User not fund with zoom email");
       return res.status(404).send("User not found");
