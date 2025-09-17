@@ -339,7 +339,6 @@ exports.AdminEarning = catchAsync(async (req, res) => {
         from.setDate(now.getDate() - 30);
         filter.startDateTime = { $gte: from, $lte: now };
       } else if (!isNaN(date)) {
-        // If it's a year like "2024"
         const year = parseInt(date, 10);
         const startOfYear = new Date(`${year}-01-01T00:00:00.000Z`);
         const endOfYear = new Date(`${year}-12-31T23:59:59.999Z`);
