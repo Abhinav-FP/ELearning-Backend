@@ -48,7 +48,7 @@ app.use(
 );
 
 const corsOptions = {
-  origin:  [ "https://japaneseforme.com", "https://www.japaneseforme.com", "http://japaneseforme.com", "http://www.japaneseforme.com", "japaneseforme.com", "https://e-learning-seven-ashy.vercel.app/", "http://localhost:3000" ], 
+  origin:  [ "https://japaneseforme.com", "https://www.japaneseforme.com", "http://japaneseforme.com", "http://www.japaneseforme.com", "japaneseforme.com", "https://e-learning-seven-ashy.vercel.app", "http://localhost:3000" ], 
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   allowedHeaders: "*", // Allow all headers
   credentials: true,
