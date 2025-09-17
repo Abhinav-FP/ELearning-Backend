@@ -11,6 +11,7 @@ const Bonus = require("../model/Bonus");
 const TeacherApprove = require("../EmailTemplate/TeacherApprove");
 const sendEmail = require("../utils/EmailMailler");
 const jwt = require("jsonwebtoken");
+const logger = require("../utils/Logger");
 
 const signEmail = async (id) => {
   const token = jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
@@ -482,12 +483,35 @@ exports.AistrainedApprove = catchAsync(async (req, res) => {
       return errorResponse(res, "Teacher not found.", 404);
     }
     const message = teacher.ais_trained === true
-      ? "Teacher has been successfully marked as AI-trained."
-      : "Teacher has been rejected successfully.";
+      ? "Teacher has been successfully marked as AIS-trained."
+      : "Teacher has been successfully marked as not AIS-trained.";
 
     return successResponse(res, message, 200, teacher);
   } catch (error) {
     console.error("Error:", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.UpdateTeacherVideo = catchAsync(async (req, res) => {
+  try {
+    const { id, link } = req.body;
+    const user = await Teacher.findById(id);
+    if (!user) {
+      return errorResponse(res, "User not found", 404);
+    }
+    const teacher = await Teacher.findByIdAndUpdate(
+      id,
+      { intro_video: link },
+      { new: true }
+    );
+    if (!teacher) {
+      return errorResponse(res, "Teacher not found.", 404);
+    }
+    logger.info(`Admin updated intro video for teacher ID: ${id} link: ${link}`);
+    return successResponse(res, "Teacher intro video updated succesfully", 200, teacher);
+  } catch (error) {
+    console.error("error:", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
