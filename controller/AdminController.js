@@ -326,23 +326,23 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
 
 exports.AdminEarning = catchAsync(async (req, res) => {
   try {
-    const { date, search } = req.query;
+    const { date, search, page, limit = 15 } = req.query;
     const filter = {};
     if (date) {
       const now = new Date();
       if (date === "last7") {
         const from = new Date();
         from.setDate(now.getDate() - 7);
-        filter.startDateTime = { $gte: from, $lte: now };
+        filter.createdAt = { $gte: from, $lte: now };
       } else if (date === "last30") {
         const from = new Date();
         from.setDate(now.getDate() - 30);
-        filter.startDateTime = { $gte: from, $lte: now };
+        filter.createdAt = { $gte: from, $lte: now };
       } else if (!isNaN(date)) {
         const year = parseInt(date, 10);
         const startOfYear = new Date(`${year}-01-01T00:00:00.000Z`);
         const endOfYear = new Date(`${year}-12-31T23:59:59.999Z`);
-        filter.startDateTime = { $gte: startOfYear, $lte: endOfYear };
+        filter.createdAt = { $gte: startOfYear, $lte: endOfYear };
       }
     }
     let count = await Bookings.aggregate([
@@ -357,12 +357,31 @@ exports.AdminEarning = catchAsync(async (req, res) => {
         }
       }
     ]);
-    let bookings = await Bookings.find(filter).sort({ startDateTime: -1 })
+
+    const totalBookings = await Bookings.countDocuments(filter); // <— total records
+    const currentPage = parseInt(page);
+    const perPage = parseInt(limit);
+    const totalPages = Math.ceil(totalBookings / perPage);
+    const skip = (currentPage - 1) * perPage;
+    let query;
+    if (search && search.trim() !== ""){
+      query= Bookings.find(filter).sort({ startDateTime: -1 })
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
       .populate('teacherId')
       .populate('LessonId');
+    }
+    else{
+      query = Bookings.find(filter).sort({ startDateTime: -1 })
+      .populate('StripepaymentId')
+      .populate('paypalpaymentId')
+      .populate('UserId')
+      .populate('teacherId')
+      .populate('LessonId').skip(skip).limit(parseInt(limit)); 
+    }
+
+    let bookings = await query;
     const bonus = await Bonus.aggregate([
       {
         $group: {
@@ -394,12 +413,18 @@ exports.AdminEarning = catchAsync(async (req, res) => {
     if (!bookings) {
       return errorResponse(res, "Bookings not Found", 401);
     }
-    count[0].totalAmount += totalBonus;
+    count[0].totalAmount = count[0].totalAmount + totalBonus - count[0].processingFee;
     count[0].teacherEarning += totalBonus;
     count[0].bonus = totalBonus;
     successResponse(res, "Bookings retrieved successfully!", 200, {
       count: count[0],
-      bookings
+      bookings,
+      pagination: {
+        currentPage,
+        totalPages,
+        totalBookings,
+        limit: perPage
+      },
     });
   } catch (error) {
     console.log("error", error);

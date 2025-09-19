@@ -550,8 +550,8 @@ exports.EarningsGet = catchAsync(async (req, res) => {
     const objectId = new mongoose.Types.ObjectId(userId);
     const filter = {
       teacherId: objectId,
-      lessonCompletedStudent: true,
-      lessonCompletedTeacher: true,
+      // lessonCompletedStudent: true,
+      // lessonCompletedTeacher: true,
     };
     const bonusFilter = {
       teacherId: objectId,
@@ -647,8 +647,14 @@ exports.EarningsGet = catchAsync(async (req, res) => {
           totalEarnings: { $sum: "$teacherEarning" },
           pendingEarnings: {
             $sum: {
-              $cond: [
-                { $eq: ["$payoutCreationDate", null] },
+             $cond: [
+                {
+                  $and: [
+                    { $eq: ["$payoutCreationDate", null] },
+                    { $eq: ["$lessonCompletedStudent", true] },
+                    { $eq: ["$lessonCompletedTeacher", true] }
+                  ]
+                },
                 "$teacherEarning",
                 0
               ]

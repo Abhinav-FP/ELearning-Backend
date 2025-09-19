@@ -8,8 +8,7 @@ const Loggers = require("../utils/Logger");
 exports.PayoutAdd = catchAsync(async (req, res) => {
   const userId = req?.user?.id;
   const { amount } = req.body;
-  const Banks = await Bank.findOne({ userId: userId });
-  
+
   if (!userId) {
     return res.status(400).json({
       status: false,
@@ -23,6 +22,15 @@ exports.PayoutAdd = catchAsync(async (req, res) => {
       message: "Amount is required.",
     });
   }
+  
+  const Banks = await Bank.findOne({ userId: userId });
+  if(!Banks){
+    return res.status(400).json({
+      status: false,
+      message: "Please add your bank account first.",
+    });
+  }
+  
 
   const time = Date.now();
 
