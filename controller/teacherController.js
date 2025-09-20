@@ -550,6 +550,7 @@ exports.EarningsGet = catchAsync(async (req, res) => {
     const objectId = new mongoose.Types.ObjectId(userId);
     const filter = {
       teacherId: objectId,
+      cancelled: false,
       // lessonCompletedStudent: true,
       // lessonCompletedTeacher: true,
     };

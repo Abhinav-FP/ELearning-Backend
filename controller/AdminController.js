@@ -327,7 +327,7 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
 exports.AdminEarning = catchAsync(async (req, res) => {
   try {
     const { date, search, page, limit = 15 } = req.query;
-    const filter = {};
+    const filter = {cancelled: false,};
     if (date) {
       const now = new Date();
       if (date === "last7") {
