@@ -343,7 +343,7 @@ exports.EmailCheck = catchAsync(async (req, res) => {
         const emailHtml = Welcome("Abhinav", link);
         console.log("About to send email");
         const record = await sendEmail({
-          email: "mathur.abhinav1108@gmail.com",
+          email: "dominik.kosik@sasuga.com.au",
           subject: registrationSubject,
           emailHtml: emailHtml,
         });

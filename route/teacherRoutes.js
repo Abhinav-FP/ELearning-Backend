@@ -22,7 +22,7 @@ router.post("/teacher/lesson/delete", verifyToken, DeleteGetLesson);
 
 // router.post("/teacher/test/delete", DeleteCheck);
 
-// router.post("/teacher/test/email", EmailCheck);
+router.post("/teacher/test/email", EmailCheck);
 
 router.post("/teacher/payout", verifyToken, PayoutAdd);
 
