@@ -18,11 +18,11 @@ router.get("/teacher/lesson/get", verifyToken, GetLessons);
 router.post("/teacher/lesson/delete", verifyToken, DeleteGetLesson);
 
 // The below 3 are test routes only don't use them
-router.post("/teacher/test/upload", upload.single('file'), UploadCheck);
+// router.post("/teacher/test/upload", upload.single('file'), UploadCheck);
 
-router.post("/teacher/test/delete", DeleteCheck);
+// router.post("/teacher/test/delete", DeleteCheck);
 
-router.post("/teacher/test/email", EmailCheck);
+// router.post("/teacher/test/email", EmailCheck);
 
 router.post("/teacher/payout", verifyToken, PayoutAdd);
 
@@ -55,6 +55,7 @@ router.get("/teacher/studentLesson", verifyToken, StudentLessonListing);
 router.get("/teacher/review", verifyToken, GetReview);
 router.get("/teacher/disconnectZoom", verifyToken, DisconnectZoom);
 router.get("/teacher/download/recording", verifyToken, DownloadRecording);
+// router.post("/teacher/token-update", TokenUpdate);
 
 // router.get("/teacher/zoom/test", GetZoomTeacher);
 

@@ -14,10 +14,14 @@ const IV_LENGTH = 16; // AES block size
 // 🔐 Encrypt function
 function encrypt(text) {
   const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(ENC_KEY), iv);
-  let encrypted = cipher.update(text);
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return iv.toString("hex") + ":" + encrypted.toString("hex");
+  const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(ENC_KEY), iv);
+
+  let encrypted = cipher.update(text, "utf8", "hex");
+  encrypted += cipher.final("hex");
+
+  const authTag = cipher.getAuthTag().toString("hex");
+
+  return iv.toString("hex") + ":" + authTag + ":" + encrypted;
 }
 
 // 🔐 Decrypt function
@@ -34,67 +38,6 @@ function decrypt(encryptedString) {
   const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
   return decrypted.toString("utf8");
 }
-
-// Old code for creating meeting using admin zoom account
-// const clientId = process.env.ZOOM_clientId;
-// const accountId = process.env.ZOOM_accountId;
-// const clientSecret = process.env.ZOOM_clientSecret;
-
-// const createZoomMeeting = async (meetingDetails) => {
-//   const base64 = btoa(`${clientId}:${clientSecret}`);
-
-//   try {
-//     // Step 1: Get Access Token
-//     const authResponse = await axios.post(
-//       `${auth_token_url}?grant_type=account_credentials&account_id=${accountId}`,
-//       {},
-//       {
-//         headers: {
-//           Authorization: `Basic ${base64}`,
-//         },
-//       }
-//     );
-
-//     const access_token = authResponse.data.access_token;
-
-//     // Step 2: Create Meeting
-//     const headers = {
-//       Authorization: `Bearer ${access_token}`,
-//       "Content-Type": "application/json",
-//     };
-
-//     const response = await axios.post(
-//       `${api_base_url}/users/me/meetings`,
-//       JSON.stringify(meetingDetails),
-//       { headers }
-//     );
-
-//     if (response.status !== 201) {
-//       return { success: false, message: "Meeting creation failed", data: null };
-//     }
-
-//     const data = response.data;
-//     return {
-//         meeting_url: data.join_url,
-//         meeting_id: data.id,
-//         meetingTime: data.start_time,
-//         purpose: data.topic,
-//         duration: data.duration,
-//         password: data.password,
-//         status: data.status,
-//         alternative_host: "new.host@example.com", // optional
-//     };
-//   } catch (error) {
-//     logger.error("Zoom API Error:", error.response?.data || error.message);
-//     console.log("Zoom API Error:", error.response?.data || error.message);
-//     return {
-//       success: false,
-//       message: "Something went wrong",
-//       error: error.response?.data || error.message,
-//     };
-//   }
-// };
-
 
 // New Code for creating meeting using teachers token
 const refreshZoomToken = async (refresh_token) => {
@@ -116,6 +59,7 @@ const refreshZoomToken = async (refresh_token) => {
       refresh_token: res.data.refresh_token,
     };
   } catch (err) {
+    logger.error("Error refreshing Zoom token:", err.response?.data || err.message);
     console.error("Error refreshing Zoom token:", err.response?.data || err.message);
     return null;
   }
@@ -197,6 +141,7 @@ const createZoomMeeting = async (meetingDetails, teacherData, TeacherModel) => {
       status: response.data.status,
     };
   } catch (error) {
+    logger.error("Zoom API Error:", error.response?.data || error.message);
     console.error("Zoom API Error:", error.response?.data || error.message);
     return { success: false, message: "Zoom meeting creation failed" };
   }

@@ -13,6 +13,7 @@ const User = require("../model/user");
 const SpecialSlot = require("../model/SpecialSlot");
 const mongoose = require("mongoose");
 const Bonus = require('../model/Bonus');
+const logger = require("../utils/Logger");
 
 const clientId = process.env.PAYPAL_CLIENT_ID;
 const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -38,6 +39,7 @@ const generateAccessToken = async () => {
     return response.data.access_token;
   } catch (error) {
     console.error("PayPal Token Error:", error.response?.data || error.message);
+    logger.error("PayPal Token Error:", error.response?.data || error.message);
   }
 };
 
@@ -83,6 +85,7 @@ exports.createOrder = catchAsync(async (req, res) => {
     res.status(201).json(response.data);
   } catch (error) {
     console.error('Error in createOrder controller:', error);
+    logger.error('Error in createOrder controller:', error);
     res.status(500).json({ error: 'Failed to create PayPal order' });
   }
 }
@@ -236,6 +239,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     res.status(200).json(savedPayment);
   } catch (error) {
     console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
+    logger.error(" Error capturing PayPal order:", error?.response?.data || error.message);
     res.status(500).json({ error: "Failed to capture and save PayPal order" });
   }
 });
@@ -283,6 +287,7 @@ exports.PaymentcancelOrder = catchAsync(async (req, res) => {
     res.status(200).json({ status: "CANCELLED", message: "Order cancelled successfully" });
   } catch (error) {
     console.error("Error saving cancelled order:", error.message);
+    logger.error("Error saving cancelled order:", error.message);
     res.status(500).json({ error: "Failed to cancel order" });
   }
 }
@@ -346,6 +351,7 @@ exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
     res.status(200).json(savedPayment);
   } catch (error) {
     console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
+    logger.error(" Error capturing PayPal order:", error?.response?.data || error.message);
     res.status(500).json({ error: "Failed to capture and save PayPal order" });
   }
 });
@@ -428,6 +434,7 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
     res.json({ clientSecret: paymentIntent.client_secret });
   } catch (error) {
     console.error('Error creating payment intent:', error);
+    logger.error('Error creating payment intent:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
