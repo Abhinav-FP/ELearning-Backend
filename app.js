@@ -108,6 +108,7 @@ app.post(
         logger.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
         const metadata = pi.metadata;
         logger.info("📦 Metadata:", metadata);
+        console.log("📦 Metadata:", metadata);
         if (metadata.IsBonus) {
           const payment = await StripePayment.create({
             srNo: parseInt(metadata.srNo),

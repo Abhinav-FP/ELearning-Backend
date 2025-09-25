@@ -87,7 +87,7 @@ exports.createOrder = catchAsync(async (req, res) => {
   } catch (error) {
     console.error('Error in createOrder controller:', error);
     logger.error('Error in createOrder controller:', error);
-    res.status(500).json({ error: 'Failed to create PayPal order' });
+    res.status(500).json({ error: error || 'Failed to create PayPal order' });
   }
 }
 );
@@ -247,7 +247,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   } catch (error) {
     console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
     logger.error(" Error capturing PayPal order:", error?.response?.data || error.message);
-    res.status(500).json({ error: "Failed to capture and save PayPal order" });
+    res.status(500).json({ error: error || "Failed to capture and save PayPal order" });
   }
 });
 
@@ -295,7 +295,7 @@ exports.PaymentcancelOrder = catchAsync(async (req, res) => {
   } catch (error) {
     console.error("Error saving cancelled order:", error.message);
     logger.error("Error saving cancelled order:", error.message);
-    res.status(500).json({ error: "Failed to cancel order" });
+    res.status(500).json({ error: error || "Failed to cancel order" });
   }
 }
 );
@@ -442,7 +442,7 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
   } catch (error) {
     console.error('Error creating payment intent:', error);
     logger.error('Error creating payment intent:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: error || 'Internal Server Error' });
   }
 });
 
