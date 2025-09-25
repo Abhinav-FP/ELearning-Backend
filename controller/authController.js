@@ -10,6 +10,8 @@ const sendEmail = require("../utils/EmailMailler");
 const Welcome = require("../EmailTemplate/Welcome");
 const TeacherWelcome = require("../EmailTemplate/TeacherWelcome");
 const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
+const mongoose = require('mongoose');
+const StripePayment = require("../model/StripePayment");
 
 const signEmail = async (id) => {
   const token = jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
@@ -44,12 +46,12 @@ exports.studentSignup = catchAsync(async (req, res) => {
     console.log("userResult", userResult)
 
     const token = await signEmail(userResult._id);
-    console.log("token", token)
+    // console.log("token", token)
     const link = `https://japaneseforme.com/verify/${token}`;
 
     const registrationSubject = "Welcome to Japanese for Me!🎉 Your account has been created.";
     const emailHtml = Welcome(name, link);
-    console.log("signup emailHtml", emailHtml);
+    // console.log("signup emailHtml", emailHtml);
 
 
 
@@ -59,7 +61,7 @@ exports.studentSignup = catchAsync(async (req, res) => {
       subject: registrationSubject,
       emailHtml: emailHtml,
     });
-    console.log("Email record:", record);
+    // console.log("Email record:", record);
     console.log("Sending signup email to", email);
 
 
@@ -192,14 +194,20 @@ exports.login = catchAsync(async (req, res) => {
   // Code to sync indexes, just replace Ranks with your model name
   // (async () => {
   //   try {
-  //     await User.syncIndexes(); // Ensures missing indexes are created
-  //     console.log("Indexes synced successfully!");
+  //     // iterate through all mongoose models
+  //     for (const modelName of mongoose.modelNames()) {
+  //       const model = mongoose.model(modelName);
+  //       await model.syncIndexes();
+  //       console.log(`Indexes synced for: ${modelName}`);
+  //     }
+
   //     res.status(200).json({
-  //       status:true,
-  //       message:"Indexes synced successfully"
-  //     })
-  //   } catch (error) {
-  //     console.error("Error syncing indexes:", error);
+  //       status: true,
+  //       message: "Indexes synced for all models"
+  //     });
+  //   } catch (err) {
+  //     console.error("Error syncing indexes:", err);
+  //     res.status(500).json({ status: false, message: "Index sync failed" });
   //   }
   // })();
 

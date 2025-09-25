@@ -62,41 +62,42 @@ app.post(
   "/api/webhook",
   express.raw({ type: "application/json" }),
   async (req, res) => {
-    Loggers.info("Headers received:", req.headers);
+    try{
+    logger.info("Headers received:", req.headers);
     const sig = req.headers["stripe-signature"];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     let event;
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
     } catch (err) {
-      Loggers.error(`❌ Webhook signature verification failed: ${err.message}`);
+      logger.error(`❌ Webhook signature verification failed: ${err.message}`);
       return res.status(400).json(`Webhook Error: ${err.message}`);
     }
 
-    Loggers.silly(`✅ Webhook event received: ${event.type}`);
+    logger.info(`✅ Webhook event received: ${event.type}`);
     // Handle event
     switch (event.type) {
       case "charge.succeeded": {
         const charge = event.data.object;
-        Loggers.warn(`💰 Charge succeeded for amount: ${charge.amount}`);
+        logger.error(`💰 Charge succeeded for amount: ${charge.amount}`);
         break;
       }
 
       case "charge.failed": {
         const charge = event.data.object;
-        Loggers.debug(`❌ Charge failed: ${charge.failure_message}`);
+        logger.error(`❌ Charge failed: ${charge.failure_message}`);
         break;
       }
 
       case "payment_intent.created": {
         const pi = event.data.object;
-        Loggers.silly(`🕐 PaymentIntent created: ${pi.id}`);
+        logger.error(`🕐 PaymentIntent created: ${pi.id}`);
         break;
       }
 
       case "payment_intent.payment_failed": {
         const pi = event.data.object;
-        Loggers.debug(
+        logger.error(
           `❌ PaymentIntent failed: ${pi.last_payment_error?.message}`
         );
         break;
@@ -104,8 +105,9 @@ app.post(
 
       case "payment_intent.succeeded": {
         const pi = event.data.object;
-        Loggers.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
+        logger.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
         const metadata = pi.metadata;
+        logger.info("📦 Metadata:", metadata);
         if (metadata.IsBonus) {
           const payment = await StripePayment.create({
             srNo: parseInt(metadata.srNo),
@@ -140,8 +142,6 @@ app.post(
           return;
         }
         // Bonus Case ends here
-
-        Loggers.info("📦 Metadata:", metadata);
         let startUTC, endUTC;
         // Convert times to UTC
         if (metadata?.isSpecial) {
@@ -161,7 +161,7 @@ app.post(
         }
         // Save payment record
         const payment = new StripePayment({
-          srNo: parseInt(metadata.srNo),
+          srNo: parseInt(metadata.srNo || 1),
           payment_type: "card",
           payment_id: pi.id,
           currency: pi.currency,
@@ -251,17 +251,21 @@ app.post(
           subject: TeacherSubject,
           emailHtml: TeacheremailHtml,
         });
-        Loggers.info(
+        logger.info(
           "Stripe webhook received successfully. Payment processed and booking with special slot completed."
         );
         break;
       }
 
       default:
-        Loggers.error(`⚠️ Unhandled event type: ${event.type}`);
+        logger.error(`⚠️ Unhandled event type: ${event.type}`);
     }
 
     res.json({ received: true });
+  }catch(err){
+      logger.error(`❌ Stripe webhook handler failed: ${err.message}`);
+      res.status(500).json({ error: "Internal server error in webhook" });
+    }
   }
 );
 
@@ -597,7 +601,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// require("./cronJobs")();
+require("./cronJobs")();
 
 const server = app.listen(PORT, () =>
   console.log("Server is running at port : " + PORT)

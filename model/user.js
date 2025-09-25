@@ -7,7 +7,15 @@ const userSchema = mongoose.Schema({
   },
   email: {
     type: String,
+    unique: true,                      // ✅ only boolean here
     required: [true, "Email is required"],
+    validate: {
+      validator: function (v) {
+        // any extra custom validation logic if you need it
+        return /\S+@\S+\.\S+/.test(v);
+      },
+      message: "Unique email is required!" // custom message belongs here
+    }
   },
   password: {
     type: String,
@@ -48,7 +56,7 @@ const userSchema = mongoose.Schema({
   },
 }, { timestamps: true });
 
-userSchema.index({ email: 1 }, { unique: [true, 'Unique email is required!'] });
+userSchema.index({ email: 1 }, { unique: true });
 
 const User = mongoose.model('User', userSchema);
 
