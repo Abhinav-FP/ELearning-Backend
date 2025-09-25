@@ -101,6 +101,8 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 
     let startUTCs, endUTCs;
     if (isSpecialSlot) {
+      logger.info("email in paypal special slot", email);
+      logger.info("teacherId in paypal special slot", teacherId);
       startUTCs =  new Date(startDateTime);
       endUTCs =  new Date(endDateTime);
     }
@@ -118,7 +120,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     if (timeDiffInMinutes < 10) {
       return res.status(400).json({
         status: false,
-        error: "Cannot select a slot that starts in less than 10 minutes or is in the past"
+        error: "Cannot create a booking which starts in less than 10 minutes from now or is in the past"
       });
     }
 
@@ -204,6 +206,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 
     const user = await User.findById({ _id: req.user.id });
     const teacher = await User.findById({ _id: teacherId });
+    logger.info("Paypal Everything done now about to send email");
 
     // Send confirmation email to student
     const registrationSubject = "Booking Confirmed 🎉";
@@ -221,6 +224,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
         : utcDateTime.toISO();
       
     const emailHtml = BookingSuccess(userTimeISO , Username, teacher?.name);
+    logger.info("Paypal sending email to student at ", email);
     await sendEmail({
       email: email,
       subject: registrationSubject,
@@ -230,6 +234,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     // Send Confirmation email to teacher
     const TeacherSubject = "New Booking 🎉";
     const TeacheremailHtml = TeacherBooking(teacherTimeISO, Username, teacher?.name);
+    logger.info("Paypal sending email to teacher at ", teacher?.email);
     await sendEmail({
       email: teacher.email,
       subject: TeacherSubject,
