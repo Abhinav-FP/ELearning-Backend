@@ -82,6 +82,7 @@ exports.createOrder = catchAsync(async (req, res) => {
         },
       }
     );
+    logger.info("Paypal order create route ran successfully");
     res.status(201).json(response.data);
   } catch (error) {
     console.error('Error in createOrder controller:', error);
@@ -101,8 +102,8 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 
     let startUTCs, endUTCs;
     if (isSpecialSlot) {
-      logger.info("email in paypal special slot", email);
-      logger.info("teacherId in paypal special slot", teacherId);
+      logger.info("Special slot PayPal booking request body:", req.body);
+      logger.info("Special slot PayPal booking: userId:", UserId, "email:", email, "teacherId:", teacherId);
       startUTCs =  new Date(startDateTime);
       endUTCs =  new Date(endDateTime);
     }
@@ -165,6 +166,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
     });
     const savedPayment = await newPayment.save();
+     logger.info("PayPal payment saved, paymentId:", savedPayment);
     let startUTC, endUTC;
     if (isSpecialSlot) {
       startUTC = new Date(startDateTime);
@@ -207,7 +209,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     const user = await User.findById({ _id: req.user.id });
     const teacher = await User.findById({ _id: teacherId });
     logger.info("Paypal Everything done now about to send email");
-
+    logger.info("Teacher details:", teacher);
     // Send confirmation email to student
     const registrationSubject = "Booking Confirmed 🎉";
     const Username = user?.name;
@@ -240,7 +242,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       subject: TeacherSubject,
       emailHtml: TeacheremailHtml,
     });
-
+    logger.info("Paypal order created route ran successfully");
     res.status(200).json(savedPayment);
   } catch (error) {
     console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
