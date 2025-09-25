@@ -39,7 +39,7 @@ const generateAccessToken = async () => {
     return response.data.access_token;
   } catch (error) {
     console.error("PayPal Token Error:", error.response?.data || error.message);
-    logger.error("PayPal Token Error:", error.response?.data || error.message);
+    logger.error(`PayPal Token Error: ${JSON.stringify(error.response?.data || error.message || 'Unknown error')}`);
   }
 };
 
@@ -86,7 +86,7 @@ exports.createOrder = catchAsync(async (req, res) => {
     res.status(201).json(response.data);
   } catch (error) {
     console.error('Error in createOrder controller:', error);
-    logger.error('Error in createOrder controller:', error);
+    logger.error(`Error in createOrder controller:, ${JSON.stringify(error || 'Unknown error')}`);
     res.status(500).json({ error: error || 'Failed to create PayPal order' });
   }
 }
@@ -102,8 +102,8 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
 
     let startUTCs, endUTCs;
     if (isSpecialSlot) {
-      logger.info("Special slot PayPal booking request body:", req.body);
-      logger.info("Special slot PayPal booking: userId:", UserId, "email:", email, "teacherId:", teacherId);
+      logger.info(`Special slot PayPal booking request body: ${JSON.stringify(req.body || "")}`);
+      logger.info(`Special slot PayPal booking: userId:", UserId, email: ${email}, teacherId: ${teacherId}`);
       startUTCs =  new Date(startDateTime);
       endUTCs =  new Date(endDateTime);
     }
@@ -166,7 +166,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code, // "USD"
     });
     const savedPayment = await newPayment.save();
-     logger.info("PayPal payment saved, paymentId:", savedPayment);
+     logger.info(`PayPal payment saved, paymentId: ${JSON.stringify(savedPayment || "")}`);
     let startUTC, endUTC;
     if (isSpecialSlot) {
       startUTC = new Date(startDateTime);
@@ -209,7 +209,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     const user = await User.findById({ _id: req.user.id });
     const teacher = await User.findById({ _id: teacherId });
     logger.info("Paypal Everything done now about to send email");
-    logger.info("Teacher details:", teacher);
+    logger.info(`Teacher details: ${JSON.stringify(teacher || "")}`);
     // Send confirmation email to student
     const registrationSubject = "Booking Confirmed 🎉";
     const Username = user?.name;
@@ -226,7 +226,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
         : utcDateTime.toISO();
       
     const emailHtml = BookingSuccess(userTimeISO , Username, teacher?.name);
-    logger.info("Paypal sending email to student at ", email);
+    logger.info(`Paypal sending email to student at  ${email}`);
     await sendEmail({
       email: email,
       subject: registrationSubject,
@@ -236,7 +236,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     // Send Confirmation email to teacher
     const TeacherSubject = "New Booking 🎉";
     const TeacheremailHtml = TeacherBooking(teacherTimeISO, Username, teacher?.name);
-    logger.info("Paypal sending email to teacher at ", teacher?.email);
+    logger.info(`Paypal sending email to teacher at: ${teacher?.email}`);
     await sendEmail({
       email: teacher.email,
       subject: TeacherSubject,
@@ -246,7 +246,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     res.status(200).json(savedPayment);
   } catch (error) {
     console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
-    logger.error(" Error capturing PayPal order:", error?.response?.data || error.message);
+    logger.error(`Error capturing PayPal order: ${JSON.stringify(error?.response?.data || error.message || 'Unknown error')}`);
     res.status(500).json({ error: error || "Failed to capture and save PayPal order" });
   }
 });
@@ -294,7 +294,7 @@ exports.PaymentcancelOrder = catchAsync(async (req, res) => {
     res.status(200).json({ status: "CANCELLED", message: "Order cancelled successfully" });
   } catch (error) {
     console.error("Error saving cancelled order:", error.message);
-    logger.error("Error saving cancelled order:", error.message);
+    logger.error(`Error saving cancelled order: ${JSON.stringify(error || 'Unknown error')}`);
     res.status(500).json({ error: error || "Failed to cancel order" });
   }
 }
@@ -358,7 +358,7 @@ exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
     res.status(200).json(savedPayment);
   } catch (error) {
     console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
-    logger.error(" Error capturing PayPal order:", error?.response?.data || error.message);
+    logger.error(`Error capturing PayPal order: ${JSON.stringify(error?.response?.data || error.message || 'Unknown error')}`);
     res.status(500).json({ error: "Failed to capture and save PayPal order" });
   }
 });
@@ -441,7 +441,7 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
     res.json({ clientSecret: paymentIntent.client_secret });
   } catch (error) {
     console.error('Error creating payment intent:', error);
-    logger.error('Error creating payment intent:', error);
+    logger.error(`Error creating payment intent: ${JSON.stringify(error || 'Unknown error')}`);
     res.status(500).json({ error: error || 'Internal Server Error' });
   }
 });
