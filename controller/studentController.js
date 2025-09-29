@@ -6,10 +6,14 @@ const Teacher = require("../model/teacher");
 const Lesson = require("../model/lesson");
 const TeacherAvailability = require("../model/TeacherAvailability");
 const Wishlist = require("../model/wishlist");
+const jwt = require("jsonwebtoken");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const Loggers = require("../utils/Logger");
 const Booking = require("../model/booking")
+const SpecialSlot = require("../model/SpecialSlot");
+const mongoose = require('mongoose');
+const moment = require("moment"); 
 
 exports.paymentget = catchAsync(async (req, res) => {
   try {
@@ -372,25 +376,6 @@ exports.GetTeacherAvailability = catchAsync(async (req, res) => {
   }
 });
 
-// exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
-//   try {
-//     const teacherId = req.params.id;
-//     if (!teacherId) {
-//       return errorResponse(res, "Teacher ID is required", 400);
-//     }
-//     const lessons = await Lesson.find({ teacher: teacherId, is_deleted: { $ne: true } }).populate("teacher");
-
-//     const  reviews = await Review.find({ teacher: lessons?.id }).populate("userId");
-//     if (!lessons || lessons.length === 0) {
-//       return errorResponse(res, "No lessons found", 404);
-//     }
-//     return successResponse(res, "Lessons retrieved successfully", 200, lessons);
-//   } catch (error) {
-//     return errorResponse(res, error.message || "Internal Server Error", 500);
-//   }
-// });
-
-
 exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
   try {
     const teacherId = req.params.id;
@@ -419,6 +404,84 @@ exports.GetLessonsByTeacher = catchAsync(async (req, res) => {
       reviews
     });
   } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.SpecialSlotList = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const objectId = new mongoose.Types.ObjectId(userId);
+    const { status, search } = req.query;
+    const filter = { student: objectId };
+    if (status && status != "") {
+      filter.paymentStatus = status;
+    }
+    let data = await SpecialSlot.find(filter)
+      .populate("student")
+      .populate("teacher")
+      .populate("lesson")
+      .sort({ startDateTime: -1 });
+    if (!data) {
+      return errorResponse(res, "Special Slots not Found", 401);
+    }
+    // if (search && search.trim() !== "") {
+    //   const regex = new RegExp(search.trim(), "i"); // case-insensitive match
+
+    //   data = data.filter((item) => {
+    //     const lessonTitle = item?.student?.name || "";
+    //     return (
+    //       regex.test(lessonTitle)
+    //     );
+    //   });
+    // }
+    successResponse(res, "Special Slots retrieved successfully!", 200, data);
+  } catch (error) {
+    console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.SpecialSlotPaymentLink = catchAsync(async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id) {
+      return errorResponse(res, "Special Slot ID is required", 400);
+    }
+
+    let data = await SpecialSlot.findById(id)
+      .populate("student")
+      .populate("teacher")
+      .populate("lesson")
+      .sort({ startDateTime: -1 });
+
+    if (!data) {
+      return errorResponse(res, "Special Slots not Found", 401);
+    }
+
+    // Current UTC time
+    const nowUtc = moment.utc();
+
+    // Start time in UTC
+    const startUtc = moment.utc(data.startDateTime);
+
+    // Difference in minutes
+    const diffMinutes = startUtc.diff(nowUtc, 'minutes');
+
+    if (diffMinutes < 10) {
+      return errorResponse(res, "Less than 10 minutes are left for start time", 400);
+    }
+
+    const token = jwt.sign(
+      { id: id },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "48h" }
+    );
+
+    const link = `https://japaneseforme.com/slot/${token}`;
+    successResponse(res, "Special Slots retrieved successfully!", 200, { link });
+  } catch (error) {
+    console.log("error", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });

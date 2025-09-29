@@ -20,6 +20,7 @@ const Welcome = require("../EmailTemplate/Welcome");
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const axios = require("axios");
+const ReviewTemplate = require("../EmailTemplate/Review");
 // const crypto = require("crypto");
 
 // configure DO Spaces S3 client (matches your uploader config)
@@ -1248,10 +1249,21 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
     );
     const link = `https://japaneseforme.com/slot/${token}`;
 
+    // Convert to ISO format for moment parsing in email templates
+    const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
+    const startTimeISO = user?.time_zone
+        ? utcDateTime.setZone(user.time_zone).toISO()
+        : utcDateTime.toISO();
+
+    const utcDateTimeEnd = DateTime.fromJSDate(new Date(endUTC), { zone: "utc" });
+    const endTimeISO = user?.time_zone
+        ? utcDateTimeEnd.setZone(user.time_zone).toISO()
+        : utcDateTimeEnd.toISO();
+
     // Email Sending logic
     const teacher = await User.findById(req.user.id);
     const registrationSubject = "Special Slot Created 🎉";
-    const emailHtml = SpecialSlotEmail(user?.name, teacher?.name, startUTC, link, amount, endUTC);
+    const emailHtml = SpecialSlotEmail(user?.name, teacher?.name, startTimeISO, link, amount, endTimeISO);
     await sendEmail({
       email: user.email,
       subject: registrationSubject,
@@ -1283,18 +1295,28 @@ exports.SpecialSlotList = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
     const objectId = new mongoose.Types.ObjectId(userId);
-    const { status } = req.query;
+    const { status, search } = req.query;
     const filter = { teacher: objectId };
     if (status && status != "") {
       filter.paymentStatus = status;
     }
-    const data = await SpecialSlot.find(filter)
+    let data = await SpecialSlot.find(filter)
       .populate("student")
       .populate("teacher")
       .populate("lesson")
-      .sort({ createdAt: -1 });
+      .sort({ startDateTime: -1 });
     if (!data) {
       return errorResponse(res, "Special Slots not Found", 401);
+    }
+    if (search && search.trim() !== "") {
+      const regex = new RegExp(search.trim(), "i"); // case-insensitive match
+
+      data = data.filter((item) => {
+        const lessonTitle = item?.student?.name || "";
+        return (
+          regex.test(lessonTitle)
+        );
+      });
     }
     successResponse(res, "Special Slots retrieved successfully!", 200, data);
   } catch (error) {
@@ -1429,5 +1451,60 @@ exports.DownloadRecording = catchAsync(async (req, res) => {
   } catch (err) {
     logger.info("Recording download error:", err.message);
     return errorResponse(res, err.message || "Internal Server Error", 500);
+  }
+});
+
+exports.LessonDone = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({
+        status: false,
+        msg: "Booking ID is required",
+      });
+    }
+    const booking = await Bookings.findById(id);
+    if (!booking) {
+      return res.status(404).json({
+        status: false,
+        msg: "Booking not found",
+      });
+    }
+    if (booking.lessonCompletedTeacher && booking.lessonCompletedStudent) {
+      return res.status(200).json({
+        status: true,
+        msg: "Lesson already marked as done",
+      });
+    }
+    let updatedBooking = booking;
+    updatedBooking = await Bookings.findByIdAndUpdate(
+      booking._id,
+      { lessonCompletedTeacher: true },
+      { new: true }
+    );
+    const userdata = await User.findById(updatedBooking?.UserId);
+    if (userdata?.email) {
+      const reviewLink = `https://japaneseforme.com/student/review/${updatedBooking._id}`;
+      const reviewSubject = "🎉 Share your feedback with Japanese for Me!";
+      const emailHtml = ReviewTemplate(userdata?.name, reviewLink);
+      await sendEmail({
+        email: userdata.email,
+        subject: reviewSubject,
+        emailHtml: emailHtml,
+      });
+      logger.info(
+        `📧 Lesson review email sent to ${userdata.email} for booking ${updatedBooking._id}`
+      );
+    }
+    return res.status(200).json({
+      status: true,
+      msg: "Lesson completion status updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      msg: "Something went wrong while updating lesson status",
+      error: error.message,
+    });
   }
 });

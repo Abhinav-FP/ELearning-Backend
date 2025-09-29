@@ -291,7 +291,7 @@ exports.PayoutAcceptorReject = catchAsync(async (req, res) => {
 exports.AdminBookingsGet = catchAsync(async (req, res) => {
   try {
     const { search } = req.query;
-    let data = await Bookings.find({}).sort({ createdAt: -1 })
+    let data = await Bookings.find({}).sort({ startDateTime: 1 })
       .populate('StripepaymentId')
       .populate('paypalpaymentId')
       .populate('UserId')
