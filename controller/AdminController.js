@@ -8,6 +8,7 @@ const Payouts = require("../model/Payout");
 const Lessons = require("../model/lesson");
 const Review = require("../model/review");
 const Bonus = require("../model/Bonus");
+const Bank = require("../model/Bank");
 const TeacherApprove = require("../EmailTemplate/TeacherApprove");
 const sendEmail = require("../utils/EmailMailler");
 const jwt = require("jsonwebtoken");
@@ -450,6 +451,7 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
 
     const payoutdata = await Payouts.find({ userId: id });
     const lessondata = await Lessons.find({ teacher: id }).sort({ is_deleted: 1 });
+    const bankdata = await Bank.findOne({ userId: id });
     const reviews = await Review.find()
       .populate({
         path: "lessonId",
@@ -464,7 +466,7 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
     if (!record) {
       return errorResponse(res, "Teacher not found", 404);
     }
-    successResponse(res, "Teacher retrieved successfully!", 200, { record, Booking, lessondata, payoutdata, filteredReviews });
+    successResponse(res, "Teacher retrieved successfully!", 200, { record, Booking, lessondata, payoutdata, filteredReviews, bankdata });
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
