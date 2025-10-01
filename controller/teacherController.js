@@ -7,6 +7,7 @@ const { DateTime } = require("luxon");
 const logger = require("../utils/Logger");
 const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
 const User = require("../model/user");
+const Payout = require("../model/Payout");
 const Teacher = require("../model/teacher");
 const SpecialSlot = require("../model/SpecialSlot");
 const Review = require("../model/review");
@@ -683,6 +684,12 @@ exports.EarningsGet = catchAsync(async (req, res) => {
       }
     ]);
 
+    // Last paid earning
+   const payoutDone = await Payout.findOne({
+      userId: userId,
+      Status: "approved"
+    }).sort({ createdAt: -1 });
+
     const bonusEarnings = await Bonus.aggregate([
       { $match: bonusFilter },
       {
@@ -742,7 +749,8 @@ exports.EarningsGet = catchAsync(async (req, res) => {
       totalEarnings: (mainEarnings.totalEarnings || 0) + (bonus.totalEarnings || 0),
       pendingEarnings: (mainEarnings.pendingEarnings || 0) + (bonus.pendingEarnings || 0),
       requestedEarnings: (mainEarnings.requestedEarnings || 0) + (bonus.requestedEarnings || 0),
-      approvedEarnings: (mainEarnings.approvedEarnings || 0) + (bonus.approvedEarnings || 0),
+      approvedEarnings: ((payoutDone ? payoutDone?.amount : 0) || 0),
+      // approvedEarnings: (mainEarnings.approvedEarnings || 0) + (bonus.approvedEarnings || 0),
     };
 
     // Get total pending earning
@@ -1216,6 +1224,29 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
         400
       );
     }
+    console.log("objectId", objectId);
+    console.log("startUTC",startUTC);
+    console.log("endUTC",endUTC);
+
+    const existingSpecialSlots = await SpecialSlot.find({ teacher: objectId });
+    console.log("existingSpecialSlots", existingSpecialSlots);
+
+    const specialSlotOverlaps = existingSpecialSlots.some((slot) => {
+      return (
+        startUTC < slot.endDateTime && endUTC > slot.startDateTime
+      );
+    });
+    console.log("specialSlotOverlaps", specialSlotOverlaps);
+
+    if (specialSlotOverlaps) {
+      return errorResponse(
+        res,
+        "You already have a special slot in the given time.",
+        400
+      );
+    }
+    return errorResponse(res, "Invalid student id", 400);
+
 
     const user = await User.findById(student);
     if (!user) {
