@@ -1245,8 +1245,6 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
         400
       );
     }
-    return errorResponse(res, "Invalid student id", 400);
-
 
     const user = await User.findById(student);
     if (!user) {
