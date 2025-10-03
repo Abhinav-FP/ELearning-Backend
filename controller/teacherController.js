@@ -921,7 +921,7 @@ exports.DashboardApi = catchAsync(async (req, res) => {
 
     // console.log("objectId",objectId);
 
-    const Reviews = await Review.find({}).populate("lessonId").sort({ createdAt: -1 });
+    const Reviews = await Review.find({review_status: "Accept"}).populate("lessonId").sort({ createdAt: -1 });
     const ReviewesCount = Reviews.filter(
       review => review?.lessonId?.teacher?.toString() === objectId.toString()
     ).length;
@@ -1391,7 +1391,7 @@ exports.GetReview = catchAsync(async (req, res) => {
 
     const lessons = await Lesson.find({
       teacher: teacherId,
-      is_deleted: { $ne: true }
+      // is_deleted: { $ne: true }
     }).populate("teacher");
 
     if (!lessons || lessons.length === 0) {
