@@ -5,6 +5,9 @@ const Message = require("../model/message");
 const User = require("../model/user");
 const { createNotification } = require("./NotificationController");
 const { uploadFileToSpaces } = require("../utils/FileUploader");
+const sendEmail = require("../utils/EmailMailler");
+const MessageTemplate = require("../EmailTemplate/Message");
+const { MaybeSendEmailNotification } = require("../utils/MaybeSendEmailNotification");
 
 exports.AddMessage = catchAsync(async (req, res) => {
   try {
@@ -66,7 +69,10 @@ exports.AddMessage = catchAsync(async (req, res) => {
       return errorResponse(res, "Failed to send message.", 500);
     }
 
-    return successResponse(res, "Message sent successfully", 201);
+    successResponse(res, "Message sent successfully", 201);
+
+    MaybeSendEmailNotification(req.user, receiver).catch((err) =>
+      console.error("Email notification error:", err));
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
