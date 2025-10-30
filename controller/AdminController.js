@@ -472,7 +472,6 @@ exports.TeacherAllData = catchAsync(async (req, res) => {
   }
 });
 
-
 exports.Admindashbaord = catchAsync(async (req, res) => {
   try {
     const countstudent = await User.countDocuments({ role: "student", block: false, email_verify: true });
@@ -489,7 +488,6 @@ exports.Admindashbaord = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 })
-
 
 exports.AistrainedApprove = catchAsync(async (req, res) => {
   try {
@@ -538,6 +536,27 @@ exports.UpdateTeacherVideo = catchAsync(async (req, res) => {
     return successResponse(res, "Teacher intro video updated succesfully", 200, teacher);
   } catch (error) {
     console.error("error:", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.UpdateFeaturedTeachers = catchAsync(async (req, res) => {
+  try {
+    const { featured } = req.body;
+    if (!Array.isArray(featured)) {
+      return errorResponse(res, "Invalid input format", 400);
+    }
+    await Teacher.updateMany({}, { $set: { featured: null } });
+    for (const { _id, number } of featured) {
+      if (_id && number) {
+        await Teacher.findByIdAndUpdate(_id, { $set: { featured: number } });
+      }
+    }
+    const updatedTeachers = await Teacher.find({});
+    return successResponse(res, "Featured teachers updated successfully", 200, {
+      data: updatedTeachers,
+    });
+  } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
