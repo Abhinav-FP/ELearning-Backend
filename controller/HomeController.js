@@ -199,13 +199,13 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
 exports.GetTeacherVideo = catchAsync(async (req, res, next) => {
   try {
     // Step 1: Get all teachers with userId populated (only where user is verified and not blocked)
-    const teachers = await Teacher.find({})
+    const teachers = await Teacher.find({featured: {$ne: null}})
       .populate({
         path: "userId",
         select: "-password",
         match: { block: false, email_verify: true },
       })
-      .sort({ createdAt: -1 })
+      .sort({ featured: 1 })
       .lean();
 
     const teacherUserIds = teachers.map(t => t?.userId?._id).filter(Boolean);

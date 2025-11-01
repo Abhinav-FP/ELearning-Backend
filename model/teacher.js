@@ -62,6 +62,10 @@ const teacherSchema =  mongoose.Schema({
     type: String,
     default: null,
   },
+  featured: {
+    type: Number,
+    default: null,
+  },
 }, { timestamps: true });
 
 const Teacher = mongoose.model('Teacher', teacherSchema);
