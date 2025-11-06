@@ -1,6 +1,7 @@
 const router = require("express").Router();
-const { TeacherList, StudentList, AdminBlockUser, ApproveRejectTeacher, PayoutAcceptorReject, PayoutListing, AdminBookingsGet, TeacherAllData, Admindashbaord , AdminEarning, AistrainedApprove, DeleteUser, UpdateTeacherVideo, UpdateFeaturedTeachers } = require("../controller/AdminController");
+const { TeacherList, StudentList, AdminBlockUser, ApproveRejectTeacher, PayoutAcceptorReject, PayoutListing, AdminBookingsGet, TeacherAllData, Admindashbaord , AdminEarning, AistrainedApprove, DeleteUser, UpdateTeacherVideo, UpdateFeaturedTeachers, AddCourse, getCourse, UpdateCourse, deleteCourse } = require("../controller/AdminController");
 const { verifyToken } = require("../middleware/tokenVerify");
+const { upload } = require("../utils/FileUploader");
 
 router.get("/admin/teachers", verifyToken, TeacherList);
 router.post("/admin/approveteacher", verifyToken, ApproveRejectTeacher);
@@ -13,10 +14,13 @@ router.post("/admin/payoutUpdate/:id", verifyToken, PayoutAcceptorReject);
 router.get("/admin/booking", verifyToken, AdminBookingsGet);
 router.get("/admin/dashboard", Admindashbaord);
 router.get("/admin/earning", verifyToken, AdminEarning);
-router.get("/admin/teacher/:id",  TeacherAllData);
-router.post("/admin/ais-trained",  AistrainedApprove);
-router.post("/admin/teacher-video",  UpdateTeacherVideo);
-router.post("/admin/teacher/featured", UpdateFeaturedTeachers);
-
+router.get("/admin/teacher/:id", verifyToken,  TeacherAllData);
+router.post("/admin/ais-trained", verifyToken,  AistrainedApprove);
+router.post("/admin/teacher-video", verifyToken,  UpdateTeacherVideo);
+router.post("/admin/teacher/featured", verifyToken, UpdateFeaturedTeachers);
+router.post("/admin/course/add", verifyToken, upload.single('thumbnail'), AddCourse);
+router.post("/admin/course/edit/:id", verifyToken, upload.single('thumbnail'), UpdateCourse);
+router.post("/admin/course/delete/:id", verifyToken, deleteCourse);
+router.get("/admin/course/get", verifyToken, getCourse);
 
 module.exports = router;

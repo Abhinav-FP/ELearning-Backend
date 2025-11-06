@@ -9,10 +9,12 @@ const Lessons = require("../model/lesson");
 const Review = require("../model/review");
 const Bonus = require("../model/Bonus");
 const Bank = require("../model/Bank");
+const AdminCourse = require("../model/AdminCourse");
 const TeacherApprove = require("../EmailTemplate/TeacherApprove");
 const sendEmail = require("../utils/EmailMailler");
 const jwt = require("jsonwebtoken");
 const logger = require("../utils/Logger");
+const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
 
 const signEmail = async (id) => {
   const token = jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
@@ -556,6 +558,125 @@ exports.UpdateFeaturedTeachers = catchAsync(async (req, res) => {
     return successResponse(res, "Featured teachers updated successfully", 200, {
       data: updatedTeachers,
     });
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.AddCourse = catchAsync(async (req, res) => {
+    try {        
+        const { title, description, link } = req.body;
+        if (!title || !description || !link ) {
+            return errorResponse(res, "All fields are required", 400);
+        }
+        if (!req.file ) {
+            return errorResponse(res, "Image is required", 400);
+        }
+        let thumbnail = null;
+        if (req.file) {
+          const fileKey = await uploadFileToSpaces(req.file);
+          thumbnail = fileKey;
+        }
+        const courseRecord = new AdminCourse({
+            title,
+            description,
+            thumbnail,
+            link,
+        });
+        const courseResult = await courseRecord.save();
+        if (!courseResult) {
+            return errorResponse(res, "Failed to add course.", 500);
+        }
+        return successResponse(res, "course added successfully", 201);
+    } catch (error) {
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
+
+exports.getCourse = catchAsync(async (req, res) => {
+    try {        
+        const data = await AdminCourse.find({});
+        if (!data) {
+            return errorResponse(res, "No course found", 200);
+        }
+        return successResponse(res, "Courses fetched successfully", 200, data);
+    } catch (error) {
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
+});
+
+exports.UpdateCourse = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params; 
+    const { title, description, link } = req.body;
+    if (!id) {
+      return errorResponse(res, "Course ID is required", 400);
+    }
+    if (!title || !description || !link) {
+      return errorResponse(res, "All fields are required", 400);
+    }
+    // ✅ Find existing course
+    const course = await AdminCourse.findById(id);
+    if (!course) {
+      return errorResponse(res, "Course not found", 404);
+    }
+
+    // ✅ Handle image upload (optional)
+    let thumbnail = course.thumbnail;
+    if (req.file) {
+      if (course.thumbnail) {
+            const isDeleted = await deleteFileFromSpaces(course.thumbnail);
+            if (!isDeleted) {
+              return res.status(500).json({
+                status: false,
+                message: "Unable to delete old profile photo",
+              });
+            }
+          }
+      const fileKey = await uploadFileToSpaces(req.file);
+      thumbnail = fileKey;
+    }
+
+    // ✅ Update the course
+    course.title = title;
+    course.description = description;
+    course.link = link;
+    course.thumbnail = thumbnail;
+
+    const updatedCourse = await course.save();
+
+    if (!updatedCourse) {
+      return errorResponse(res, "Failed to update course.", 500);
+    }
+
+    return successResponse(res, "Course updated successfully", 200);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.deleteCourse = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params; 
+    if (!id) {
+      return errorResponse(res, "Course ID is required", 400);
+    }
+    const course = await AdminCourse.findById(id);
+    if (!course) {
+      return errorResponse(res, "Course not found", 404);
+    }
+    if(course.is_deleted){
+      course.is_deleted = false;
+    }
+    else{
+      course.is_deleted = true;
+    }
+    const updatedCourse = await course.save();
+    if (!updatedCourse) {
+      return errorResponse(res, "Failed to delete course", 500);
+    }
+
+    return successResponse(res, "Course updated successfully", 200);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }

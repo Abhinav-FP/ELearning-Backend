@@ -9,6 +9,7 @@ const teacherfaq = require("../model/teacherfaq");
 const Lesson = require("../model/lesson");
 const { default: mongoose } = require("mongoose");
 const review = require("../model/review");
+const AdminCourse = require("../model/AdminCourse");
 
 // Home Section
 exports.homeAdd = catchAsync(async (req, res, next) => {
@@ -481,4 +482,16 @@ exports.Privacy = catchAsync(async (req, res, next) => {
     logger.error(error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
+});
+
+exports.getCourse = catchAsync(async (req, res) => {
+    try {        
+        const data = await AdminCourse.find({is_deleted: false});
+        if (!data) {
+            return errorResponse(res, "No course found", 200);
+        }
+        return successResponse(res, "Courses fetched successfully", 200, data);
+    } catch (error) {
+        return errorResponse(res, error.message || "Internal Server Error", 500);
+    }
 });
