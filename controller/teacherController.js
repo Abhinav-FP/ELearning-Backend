@@ -1224,19 +1224,19 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
         400
       );
     }
-    console.log("objectId", objectId);
-    console.log("startUTC",startUTC);
-    console.log("endUTC",endUTC);
+    // console.log("objectId", objectId);
+    // console.log("startUTC",startUTC);
+    // console.log("endUTC",endUTC);
 
     const existingSpecialSlots = await SpecialSlot.find({ teacher: objectId });
-    console.log("existingSpecialSlots", existingSpecialSlots);
+    // console.log("existingSpecialSlots", existingSpecialSlots);
 
     const specialSlotOverlaps = existingSpecialSlots.some((slot) => {
       return (
         startUTC < slot.endDateTime && endUTC > slot.startDateTime
       );
     });
-    console.log("specialSlotOverlaps", specialSlotOverlaps);
+    // console.log("specialSlotOverlaps", specialSlotOverlaps);
 
     if (specialSlotOverlaps) {
       return errorResponse(
