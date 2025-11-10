@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { TeacherList, StudentList, AdminBlockUser, ApproveRejectTeacher, PayoutAcceptorReject, PayoutListing, AdminBookingsGet, TeacherAllData, Admindashbaord , AdminEarning, AistrainedApprove, DeleteUser, UpdateTeacherVideo, UpdateFeaturedTeachers, AddCourse, getCourse, UpdateCourse, deleteCourse } = require("../controller/AdminController");
+const { TeacherList, StudentList, AdminBlockUser, ApproveRejectTeacher, PayoutAcceptorReject, PayoutListing, AdminBookingsGet, TeacherAllData, Admindashbaord , AdminEarning, AistrainedApprove, DeleteUser, UpdateTeacherVideo, UpdateFeaturedTeachers, AddCourse, getCourse, UpdateCourse, deleteCourse, UpdateTeacherRank, GetRankedTeachers } = require("../controller/AdminController");
 const { verifyToken } = require("../middleware/tokenVerify");
 const { upload } = require("../utils/FileUploader");
 
@@ -18,6 +18,8 @@ router.get("/admin/teacher/:id", verifyToken,  TeacherAllData);
 router.post("/admin/ais-trained", verifyToken,  AistrainedApprove);
 router.post("/admin/teacher-video", verifyToken,  UpdateTeacherVideo);
 router.post("/admin/teacher/featured", verifyToken, UpdateFeaturedTeachers);
+router.post("/admin/teacher/rank", verifyToken, UpdateTeacherRank);
+router.get("/admin/get-rank-teachers", verifyToken, GetRankedTeachers);
 router.post("/admin/course/add", verifyToken, upload.single('thumbnail'), AddCourse);
 router.post("/admin/course/edit/:id", verifyToken, upload.single('thumbnail'), UpdateCourse);
 router.post("/admin/course/delete/:id", verifyToken, deleteCourse);

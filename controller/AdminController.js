@@ -563,6 +563,46 @@ exports.UpdateFeaturedTeachers = catchAsync(async (req, res) => {
   }
 });
 
+exports.UpdateTeacherRank = catchAsync(async (req, res) => {
+  try {
+    const { rank } = req.body;
+    if (!Array.isArray(rank)) {
+      return errorResponse(res, "Invalid input format", 400);
+    }
+    await Teacher.updateMany({}, { $set: { rank: null } });
+    for (const { _id, number } of rank) {
+      if (_id && number) {
+        await Teacher.findByIdAndUpdate(_id, { $set: { rank: number } });
+      }
+    }
+    const updatedTeachers = await Teacher.find({});
+    return successResponse(res, "Teachers rank updated successfully", 200, {
+      data: updatedTeachers,
+    });
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.GetRankedTeachers = catchAsync(async (req, res, next) => {
+  try {
+    const teachers = await Teacher.find({rank: {$ne: null}})
+      .sort({ rank: 1 })
+      .select("_id rank")
+      .lean();
+
+    return successResponse(
+      res,
+      "Teachers fetched with reviews and lessons",
+      200,
+      teachers,
+    );
+  } catch (error) {
+    logger.error(error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
 exports.AddCourse = catchAsync(async (req, res) => {
     try {        
         const { title, description, link } = req.body;

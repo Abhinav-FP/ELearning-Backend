@@ -166,7 +166,7 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
     });
 
     // Step 3 & 4: Merge data and exclude teachers with 0 lessons or unmatched user
-    const finalTeachers = teachers
+    let finalTeachers = teachers
       .map((teacher) => {
         const teacherId = teacher?.userId?._id?.toString();
         const lessonInfo = lessonsMap[teacherId];
@@ -184,6 +184,24 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
     if (!finalTeachers.length) {
       return validationErrorResponse(res, "No teacher with lessons found", 400);
     }
+
+    // ✅ Step 5: Sort teachers
+    // - Teachers with non-null rank come first, sorted by rank (ascending)
+    // - Others follow, sorted by createdAt (descending)
+    finalTeachers.sort((a, b) => {
+      const aHasRank = a.rank !== null && a.rank !== undefined;
+      const bHasRank = b.rank !== null && b.rank !== undefined;
+
+      // Case 1: Both have rank -> sort by rank
+      if (aHasRank && bHasRank) return a.rank - b.rank;
+
+      // Case 2: Only one has rank -> ranked teacher first
+      if (aHasRank && !bHasRank) return -1;
+      if (!aHasRank && bHasRank) return 1;
+
+      // Case 3: Neither has rank -> sort by createdAt (latest first)
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    });
 
     return successResponse(
       res,

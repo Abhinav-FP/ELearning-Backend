@@ -66,6 +66,10 @@ const teacherSchema =  mongoose.Schema({
     type: Number,
     default: null,
   },
+  rank: {
+    type: Number,
+    default: null,
+  },
 }, { timestamps: true });
 
 const Teacher = mongoose.model('Teacher', teacherSchema);
