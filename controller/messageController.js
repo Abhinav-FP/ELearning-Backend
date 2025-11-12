@@ -71,8 +71,8 @@ exports.AddMessage = catchAsync(async (req, res) => {
 
     successResponse(res, "Message sent successfully", 201);
 
-    // MaybeSendEmailNotification(req.user, receiver).catch((err) =>
-    //   console.error("Email notification error:", err));
+    MaybeSendEmailNotification(req.user, receiver).catch((err) =>
+      console.error("Email notification error:", err));
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }

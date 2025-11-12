@@ -2,20 +2,23 @@ const EmailNotification = require("../model/emailNotificationSchema");
 const User = require("../model/user");
 const sendEmail = require("./EmailMailler");
 const Message = require("../EmailTemplate/Message");
+const { DateTime } = require("luxon");
+const logger = require("../utils/Logger");
 
 const EMAIL_COOLDOWN_MINUTES = 240;
 
 exports.MaybeSendEmailNotification = async (senderId, receiverId) => {
-    // console.log("senderId", senderId);
-    // console.log("receiverId", receiverId);
+  // console.log("senderId", senderId);
+  // console.log("receiverId", receiverId);
+  // console.log("Inside the funtion");
   try {
-    const now = new Date();
+    const now = DateTime.utc();
 
     // Check record
     const record = await EmailNotification.findOne({
       sender: senderId.id,
       receiver: receiverId,
-    });                                          
+    });
 
     const shouldSend =
       !record ||
@@ -23,10 +26,12 @@ exports.MaybeSendEmailNotification = async (senderId, receiverId) => {
 
     if (!shouldSend) return;
 
+    // console.log("email bhej rahe hai");
+
     const receiver = await User.findById(receiverId);
     const sender = await User.findById(senderId?.id);
-    // console.log("sender", sender);
     // console.log("receiver", receiver);
+
     if (!receiver || !receiver.email) return;
 
     const link = senderId.role === "teacher" ? "https://japaneseforme.com/student/message" : "https://japaneseforme.com/teacher-dashboard/message";
@@ -38,10 +43,11 @@ exports.MaybeSendEmailNotification = async (senderId, receiverId) => {
         subject: subject,
         emailHtml: emailHtml,
     });
+    logger.info(`Email sent for sender: ${senderId?.id} and receiver: ${receiverId}`)
 
     // Update or create record
     await EmailNotification.findOneAndUpdate(
-      { sender: senderId._id, receiver: receiverId },
+      { sender: senderId?.id, receiver: receiverId },
       { lastSentAt: now },
       { upsert: true, new: true }
     );

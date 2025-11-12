@@ -1300,6 +1300,158 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
   }
 });
 
+exports.SpecialSlotwithZeroAmount = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const objectId = new mongoose.Types.ObjectId(userId);
+
+    // Check if zoom is connected
+    const teacherId = req.user.id;
+    if (!teacherId) {
+      return errorResponse(res, "Teacher ID is required", 400);
+    }
+    // 🔎 Check if Zoom is connected for this teacher
+    const ZoomConnectedAccount = await Teacher.findOne({
+      userId: teacherId,
+      access_token: { $ne: null },
+      refresh_token: { $ne: null },
+    });
+
+    if (!ZoomConnectedAccount) {
+      return errorResponse(
+        res,
+        "Please connect Zoom account before creating special slot",
+        400
+      );
+    }  
+
+    let { student, lesson, amount, startDateTime, endDateTime } = req.body;
+    const time_zone = req.user.time_zone;
+
+    if (!student || !lesson || !amount || !startDateTime || !endDateTime) {
+      return errorResponse(res, "All fields are required", 400);
+    }
+
+    // Convert input to UTC
+    const start = DateTime.fromISO(startDateTime, { zone: time_zone });
+    const end = DateTime.fromISO(endDateTime, { zone: time_zone });
+
+    const startUTC = start.toUTC().toJSDate();
+    const endUTC = end.toUTC().toJSDate();
+
+    // ⛔ Check if start time is in the past or less than 3 hours from now
+    const nowUTC = new Date();
+    const threeHoursLater = new Date(nowUTC.getTime() + 3 * 60 * 60 * 1000);
+
+    if (startUTC <= nowUTC || startUTC < threeHoursLater) {
+      return errorResponse(res, "Start time must be at least 3 hours from now.", 400);
+    }
+
+    const availabilityBlocks = await TeacherAvailability.find({ teacher: objectId });
+    // Check for overlap with availability
+    const slotOverlaps = availabilityBlocks.some((block) => {
+      return (
+        startUTC < block.endDateTime && endUTC > block.startDateTime
+      );
+    });
+
+    if (slotOverlaps) {
+      return errorResponse(
+        res,
+        "You already have an availability in the given time. Special slots are not allowed.",
+        400
+      );
+    }
+    // console.log("objectId", objectId);
+    // console.log("startUTC",startUTC);
+    // console.log("endUTC",endUTC);
+
+    const existingSpecialSlots = await SpecialSlot.find({ teacher: objectId });
+    // console.log("existingSpecialSlots", existingSpecialSlots);
+
+    const specialSlotOverlaps = existingSpecialSlots.some((slot) => {
+      return (
+        startUTC < slot.endDateTime && endUTC > slot.startDateTime
+      );
+    });
+    // console.log("specialSlotOverlaps", specialSlotOverlaps);
+
+    if (specialSlotOverlaps) {
+      return errorResponse(
+        res,
+        "You already have a special slot in the given time.",
+        400
+      );
+    }
+
+    const user = await User.findById(student);
+    if (!user) {
+      return errorResponse(res, "Invalid student id", 400);
+    }
+
+    const slot = new SpecialSlot({
+      student,
+      lesson,
+      amount,
+      startDateTime: startUTC,
+      endDateTime: endUTC,
+      teacher: req.user.id,
+    });
+
+    const slotResult = await slot.save();
+
+    if (!slotResult) {
+      return errorResponse(res, "Failed to add special slot.", 500);
+    }
+    
+    const Bookingsave = new Bookings({
+      teacherId: req.user.id,
+      totalAmount: 0,
+      adminCommission: 0,
+      teacherEarning: 0,
+      UserId: student,
+      LessonId: lesson,
+      startDateTime: startUTC,
+      endDateTime: endUTC,
+      processingFee: 0,
+    });
+
+    await Bookingsave.save();
+    // const token = jwt.sign(
+    //   { id: slotResult?._id },
+    //   process.env.JWT_SECRET_KEY,
+    //   { expiresIn: "48h" }
+    // );
+    // const link = `https://japaneseforme.com/slot/${token}`;
+
+    // // Convert to ISO format for moment parsing in email templates
+    // const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
+    // const startTimeISO = user?.time_zone
+    //     ? utcDateTime.setZone(user.time_zone).toISO()
+    //     : utcDateTime.toISO();
+
+    // const utcDateTimeEnd = DateTime.fromJSDate(new Date(endUTC), { zone: "utc" });
+    // const endTimeISO = user?.time_zone
+    //     ? utcDateTimeEnd.setZone(user.time_zone).toISO()
+    //     : utcDateTimeEnd.toISO();
+
+    // // Email Sending logic
+    // const teacher = await User.findById(req.user.id);
+    // const registrationSubject = "Special Slot Created 🎉";
+    // const emailHtml = SpecialSlotEmail(user?.name, teacher?.name, startTimeISO, link, amount, endTimeISO);
+    // await sendEmail({
+    //   email: user.email,
+    //   subject: registrationSubject,
+    //   emailHtml
+    // });
+
+    return successResponse(res, "Special Slot created successfully", 201, slotResult);
+  } catch (error) {
+    console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
 exports.StudentLessonListing = catchAsync(async (req, res) => {
   try {
     const lessons = await Lesson.find({ teacher: req.user.id, is_deleted: { $ne: true } });
