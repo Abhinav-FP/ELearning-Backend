@@ -14,6 +14,7 @@ const Review = require("../model/review");
 const mongoose = require('mongoose');
 const sendEmail = require("../utils/EmailMailler");
 const SpecialSlotEmail = require("../EmailTemplate/SpecialSlot");
+const SpecialSlotFreeEmail = require("../EmailTemplate/FreeSpecialSlot");
 const jwt = require("jsonwebtoken");
 const review = require("../model/review");
 const Bonus = require("../model/Bonus");
@@ -1326,9 +1327,10 @@ exports.SpecialSlotwithZeroAmount = catchAsync(async (req, res) => {
     }  
 
     let { student, lesson, amount, startDateTime, endDateTime } = req.body;
+    console.log("req.body", req.body);
     const time_zone = req.user.time_zone;
 
-    if (!student || !lesson || !amount || !startDateTime || !endDateTime) {
+    if (!student || !lesson || !startDateTime || !endDateTime) {
       return errorResponse(res, "All fields are required", 400);
     }
 
@@ -1392,7 +1394,7 @@ exports.SpecialSlotwithZeroAmount = catchAsync(async (req, res) => {
     const slot = new SpecialSlot({
       student,
       lesson,
-      amount,
+      amount: 0,
       startDateTime: startUTC,
       endDateTime: endUTC,
       teacher: req.user.id,
@@ -1417,33 +1419,28 @@ exports.SpecialSlotwithZeroAmount = catchAsync(async (req, res) => {
     });
 
     await Bookingsave.save();
-    // const token = jwt.sign(
-    //   { id: slotResult?._id },
-    //   process.env.JWT_SECRET_KEY,
-    //   { expiresIn: "48h" }
-    // );
-    // const link = `https://japaneseforme.com/slot/${token}`;
 
-    // // Convert to ISO format for moment parsing in email templates
-    // const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
-    // const startTimeISO = user?.time_zone
-    //     ? utcDateTime.setZone(user.time_zone).toISO()
-    //     : utcDateTime.toISO();
 
-    // const utcDateTimeEnd = DateTime.fromJSDate(new Date(endUTC), { zone: "utc" });
-    // const endTimeISO = user?.time_zone
-    //     ? utcDateTimeEnd.setZone(user.time_zone).toISO()
-    //     : utcDateTimeEnd.toISO();
+    // Convert to ISO format for moment parsing in email templates
+    const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
+    const startTimeISO = user?.time_zone
+        ? utcDateTime.setZone(user.time_zone).toISO()
+        : utcDateTime.toISO();
+
+    const utcDateTimeEnd = DateTime.fromJSDate(new Date(endUTC), { zone: "utc" });
+    const endTimeISO = user?.time_zone
+        ? utcDateTimeEnd.setZone(user.time_zone).toISO()
+        : utcDateTimeEnd.toISO();
 
     // // Email Sending logic
-    // const teacher = await User.findById(req.user.id);
-    // const registrationSubject = "Special Slot Created 🎉";
-    // const emailHtml = SpecialSlotEmail(user?.name, teacher?.name, startTimeISO, link, amount, endTimeISO);
-    // await sendEmail({
-    //   email: user.email,
-    //   subject: registrationSubject,
-    //   emailHtml
-    // });
+    const teacher = await User.findById(req.user.id);
+    const registrationSubject = "Special Slot Created 🎉";
+    const emailHtml = SpecialSlotFreeEmail(user?.name, teacher?.name, startTimeISO, endTimeISO);
+    await sendEmail({
+      email: user.email,
+      subject: registrationSubject,
+      emailHtml
+    });
 
     return successResponse(res, "Special Slot created successfully", 201, slotResult);
   } catch (error) {
