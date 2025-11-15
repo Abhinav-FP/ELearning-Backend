@@ -12,7 +12,7 @@ module.exports = (receiverName, senderName ,link) => {
 
     <tr>
       <td style="padding: 2.5rem 1rem 2rem;">
-        <img src="ttps://student-teacher-platform.sgp1.digitaloceanspaces.com/message.png" alt="New Message" style="max-width: 100%; margin: auto; display: block;">
+        <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/message.png" alt="New Message" style="max-width: 100%; margin: auto; display: block;">
       </td>
     </tr>
 
