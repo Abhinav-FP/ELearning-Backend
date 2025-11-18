@@ -8,6 +8,9 @@ const app = express();
 const cors = require("cors");
 const StripePayment = require("./model/StripePayment");
 const Bookings = require("./model/booking");
+const BulkLessons = require("./model/bulkLesson");
+const Lesson = require("./model/lesson");
+const BulkEmail = require("./EmailTemplate/BulkLesson");
 const Zoom = require("./model/Zoom");
 const crypto = require("crypto");
 const User = require("./model/user");
@@ -109,6 +112,46 @@ app.post(
         const metadata = pi.metadata;
         logger.info("📦 Metadata:", metadata);
         console.log("📦 Metadata:", metadata);
+        // Handle bulk lesson purchase
+        if(metadata.isBulk){
+          const payment = await StripePayment.create({
+            srNo: parseInt(metadata.srNo),
+            payment_type: "card",
+            payment_id: pi.id,
+            currency: pi.currency,
+            LessonId: metadata.LessonId,
+            amount: pi.amount / 100,
+            UserId: metadata.userId,
+            payment_status: pi.status,
+          });
+          logger.info(`Stripe payment saved for bulk lesson, paymentId: ${JSON.stringify(payment || "")}`);
+          const teacherEarnings = (pi.amount / 100 - metadata.processingFee) * 0.9;
+          const bulkLesson = new BulkLessons({
+            teacherId:  metadata.teacherId,
+            UserId: metadata.userId,
+            LessonId: metadata.LessonId,
+            StripepaymentId: payment._id,
+            totalAmount: pi.amount / 100 || metadata.amount,
+            teacherEarning: teacherEarnings || 0,
+            adminCommission: metadata.adminCommission,
+            processingFee: metadata.processingFee || 0,
+            totalLessons: metadata.multipleLessons || 0,
+          });
+          const savedBulkLesson = await bulkLesson.save();
+          logger.info(`Bulk lesson record created: ${JSON.stringify(savedBulkLesson || "")}`);
+          const user = await User.findById({ _id: metadata?.userId });
+          const teacher = await User.findById({ _id: metadata?.teacherId });
+          const lesson = await Lesson.findById(metadata?.LessonId);
+          const Username = user?.name;
+          const emailHtml = BulkEmail(Username , multipleLessons, teacher?.name, lesson?.title);
+          const subject = "Bulk Lesson Purchase is Successful! 🎉";
+          logger.info(`Paypal sending bulk email to student at  ${email}`);
+          await sendEmail({
+            email: email,
+            subject: subject,
+            emailHtml: emailHtml,
+          });          
+        }
         if (metadata.IsBonus) {
           const payment = await StripePayment.create({
             srNo: parseInt(metadata.srNo),
