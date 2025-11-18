@@ -5,8 +5,11 @@ const qs = require('qs');
 const Payment = require("../model/PaypalPayment");
 const StripePayment = require("../model/StripePayment");
 const Bookings = require("../model/booking");
+const Lesson = require("../model/lesson");
+const BulkLessons = require("../model/bulkLesson");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("../EmailTemplate/BookingSuccess");
+const BulkEmail = require("../EmailTemplate/BulkLesson");
 const TeacherBooking = require("../EmailTemplate/TeacherBooking");
 const sendEmail = require("../utils/EmailMailler");
 const User = require("../model/user");
@@ -92,13 +95,93 @@ exports.createOrder = catchAsync(async (req, res) => {
 }
 );
 
+// Bulk booking iss function ke through hoti hai
+async function handleBulkBooking(data) {
+  try {
+    // console.log("Bulk booking called with data:", data);
+    const { orderID, teacherId, LessonId, totalAmount, adminCommission, email, processingFee, multipleLessons, UserId, req, res } = data;
+    // Saving the payment details
+    const accessToken = await generateAccessToken();
+    const response = await axios.post(
+      `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    const captureData = response.data;
+    const newPayment = new Payment({
+      orderID: captureData.id,
+      intent: captureData.intent,
+      status: captureData.status,
+      purchase_units: captureData.purchase_units,
+      payer: captureData.payer,
+      payment_source: captureData.payment_source,
+      capturedAt: new Date(),
+      LessonId: LessonId || undefined,
+      UserId: UserId || undefined,
+      amount: captureData.purchase_units[0].payments.captures[0].amount.value,
+      currency: captureData.purchase_units[0].payments.captures[0].amount.currency_code,
+    });
+    const savedPayment = await newPayment.save();
+    logger.info(`PayPal payment saved for bulk lesson, paymentId: ${JSON.stringify(savedPayment || "")}`);
+
+    // Bulk lesson record creation
+    const bulkLesson = new BulkLessons({
+      teacherId,
+      UserId,
+      LessonId,
+      paypalpaymentId: savedPayment?._id,
+      StripepaymentId: null,
+      totalAmount,
+      teacherEarning: (totalAmount - processingFee) * 0.90 || 0,
+      adminCommission,
+      processingFee,
+      totalLessons: multipleLessons,
+    });
+    const savedBulkLesson = await bulkLesson.save();
+    logger.info(`Bulk lesson record created: ${JSON.stringify(savedBulkLesson || "")}`);
+
+    const user = await User.findById({ _id: UserId });
+    const teacher = await User.findById({ _id: teacherId });
+    const lesson = await Lesson.findById(LessonId);
+    const Username = user?.name;
+    const emailHtml = BulkEmail(Username , multipleLessons, teacher?.name, lesson?.title);
+    const subject = "Bulk Lesson Purchase is Successful! 🎉";
+    logger.info(`Paypal sending bulk email to student at  ${email}`);
+    await sendEmail({
+      email: email,
+      subject: subject,
+      emailHtml: emailHtml,
+    });
+    res.status(200).json(savedPayment);
+  } catch (err) {
+    console.error("Bulk booking handler error:", err);
+    return data.res.status(500).json({
+      status: false,
+      error: err.message || "Bulk handler failed"
+    });
+  }
+}
 
 exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
     const { orderID, teacherId, startDateTime, endDateTime, LessonId, timezone, totalAmount, adminCommission, email,
-      isSpecialSlot, processingFee
-    } = req.body;
+      isSpecialSlot, processingFee, isBulk, multipleLessons } = req.body;
+    
+    // Bulk booking handling
+    if (isBulk) {
+      return handleBulkBooking({
+        ...req.body,        
+        UserId,             
+        req,                
+        res                 
+      });
+    }
 
     let startUTCs, endUTCs;
     if (isSpecialSlot) {
@@ -251,8 +334,6 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
   }
 });
 
-
-
 exports.PaymentcancelOrder = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
@@ -300,9 +381,7 @@ exports.PaymentcancelOrder = catchAsync(async (req, res) => {
 }
 );
 
-
 // For Tips  teacher given  by student 
-
 exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
   try {
     const UserId = req.user.id;
@@ -363,14 +442,12 @@ exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
   }
 });
 
-
 exports.PaymentCreate = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
-    const { amount, LessonId, currency, teacherId,
-      startDateTime, endDateTime, timezone, adminCommission,
-      email, isSpecial, IsBonus,
-      BookingId, processingFee
+    const { amount, LessonId, currency, teacherId, startDateTime, 
+      endDateTime, timezone, adminCommission, email, isSpecial, 
+      IsBonus, BookingId, processingFee, isBulk, multipleLessons
     } = req?.body;
     // console.log("req?.body", req?.body)
 
@@ -436,6 +513,8 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
         BookingId,
         IsBonus,
         processingFee,
+        isBulk, 
+        multipleLessons
       }
     });
     res.json({ clientSecret: paymentIntent.client_secret });
@@ -445,9 +524,6 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
     res.status(500).json({ error: error || 'Internal Server Error' });
   }
 });
-
-
-
 
 
 
