@@ -453,6 +453,7 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
 
     // Checking if the booking with the same slot already exists
     let startUTC, endUTC;
+    if(!isBulk){
     if (isSpecial) {
       startUTC = new Date(startDateTime);
       endUTC = new Date(endDateTime);
@@ -489,7 +490,7 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
         error: "Booking already exists at the given slot for this teacher.",
       });
     }    
-
+    }
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
