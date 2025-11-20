@@ -110,7 +110,7 @@ app.post(
         const pi = event.data.object;
         logger.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
         const metadata = pi.metadata;
-        
+
         const alreadyExists = await StripePayment.findOne({ payment_id: pi.id });
         if (alreadyExists) {
           logger.warn(`⚠️ Stripe payment already processed. payment_id: ${pi.id}`);
@@ -120,7 +120,7 @@ app.post(
         logger.info("📦 Metadata:", metadata);
         console.log("📦 Metadata:", metadata);
         // Handle bulk lesson purchase
-        if(metadata.isBulk){
+        if (metadata.isBulk === "true") {
           const payment = await StripePayment.create({
             srNo: parseInt(metadata.srNo),
             payment_type: "card",
