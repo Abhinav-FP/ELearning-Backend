@@ -10,10 +10,17 @@ const jwt = require("jsonwebtoken");
 const catchAsync = require("../utils/catchAsync");
 const { successResponse, errorResponse, validationErrorResponse } = require("../utils/ErrorHandling");
 const Loggers = require("../utils/Logger");
-const Booking = require("../model/booking")
+const Booking = require("../model/booking");
+const BulkLesson = require("../model/bulkLesson");
 const SpecialSlot = require("../model/SpecialSlot");
 const mongoose = require('mongoose');
 const moment = require("moment"); 
+const logger = require("../utils/Logger");
+const { DateTime } = require("luxon");
+const User = require("../model/user");
+const sendEmail = require("../utils/EmailMailler");
+const BookingSuccess = require("../EmailTemplate/BookingSuccess");
+const TeacherBooking = require("../EmailTemplate/TeacherBooking");
 
 exports.paymentget = catchAsync(async (req, res) => {
   try {
@@ -480,6 +487,193 @@ exports.SpecialSlotPaymentLink = catchAsync(async (req, res) => {
 
     const link = `https://japaneseforme.com/slot/${token}`;
     successResponse(res, "Special Slots retrieved successfully!", 200, { link });
+  } catch (error) {
+    console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.BulkLessonCheck = catchAsync(async (req, res) => {
+  try {
+    const { student, teacher } = req.body;
+    const teacherId = teacher ? new mongoose.Types.ObjectId(teacher) : null;
+    const teacherData = await Teacher.findById(teacherId);
+    if (!teacherData) {
+      return errorResponse(res, "Teacher not found", 404);
+    }
+
+    let data = await BulkLesson.find({
+      UserId: student,
+      teacherId: teacherData?.userId,
+      lessonsRemaining: { $gt: 0 }
+    })
+    if (!data) {
+      return errorResponse(res, "Special Slots not Found", 401);
+    }
+    successResponse(res, "Special Slots retrieved successfully!", 200, data);
+  } catch (error) {
+    console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+})
+
+exports.BulkLessonList = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const objectId = new mongoose.Types.ObjectId(userId);
+    const { status, search } = req.query;
+    let data = await BulkLesson.find({ UserId: objectId })
+      .populate("teacherId")
+      .populate("UserId")
+      .populate("LessonId")
+      .populate("paypalpaymentId")
+      .populate("StripepaymentId")
+      .populate({
+          path: "bookings.id",
+          model: "Bookings"
+        })
+      .sort({ createdAt: -1 });
+    if (!data) {
+      return errorResponse(res, "Special Slots not Found", 401);
+    }
+    // if (search && search.trim() !== "") {
+    //   const regex = new RegExp(search.trim(), "i"); // case-insensitive match
+
+    //   data = data.filter((item) => {
+    //     const lessonTitle = item?.student?.name || "";
+    //     return (
+    //       regex.test(lessonTitle)
+    //     );
+    //   });
+    // }
+    // console.log("data", data);
+
+    successResponse(res, "Special Slots retrieved successfully!", 200, data);
+  } catch (error) {
+    console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.BulkLessonRedeem = catchAsync(async (req, res) => {
+  try {
+    const { id, startDateTime, endDateTime, timezone } = req.body;
+    
+    if(!id || !startDateTime || !endDateTime || !timezone){
+      return errorResponse(res, "All fields are required", 400);
+    }
+    // console.log("id", id);
+    // console.log("startDateTime", startDateTime);
+    // console.log("endDateTime", endDateTime);
+    // console.log("timezone", timezone);
+
+    const data = await BulkLesson.findById(id);
+    // console.log("data", data);
+    if (!data) {
+      return errorResponse(res, "Bulk Lesson not found", 404);
+    }
+
+    if (data.lessonsRemaining <= 0) {
+    return errorResponse(res, "No lessons remaining to redeem", 400);
+    }
+
+    // return successResponse(res, "Special Slots retrieved successfully!", 200);
+
+    // Copy paste yahan se shuru
+     let startUTCs, endUTCs;
+     startUTCs = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+     endUTCs = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+
+    const nowUTC = new Date();
+
+    const timeDiffInMs = startUTCs - nowUTC;
+    const timeDiffInMinutes = timeDiffInMs / (1000 * 60);
+    if (timeDiffInMinutes < 10) {
+      return res.status(400).json({
+        status: false,
+        error: "Cannot create a booking which starts in less than 10 minutes from now or is in the past"
+      });
+    }
+
+    // Check for booking conflict for the same teacher
+    const existingBooking = await Booking.findOne({
+      teacherId: new mongoose.Types.ObjectId(data?.teacherId),
+      cancelled: false, // Only consider active bookings
+      startDateTime: { $lt: endUTCs },
+      endDateTime: { $gt: startUTCs },
+    });
+    if (existingBooking) {
+      return res.status(400).json({
+        status: false,
+        error: "Booking already exists at the given slot for this teacher.",
+      });
+    }
+
+    let startUTC, endUTC;
+    startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+    endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+    
+    const Bookingsave = new Booking({
+      teacherId: data?.teacherId,
+      totalAmount: data?.totalAmount/data?.totalLessons || 0,
+      adminCommission : data?.adminCommission/data?.totalLessons || 0,
+      teacherEarning : data?.teacherEarning/data?.totalLessons || 0,
+      UserId: data?.UserId,
+      LessonId: data?.LessonId,
+      paypalpaymentId: null,
+      startDateTime: startUTC,
+      endDateTime: endUTC,
+      processingFee: data?.processingFee/data?.totalLessons || 0,
+    });
+    await Bookingsave.save();
+
+    data.bookings = data.bookings || [];
+    data.bookings.push({
+      id: Bookingsave._id,
+      cancelled: false
+    });
+    data.lessonsRemaining = data.lessonsRemaining - 1;
+    await data.save();
+
+    const user = await User.findById({ _id: req.user.id });
+    const teacher = await User.findById({ _id: data?.teacherId });
+    logger.info("Paypal Everything done now about to send email");
+    logger.info(`Teacher details: ${JSON.stringify(teacher || "")}`);
+    // Send confirmation email to student
+    const registrationSubject = "Booking Confirmed 🎉";
+    const Username = user?.name;
+
+    // Convert to ISO format for moment parsing in email templates
+    const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
+    
+    const userTimeISO = user?.time_zone
+        ? utcDateTime.setZone(user.time_zone).toISO()
+        : utcDateTime.toISO();
+
+      const teacherTimeISO = teacher?.time_zone
+        ? utcDateTime.setZone(teacher.time_zone).toISO()
+        : utcDateTime.toISO();
+      
+    const emailHtml = BookingSuccess(userTimeISO , Username, teacher?.name);
+    logger.info(`Paypal sending email to student at  ${user?.email}`);
+    await sendEmail({
+      email: user?.email,
+      subject: registrationSubject,
+      emailHtml: emailHtml,
+    });
+
+    // Send Confirmation email to teacher
+    const TeacherSubject = "New Booking 🎉";
+    const TeacheremailHtml = TeacherBooking(teacherTimeISO, Username, teacher?.name);
+    logger.info(`Bulk booking redeem sending email to teacher at: ${teacher?.email}`);
+    await sendEmail({
+      email: teacher.email,
+      subject: TeacherSubject,
+      emailHtml: TeacheremailHtml,
+    });
+    logger.info("Bulk booking redeem successfull!");
+  
+    successResponse(res, "Special Slots retrieved successfully!", 200);
   } catch (error) {
     console.log("error", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);

@@ -6,6 +6,7 @@ const StudentCancel = require("../EmailTemplate/Cancelled");
 const AdminCancel = require("../EmailTemplate/AdminCancel");
 const { DateTime } = require("luxon");
 const sendEmail = require("../utils/EmailMailler");
+const BulkLesson = require("../model/bulkLesson");
 
 exports.AddBooking = catchAsync(async (req, res) => {
   try {
@@ -113,6 +114,15 @@ exports.CancelBooking = catchAsync(async (req, res) => {
      }
     booking.cancelled = true;
     await booking.save();
+
+    // --- Update BulkLesson record ---
+    await BulkLesson.findOneAndUpdate(
+      { "bookings.id": booking._id },
+      {
+        $set: { "bookings.$.cancelled": true },
+        $inc: { lessonsRemaining: 1 }
+      }
+    );
 
     const admin = await User.findOne({ role: "admin" });
     // console.log("admin", admin);

@@ -136,6 +136,7 @@ app.post(
             adminCommission: metadata.adminCommission,
             processingFee: metadata.processingFee || 0,
             totalLessons: metadata.multipleLessons || 0,
+            lessonsRemaining: metadata.multipleLessons || 0,
           });
           const savedBulkLesson = await bulkLesson.save();
           logger.info(`Bulk lesson record created: ${JSON.stringify(savedBulkLesson || "")}`);
@@ -150,7 +151,8 @@ app.post(
             email: email,
             subject: subject,
             emailHtml: emailHtml,
-          });          
+          });
+          return;          
         }
         if (metadata.IsBonus) {
           const payment = await StripePayment.create({

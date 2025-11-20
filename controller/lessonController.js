@@ -190,7 +190,7 @@ exports.LessonDone = catchAsync(async (req, res) => {
 exports.Bookingid = catchAsync(async (req, res) => {
     try {
         const { id } = req.params;
-        console.log("id" ,id)
+        // console.log("id" ,id)
         const record = await Bookings.findById( id );
         if (!record) {
             return res.status(404).json({

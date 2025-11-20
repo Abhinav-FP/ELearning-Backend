@@ -141,6 +141,7 @@ async function handleBulkBooking(data) {
       adminCommission,
       processingFee,
       totalLessons: multipleLessons,
+      lessonsRemaining: multipleLessons,
     });
     const savedBulkLesson = await bulkLesson.save();
     logger.info(`Bulk lesson record created: ${JSON.stringify(savedBulkLesson || "")}`);
