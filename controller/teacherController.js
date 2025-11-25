@@ -1301,6 +1301,32 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
   }
 });
 
+exports.SpecialSlotCancel = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return errorResponse(res, "Special Slot ID is required", 400);
+    }
+    const data = await SpecialSlot.findById(id)
+      .populate("student")
+      .populate("teacher")
+      .populate("lesson");
+
+    if (!data) {
+      return errorResponse(res, "Special Slot not found", 404);
+    }
+     if (data.cancelled) {
+       return successResponse(res, "Special Slot is already cancelled", 200);
+     }
+    data.cancelled = true;
+    await data.save();
+
+    return successResponse(res, "Special Slot cancelled successfully", 200);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
 exports.SpecialSlotwithZeroAmount = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;

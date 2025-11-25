@@ -34,6 +34,10 @@ const SpecialSlotSchema = mongoose.Schema(
       type: Date,
       required: true,
     },
+    cancelled: {
+      type: Boolean,
+      required: false,
+    },
   },
   { timestamps: true }
 );
