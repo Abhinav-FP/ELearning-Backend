@@ -15,6 +15,8 @@ const sendEmail = require("../utils/EmailMailler");
 const jwt = require("jsonwebtoken");
 const logger = require("../utils/Logger");
 const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
+const BulkLesson = require("../model/bulkLesson");
+
 
 const signEmail = async (id) => {
   const token = jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
@@ -330,7 +332,7 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
 exports.AdminEarning = catchAsync(async (req, res) => {
   try {
     const { date, search, page, limit = 15 } = req.query;
-    const filter = {cancelled: false,};
+    const filter = {cancelled: false, isFromBulk: { $ne: true }};
     if (date) {
       const now = new Date();
       if (date === "last7") {
@@ -385,6 +387,39 @@ exports.AdminEarning = catchAsync(async (req, res) => {
     }
 
     let bookings = await query;
+
+    let bulkFilter = {};
+    if (filter.createdAt) bulkFilter.createdAt = filter.createdAt;
+
+    const bulkAgg = await BulkLesson.aggregate([
+      { $match: bulkFilter },
+      {
+        $group: {
+          _id: null,
+          bulkTotalAmount: { $sum: { $toDouble: "$totalAmount" } },
+          bulkTeacherEarning: { $sum: { $toDouble: "$teacherEarning" } },
+          bulkProcessingFee: { $sum: { $toDouble: "$processingFee" } },
+          bulkAdminCommission: { $sum: { $toDouble: "$adminCommission" } }
+        }
+      }
+    ]);
+
+    const bulk = bulkAgg.length > 0
+      ? bulkAgg[0]
+      : { bulkTotalAmount: 0, bulkTeacherEarning: 0, bulkProcessingFee: 0 };
+
+    const bulkPurchases = await BulkLesson.find()
+    .populate("UserId")
+    .populate("teacherId")
+    .populate("LessonId")
+    .populate("StripepaymentId")
+    .populate("paypalpaymentId")
+    .populate({
+      path: "bookings.id",
+      model: "Bookings"
+    })
+    .sort({ createdAt: -1 })
+
     const bonus = await Bonus.aggregate([
       {
         $group: {
@@ -393,6 +428,7 @@ exports.AdminEarning = catchAsync(async (req, res) => {
         }
       }
     ]);
+
     const totalBonus = bonus.length > 0 ? bonus[0].totalAmount : 0;
     if (search && search.trim() !== "") {
       const regex = new RegExp(search.trim(), "i"); // case-insensitive match
@@ -416,12 +452,19 @@ exports.AdminEarning = catchAsync(async (req, res) => {
     if (!bookings) {
       return errorResponse(res, "Bookings not Found", 401);
     }
-    count[0].totalAmount = count[0].totalAmount + totalBonus - count[0].processingFee;
-    count[0].teacherEarning += totalBonus;
+    // console.log("count[0] before", count[0]);
+    count[0].totalAmount = count[0].totalAmount + totalBonus - count[0].processingFee + bulk.bulkTotalAmount - bulk.bulkProcessingFee;
+    count[0].teacherEarning += totalBonus + bulk.bulkTeacherEarning;
     count[0].bonus = totalBonus;
+    count[0].adminCommission += bulk.bulkAdminCommission;
+
+    // console.log("bulk", bulk);
+    // console.log("totalBonus", totalBonus);
+    // console.log("count[0] after", count[0]);
     successResponse(res, "Bookings retrieved successfully!", 200, {
       count: count[0],
       bookings,
+      bulkPurchases,
       pagination: {
         currentPage,
         totalPages,

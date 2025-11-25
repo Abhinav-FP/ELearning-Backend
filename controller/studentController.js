@@ -624,6 +624,8 @@ exports.BulkLessonRedeem = catchAsync(async (req, res) => {
       startDateTime: startUTC,
       endDateTime: endUTC,
       processingFee: data?.processingFee/data?.totalLessons || 0,
+      isFromBulk: true,
+      bulkId: id
     });
     await Bookingsave.save();
 

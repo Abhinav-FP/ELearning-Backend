@@ -85,11 +85,23 @@ const bookingSchema = new mongoose.Schema(
       ref: "Zoom",
       default: null,
     },
-    IsBonus: { type: Boolean, default: false },
+    IsBonus: { 
+      type: Boolean, 
+      default: false 
+    },
      BonusId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "bonus",
       default: null,
+    },
+    isFromBulk: {
+      type: Boolean,
+      default: false
+    },
+    bulkId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "bulkLessons",
+      default: null
     },
   },
   { timestamps: true }
