@@ -27,13 +27,7 @@ module.exports = (studentName, teacherName, date) => {
         </p>
 
         <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 1.3rem;">
-          A refund will be issued shortly. If this was unexpected, feel free to book a new lesson at your convenience.
-        </p>
-
-        <p style="margin: 0 0 0;text-align: center;">
-          <a href="https://japaneseforme.com/" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">
-            Find Another Time
-          </a>
+          Please contact your teacher to re-schedule the lesson.
         </p>
       </td>
     </tr>
