@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const { BankAddOrEdit, BankList } = require("../controller/BankController");
 const { PayoutAdd, payoutList } = require("../controller/PayoutController");
-const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck, TeacherGet, EarningsGet, BookingsGet, updateProfile, DashboardApi, SpecialSlotCreate, StudentLessonListing, SpecialSlotList, SpecialSlotData, DeleteGetLesson, GetReview, EmailCheck, GetZoomTeacher, DisconnectZoom, DownloadRecording, LessonDone, SpecialSlotwithZeroAmount, SpecialSlotCancel } = require("../controller/teacherController");
+const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck, TeacherGet, EarningsGet, BookingsGet, updateProfile, DashboardApi, SpecialSlotCreate, StudentLessonListing, SpecialSlotList, SpecialSlotData, DeleteGetLesson, GetReview, EmailCheck, GetZoomTeacher, DisconnectZoom, DownloadRecording, LessonDone, SpecialSlotwithZeroAmount, SpecialSlotCancel, TeacherBulkLessonList } = require("../controller/teacherController");
 const { verifyToken } = require("../middleware/tokenVerify");
 const { upload } = require("../utils/FileUploader");
 
@@ -59,6 +59,7 @@ router.get("/teacher/disconnectZoom", verifyToken, DisconnectZoom);
 router.get("/teacher/download/recording", verifyToken, DownloadRecording);
 // This route is used only when marking lesson done via teacher dashboard not email link
 router.get("/teacher/lessonDone/:id", verifyToken, LessonDone);
+router.get("/teacher/bulkLesson", verifyToken, TeacherBulkLessonList);
 // router.post("/teacher/token-update", TokenUpdate);
 
 // router.get("/teacher/zoom/test", GetZoomTeacher);

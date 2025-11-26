@@ -9,6 +9,7 @@ const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploa
 const User = require("../model/user");
 const Payout = require("../model/Payout");
 const Teacher = require("../model/teacher");
+const BulkLesson = require("../model/bulkLesson");
 const SpecialSlot = require("../model/SpecialSlot");
 const Review = require("../model/review");
 const mongoose = require('mongoose');
@@ -1704,5 +1705,43 @@ exports.LessonDone = catchAsync(async (req, res) => {
       msg: "Something went wrong while updating lesson status",
       error: error.message,
     });
+  }
+});
+
+exports.TeacherBulkLessonList = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const objectId = new mongoose.Types.ObjectId(userId);
+    const { status, search } = req.query;
+    let data = await BulkLesson.find({ teacherId: objectId })
+      .populate("teacherId")
+      .populate("UserId")
+      .populate("LessonId")
+      .populate("paypalpaymentId")
+      .populate("StripepaymentId")
+      .populate({
+          path: "bookings.id",
+          model: "Bookings"
+        })
+      .sort({ createdAt: -1 });
+    if (!data) {
+      return errorResponse(res, "Special Slots not Found", 404);
+    }
+    // if (search && search.trim() !== "") {
+    //   const regex = new RegExp(search.trim(), "i"); // case-insensitive match
+
+    //   data = data.filter((item) => {
+    //     const lessonTitle = item?.student?.name || "";
+    //     return (
+    //       regex.test(lessonTitle)
+    //     );
+    //   });
+    // }
+    // console.log("data", data);
+
+    successResponse(res, "Special Slots retrieved successfully!", 200, data);
+  } catch (error) {
+    console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
