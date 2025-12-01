@@ -88,6 +88,21 @@ exports.teacherget = catchAsync(async (req, res) => {
       return lessonCountMap[teacherId] > 0;
     });
 
+    teachers.sort((a, b) => {
+      const aHasRank = a.rank !== null && a.rank !== undefined;
+      const bHasRank = b.rank !== null && b.rank !== undefined;
+
+      // Case 1: Both have rank -> sort by rank
+      if (aHasRank && bHasRank) return a.rank - b.rank;
+
+      // Case 2: Only one has rank -> ranked teacher first
+      if (aHasRank && !bHasRank) return -1;
+      if (!aHasRank && bHasRank) return 1;
+
+      // Case 3: Neither has rank -> sort by createdAt (latest first)
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    });
+
     // Step 7: Apply search filter (if provided)
     if (search && search.trim() !== "") {
       const regex = new RegExp(search.trim(), "i");
