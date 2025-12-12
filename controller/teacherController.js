@@ -55,6 +55,10 @@ exports.AddAvailability = catchAsync(async (req, res) => {
     let { startDateTime, endDateTime } = req.body;
     const time_zone = req.user.time_zone;
 
+    // console.log("time_zone", time_zone);
+    // console.log("startDateTime", startDateTime);
+    // console.log("endDateTime", endDateTime);
+
     // Check if zoom is connected
     const teacherId = req.user.id;
     if (!teacherId) {

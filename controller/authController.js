@@ -337,6 +337,14 @@ exports.updateProfile = catchAsync(async (req, res) => {
       }
     }
 
+    let timeChanged = false;
+    // console.log("updates.timezone", updates.time_zone);
+    // console.log("user.timezone", user.time_zone);
+    if (updates.time_zone && updates.time_zone !== user.time_zone) {
+      timeChanged = true;
+    }
+    // console.log("timeChanged", timeChanged);
+
     let photo = null;
     if (req.file) {
       if (user.profile_photo) {
@@ -367,6 +375,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
 
     return successResponse(res, "Profile updated successfully!", 200, {
       user: updatedUser,
+      time: timeChanged,
     });
   } catch (error) {
     console.log(error);
