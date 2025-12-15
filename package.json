@@ -15,7 +15,7 @@
     "@aws-sdk/s3-request-presigner": "^3.803.0",
     "@paypal/checkout-server-sdk": "^1.0.3",
     "@paypal/paypal-server-sdk": "^1.0.0",
-    "axios": "^1.7.7",
+    "axios": "^1.13.2",
     "bcrypt": "^5.1.1",
     "body-parser": "^2.2.0",
     "btoa": "^1.2.1",
