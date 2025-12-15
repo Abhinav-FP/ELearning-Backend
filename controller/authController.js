@@ -24,13 +24,11 @@ exports.studentSignup = catchAsync(async (req, res) => {
   try {
     // console.log("Hi");
     const { name, email, password, role, time_zone } = req.body;
-
+    Loggers.info(`[STUDENT_SIGNUP][ENTRY] name="${name || "N/A"}"`);
     if (!email || !password || !role || !name || !time_zone) {
       return errorResponse(res, "All fields are required", 401, "false");
     }
-
     const hashedPassword = await bcrypt.hash(password, 12);
-
     const userRecord = new User({
       name,
       email,
@@ -38,13 +36,13 @@ exports.studentSignup = catchAsync(async (req, res) => {
       role,
       time_zone,
     });
-
+    Loggers.info(`[STUDENT_SIGNUP][PRE_SAVE] name="${userRecord.name || "N/A"}"`);
     const userResult = await userRecord.save();
     if (!userResult) {
       return errorResponse(res, "Failed to create user.", 500);
     }
-    console.log("userResult", userResult)
-
+    Loggers.info(`[STUDENT_SIGNUP][POST_SAVE] name="${userResult?.name || "N/A"}"`);
+    // console.log("userResult", userResult)
     const token = await signEmail(userResult._id);
     // console.log("token", token)
     const link = `https://japaneseforme.com/verify/${token}`;
@@ -55,7 +53,7 @@ exports.studentSignup = catchAsync(async (req, res) => {
 
 
 
-    console.log("About to send email");
+    // console.log("About to send email");
     const record = await sendEmail({
       email: email,
       subject: registrationSubject,
@@ -63,8 +61,6 @@ exports.studentSignup = catchAsync(async (req, res) => {
     });
     // console.log("Email record:", record);
     console.log("Sending signup email to", email);
-
-
 
     return successResponse(res, "User created successfully!", 201, {
       user: userResult,
