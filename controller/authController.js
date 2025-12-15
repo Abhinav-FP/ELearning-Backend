@@ -12,7 +12,6 @@ const TeacherWelcome = require("../EmailTemplate/TeacherWelcome");
 const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
 const mongoose = require('mongoose');
 const StripePayment = require("../model/StripePayment");
-const verifyTurnstile = require("../utils/verifyTurnstile");
 
 const signEmail = async (id) => {
   const token = jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
@@ -24,26 +23,8 @@ const signEmail = async (id) => {
 exports.studentSignup = catchAsync(async (req, res) => {
   try {
     // console.log("Hi");
-    const { name, email, password, role, time_zone, cf_turnstile_token, } = req.body;
+    const { name, email, password, role, time_zone } = req.body;
     Loggers.info(`[STUDENT_SIGNUP][ENTRY] name="${name || "N/A"}"`);
-    
-    if (!cf_turnstile_token) {
-      Loggers.warn("[STUDENT_SIGNUP][TURNSTILE_MISSING]");
-      return errorResponse(res, "Human verification failed", 400);
-    }
-
-    const turnstileResult = await verifyTurnstile(
-      cf_turnstile_token,
-      req.ip
-    );
-
-    if (!turnstileResult.success) {
-      Loggers.warn(
-        `[STUDENT_SIGNUP][TURNSTILE_FAILED] ip=${req.ip}`
-      );
-      return errorResponse(res, "Human verification failed", 403);
-    }
-
     if (!email || !password || !role || !name || !time_zone) {
       return errorResponse(res, "All fields are required", 401, "false");
     }
