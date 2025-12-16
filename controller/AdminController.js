@@ -771,6 +771,10 @@ exports.emulateUser = catchAsync(async (req, res) => {
     if (!id) {
       return errorResponse(res, "User id is required", 400);
     }
+    // console.log("req.user", req.user);
+    if(req.user.role != "admin"){
+      return errorResponse(res, "Only admin can emulate users", 403);
+    }
     const user = await User.findById(id);
     if (!user) {
       return errorResponse(res, "User not found", 404);
