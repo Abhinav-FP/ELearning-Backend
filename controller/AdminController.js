@@ -764,3 +764,34 @@ exports.deleteCourse = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
+
+exports.emulateUser = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return errorResponse(res, "User id is required", 400);
+    }
+    const user = await User.findById(id);
+    if (!user) {
+      return errorResponse(res, "User not found", 404);
+    }
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        time_zone: user.time_zone,
+        email: user.email,
+      },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "24h" }
+    );
+    return res.status(200).json({
+      status: true,
+      message: "Emulation successful",
+      token,
+      role: user.role,
+    });
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
