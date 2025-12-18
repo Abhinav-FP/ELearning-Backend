@@ -59,8 +59,8 @@ const refreshZoomToken = async (refresh_token) => {
       refresh_token: res.data.refresh_token,
     };
   } catch (err) {
-    logger.error("Error refreshing Zoom token:", err.response?.data || err.message);
-    console.error("Error refreshing Zoom token:", err.response?.data || err.message);
+    logger.error("Error refreshing Zoom token:", JSON.stringify(err.response?.data || err.message));
+    console.error("Error refreshing Zoom token:", JSON.stringify(err.response?.data || err.message));
     return null;
   }
 };
@@ -141,8 +141,8 @@ const createZoomMeeting = async (meetingDetails, teacherData, TeacherModel) => {
       status: response.data.status,
     };
   } catch (error) {
-    logger.error("Zoom API Error:", error.response?.data || error.message);
-    console.error("Zoom API Error:", error.response?.data || error.message);
+    logger.error("Zoom API Error:", JSON.stringify(error.response?.data || error.message));
+    console.error("Zoom API Error:", JSON.stringify(error.response?.data || error.message));
     return { success: false, message: "Zoom meeting creation failed" };
   }
 };
