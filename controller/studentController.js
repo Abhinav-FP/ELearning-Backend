@@ -250,7 +250,8 @@ exports.studentDashboard = catchAsync(async (req, res) => {
 
     const data = await Bookings.findOne({
       UserId: userId,
-      startDateTime: { $gt: new Date() }
+      startDateTime: { $gt: new Date() },
+      cancelled: false,
     })
       .sort({ startDateTime: 1 })
       // .limit(1)
