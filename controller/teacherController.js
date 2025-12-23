@@ -1210,10 +1210,10 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
     // ⛔ Check if start time is in the past or less than 3 hours from now
     const nowUTC = new Date();
     // const threeHoursLater = new Date(nowUTC.getTime() + 3 * 60 * 60 * 1000);
-    const thirtyMinutesLater = new Date(nowUTC.getTime() + 30 * 60 * 1000);
+    const thirtyMinutesLater = new Date(nowUTC.getTime() + 10 * 60 * 1000);
 
     if (startUTC <= nowUTC || startUTC < thirtyMinutesLater) {
-      return errorResponse(res, "Start time must be at least 30 minutes from now.", 400);
+      return errorResponse(res, "Start time must be at least 10 minutes from now.", 400);
     }
 
     const availabilityBlocks = await TeacherAvailability.find({ teacher: objectId });
@@ -1359,7 +1359,7 @@ exports.SpecialSlotwithZeroAmount = catchAsync(async (req, res) => {
     }  
 
     let { student, lesson, amount, startDateTime, endDateTime } = req.body;
-    console.log("req.body", req.body);
+    // console.log("req.body", req.body);
     const time_zone = req.user.time_zone;
 
     if (!student || !lesson || !startDateTime || !endDateTime) {
@@ -1376,10 +1376,10 @@ exports.SpecialSlotwithZeroAmount = catchAsync(async (req, res) => {
     // ⛔ Check if start time is in the past or less than 3 hours from now
     const nowUTC = new Date();
     // const threeHoursLater = new Date(nowUTC.getTime() + 3 * 60 * 60 * 1000);
-     const thirtyMinutesLater = new Date(nowUTC.getTime() + 30 * 60 * 1000);
+     const thirtyMinutesLater = new Date(nowUTC.getTime() + 10 * 60 * 1000);
 
     if (startUTC <= nowUTC || startUTC < thirtyMinutesLater) {
-      return errorResponse(res, "Start time must be at least 30 minutes from now.", 400);
+      return errorResponse(res, "Start time must be at least 10 minutes from now.", 400);
     }
 
     const availabilityBlocks = await TeacherAvailability.find({ teacher: objectId });
