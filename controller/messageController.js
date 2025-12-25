@@ -48,11 +48,20 @@ exports.AddMessage = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid user role", 400);
     }
 
+    const hasLockedUnread = await Message.exists({
+      student,
+      teacher,
+      is_read: false,
+      notification_locked: true,
+    });
+
     const messageRecord = new Message({
       student,
       teacher,
       content: content || null,
       sent_by: req.user.role,
+      email_notified: !!hasLockedUnread,
+      notification_locked: !!hasLockedUnread,
       ...fileDetails,
     });
 
@@ -71,8 +80,8 @@ exports.AddMessage = catchAsync(async (req, res) => {
 
     successResponse(res, "Message sent successfully", 201);
 
-    MaybeSendEmailNotification(req.user, receiver).catch((err) =>
-      console.error("Email notification error:", err));
+    // MaybeSendEmailNotification(req.user, receiver).catch((err) =>
+    //   console.error("Email notification error:", err));
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
@@ -140,7 +149,11 @@ exports.GetMessage = catchAsync(async (req, res) => {
         is_read: false,
         is_deleted: false,
       },
-      { $set: { is_read: true } }
+      { $set: { 
+        is_read: true,
+        email_notified: false,
+        notification_locked: false,
+       }}
     );
 
     res.json({

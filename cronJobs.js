@@ -1,4 +1,3 @@
-// cronJobs.js
 const cron = require('node-cron');
 const Bookings = require("./model/booking");
 const Teacher = require("./model/teacher");
@@ -16,6 +15,11 @@ const { createZoomMeeting } = require('./zoommeeting');
 const logger = require("./utils/Logger");
 const jwt = require("jsonwebtoken");
 const mongoose = require('mongoose');
+
+// Added these for message email notification cron
+const Message = require("./model/message");
+// const User = require("./model/user");
+const MessageTemplate = require("./EmailTemplate/Message");
 
 module.exports = () => {
   cron.schedule('* * * * *', async () => {
@@ -238,18 +242,81 @@ module.exports = () => {
     }
   });
 
-  cron.schedule('46 16 * * *', async () => {
+  // cron.schedule('46 16 * * *', async () => {
+  //   try {
+  //     console.log('⏰ Currency update cron job triggered!');
+  //     const emailHtml = currency('Success', true, '', 'May 29, 2025 11:25 AM');
+  //     const record = await updateCurrencyRatesJob();
+  //     await sendEmail({
+  //       email: "ankit.jain@internetbusinesssolutionsindia.com",
+  //       subject: 'Currency Rate Update - Success',
+  //       emailHtml: emailHtml,
+  //     });
+  //   } catch (err) {
+  //     console.error('❌ Cron job error:', err);
+  //   }
+  // });
+
+  cron.schedule("'* * * * *", async () => {
     try {
-      console.log('⏰ Currency update cron job triggered!');
-      const emailHtml = currency('Success', true, '', 'May 29, 2025 11:25 AM');
-      const record = await updateCurrencyRatesJob();
-      await sendEmail({
-        email: "ankit.jain@internetbusinesssolutionsindia.com",
-        subject: 'Currency Rate Update - Success',
-        emailHtml: emailHtml,
-      });
-    } catch (err) {
-      console.error('❌ Cron job error:', err);
+      console.log("Running message cron");
+      const EMAIL_DELAY_MINUTES = 5;
+      const cutoffTime = new Date(Date.now() - EMAIL_DELAY_MINUTES * 60 * 1000);
+      const unreadMessages = await Message.find({
+        is_read: false,
+        is_deleted: false,
+        email_notified: false,
+        notification_locked: false,
+        // createdAt: { $lte: cutoffTime },
+      })
+      .sort({ createdAt: 1 })
+      .populate("student teacher");
+
+      console.log("unreadMessages", unreadMessages);
+
+      const pairs = {};
+      for (const msg of unreadMessages) {
+        const key = `${msg.student._id}_${msg.teacher._id}`;
+        if (!pairs[key]) {
+          pairs[key] = msg;
+        }
+      }
+      for (const key in pairs) {
+        const msg = pairs[key];
+        const receiver =
+          msg.sent_by === "student" ? msg.teacher : msg.student;
+        const sender =
+          msg.sent_by === "student" ? msg.student : msg.teacher;
+        if (!receiver?.email) continue;
+        const link =
+          sender.role === "teacher"
+            ? "https://japaneseforme.com/student/message"
+            : "https://japaneseforme.com/teacher-dashboard/message";
+        await sendEmail({
+          email: receiver.email,
+          subject: `New message from ${sender.name}`,
+          emailHtml: MessageTemplate(
+            receiver.name || "",
+            sender.name || "",
+            link
+          ),
+        });
+
+        // 4️⃣ LOCK THE CONVERSATION
+        await Message.updateMany(
+          {
+            student: msg.student._id,
+            teacher: msg.teacher._id,
+            is_read: false,
+          },
+          {
+            email_notified: true,
+            notification_locked: true,
+          }
+        );
+      }
+    } catch (error) {
+      logger.error("Error in message email cron", error);
     }
   });
 };
