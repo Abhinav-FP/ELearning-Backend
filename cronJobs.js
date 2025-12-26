@@ -259,7 +259,7 @@ module.exports = () => {
 
   cron.schedule("'* * * * *", async () => {
     try {
-      console.log("Running message cron");
+      // console.log("Running message cron");
       const EMAIL_DELAY_MINUTES = 5;
       const cutoffTime = new Date(Date.now() - EMAIL_DELAY_MINUTES * 60 * 1000);
       const unreadMessages = await Message.find({
@@ -267,12 +267,12 @@ module.exports = () => {
         is_deleted: false,
         email_notified: false,
         notification_locked: false,
-        // createdAt: { $lte: cutoffTime },
+        createdAt: { $lte: cutoffTime },
       })
       .sort({ createdAt: 1 })
       .populate("student teacher");
 
-      console.log("unreadMessages", unreadMessages);
+      // console.log("unreadMessages", unreadMessages);
 
       const pairs = {};
       for (const msg of unreadMessages) {
@@ -301,6 +301,8 @@ module.exports = () => {
             link
           ),
         });
+
+        logger.info(`📧 Message notification email sent to ${receiver.email} for unread message from ${sender?.email}`);
 
         // 4️⃣ LOCK THE CONVERSATION
         await Message.updateMany(
