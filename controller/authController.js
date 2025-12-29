@@ -44,7 +44,7 @@ exports.studentSignup = catchAsync(async (req, res) => {
     // const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
 
     Loggers.info("[SIGNUP_ATTEMPT]", {
-      ip,
+      ip: req.ip || "N/A",
       email,
       userAgent: req.headers["user-agent"],
       turnstile: result.success
