@@ -26,6 +26,7 @@ module.exports = () => {
     try {
         // console.log(`Running cron job at ${new Date().toISOString()}`);
         const now = new Date(); // current time in UTC
+        const endNow = DateTime.utc().startOf('minute'); // e.g., 13:42:00
 
         const data = await Bookings.find({
         startDateTime: { $gt: now },
@@ -149,7 +150,6 @@ module.exports = () => {
         }
 
         // Sending lesson done emails to user and teacher
-        const endNow = DateTime.utc().startOf('minute'); // e.g., 13:42:00
         const justEndedBookings = await Bookings.find({
           cancelled: false,
           endDateTime: {

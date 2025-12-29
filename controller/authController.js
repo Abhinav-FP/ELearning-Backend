@@ -12,6 +12,7 @@ const TeacherWelcome = require("../EmailTemplate/TeacherWelcome");
 const { uploadFileToSpaces, deleteFileFromSpaces } = require("../utils/FileUploader");
 const mongoose = require('mongoose');
 const StripePayment = require("../model/StripePayment");
+const verifyTurnstile = require("../utils/verifyTurnstile");
 
 const signEmail = async (id) => {
   const token = jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
@@ -22,12 +23,28 @@ const signEmail = async (id) => {
 
 exports.studentSignup = catchAsync(async (req, res) => {
   try {
-    // console.log("Hi");
     const { name, email, password, role, time_zone } = req.body;
     Loggers.info(`[STUDENT_SIGNUP][ENTRY] name="${name || "N/A"}"`);
     if (!email || !password || !role || !name || !time_zone) {
       return errorResponse(res, "All fields are required", 401, "false");
     }
+    const { cf_turnstile_token } = req.body;
+    if (!cf_turnstile_token) {
+      return errorResponse(res, "Captcha verification failed", 403);
+    }
+    const result = await verifyTurnstile(cf_turnstile_token, req.ip);
+
+    if (!result.success) {
+      Loggers.warn("[TURNSTILE_FAILED]", result);
+      return errorResponse(res, "Bot detected", 403);
+    }
+    Loggers.info("[SIGNUP_ATTEMPT]", {
+      ip: req.ip,
+      email,
+      userAgent: req.headers["user-agent"],
+      turnstile: result.success
+    });
+
     const hashedPassword = await bcrypt.hash(password, 12);
     const userRecord = new User({
       name,
