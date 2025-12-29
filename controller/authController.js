@@ -36,7 +36,7 @@ exports.studentSignup = catchAsync(async (req, res) => {
 
     if (!result.success) {
       Loggers.warn("[TURNSTILE_FAILED]", result);
-      return errorResponse(res, "Bot detected", 403);
+      return errorResponse(res, "Captcha verification failed. Please refresh the page and try again.", 403);
     }
     
     // console.log("req.ip:", req.ip);
