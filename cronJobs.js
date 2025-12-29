@@ -257,7 +257,7 @@ module.exports = () => {
   //   }
   // });
 
-  cron.schedule("'* * * * *", async () => {
+  cron.schedule("* * * * *", async () => {
     try {
       // console.log("Running message cron");
       const EMAIL_DELAY_MINUTES = 5;
