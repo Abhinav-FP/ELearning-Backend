@@ -48,20 +48,13 @@ exports.AddMessage = catchAsync(async (req, res) => {
       return errorResponse(res, "Invalid user role", 400);
     }
 
-    const hasLockedUnread = await Message.exists({
-      student,
-      teacher,
-      is_read: false,
-      notification_locked: true,
-    });
-
     const messageRecord = new Message({
       student,
       teacher,
       content: content || null,
       sent_by: req.user.role,
-      email_notified: !!hasLockedUnread,
-      notification_locked: !!hasLockedUnread,
+      email_notified: false,
+      notification_locked: false,
       ...fileDetails,
     });
 
