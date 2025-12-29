@@ -4,7 +4,7 @@ async function verifyTurnstile(token, ip) {
   const res = await axios.post(
     "https://challenges.cloudflare.com/turnstile/v0/siteverify",
     new URLSearchParams({
-      secret: process.env.CLOUDFLARE_TURNSTILE_SECRET,
+      secret: process.env.CF_TURNSTILE_SECRET_KEY,
       response: token,
       remoteip: ip || ""
     })

@@ -38,8 +38,13 @@ exports.studentSignup = catchAsync(async (req, res) => {
       Loggers.warn("[TURNSTILE_FAILED]", result);
       return errorResponse(res, "Bot detected", 403);
     }
+    
+    // console.log("req.ip:", req.ip);
+    // console.log("x-forwarded-for:", req.headers["x-forwarded-for"]);
+    // const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
+
     Loggers.info("[SIGNUP_ATTEMPT]", {
-      ip: req.ip,
+      ip,
       email,
       userAgent: req.headers["user-agent"],
       turnstile: result.success
