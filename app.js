@@ -338,6 +338,8 @@ app.use("/api", require("./route/adminRoutes"));
 app.use("/api", require("./route/bookingRoutes"));
 app.use("/api", require("./route/teacherRoutes"));
 app.use("/api/payment", require("./route/paymentRoutes"));
+// Google api endpoint
+app.use("/api", require("./route/googleRoutes"));
 
 const ZOOM_WEBHOOK_SECRET = process.env.ZOOM_WEBHOOK_SECRET;
 const ZOOM_CLIENT_ID = process.env.ZOOM_clientId;
@@ -654,7 +656,7 @@ app.get("/", (req, res) => {
   });
 });
 
-require("./cronJobs")();
+// require("./cronJobs")();
 
 const server = app.listen(PORT, () =>
   console.log("Server is running at port : " + PORT)
