@@ -64,13 +64,13 @@ router.get("/auth/google/callback", verifyToken, async (req, res) => {
 
     // Redirect back to frontend
     res.redirect(
-      `${process.env.FRONTEND_URL}/teacher/settings?calendar=connected`
+      `https://japaneseforme.com/teacher-dashboard/setting`
     );
 
   } catch (err) {
     console.error("Google OAuth Error:", err);
     res.redirect(
-      `${process.env.FRONTEND_URL}/teacher/settings?calendar=error`
+      `https://japaneseforme.com/teacher-dashboard/setting`
     );
   }
 });
