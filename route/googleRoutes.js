@@ -20,7 +20,7 @@ router.get("/auth/google", verifyToken, async (req, res) => {
   res.json({ url });
 });
 
-router.get("/auth/google/callback", verifyToken, async (req, res) => {
+router.get("/auth/google/callback", async (req, res) => {
   try {
     const { code, state } = req.query;
 
