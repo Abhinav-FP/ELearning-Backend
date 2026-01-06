@@ -43,11 +43,13 @@ router.get("/auth/google/callback", async (req, res) => {
     oauth2Client.setCredentials(tokens);
 
     // Get user's primary calendar info (optional)
-    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
-    const calendarList = await calendar.calendarList.list();
-    const primaryCalendar = calendarList.data.items.find(
-      cal => cal.primary
-    );
+    // const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+    // const calendarList = await calendar.calendarList.list();
+    // const primaryCalendar = calendarList.data.items.find(
+    //   cal => cal.primary
+    // );
+
+    const calendarId = "primary";
 
     // Store securely in DB
     await Teacher.findOneAndUpdate({userId: state}, {
@@ -55,7 +57,7 @@ router.get("/auth/google/callback", async (req, res) => {
             accessToken: tokens.access_token,
             refreshToken: tokens.refresh_token, // STORE THIS
             expiryDate: tokens.expiry_date,
-            calendarId: primaryCalendar?.id || "primary",
+            calendarId: calendarId || "primary",
             connected: true,
           },
         },
