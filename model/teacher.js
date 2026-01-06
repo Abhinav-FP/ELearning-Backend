@@ -70,6 +70,29 @@ const teacherSchema =  mongoose.Schema({
     type: Number,
     default: null,
   },
+  // google calendar fields
+  googleCalendar: {
+  accessToken: {
+    type: String,
+    default: null,
+  },
+  refreshToken: {
+    type: String,
+    default: null,
+  },
+  expiryDate: {
+    type: Number,
+    default: null,
+  },
+  calendarId: {
+    type: String,
+    default: "primary",
+  },
+  connected: {
+    type: Boolean,
+    default: false,
+  },
+},
 }, { timestamps: true });
 
 const Teacher = mongoose.model('Teacher', teacherSchema);
