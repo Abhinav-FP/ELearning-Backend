@@ -22,7 +22,10 @@ router.get("/auth/google", verifyToken, async (req, res) => {
 
 router.get("/auth/google/callback", async (req, res) => {
   try {
+    console.log("➡️ Google OAuth callback hit");
+
     const { code, state } = req.query;
+    console.log("req.query", req.query);
 
     if (!code || !state) {
       return res.status(400).json({ message: "Invalid Google callback" });
@@ -30,6 +33,12 @@ router.get("/auth/google/callback", async (req, res) => {
 
     // Exchange code for tokens
     const { tokens } = await oauth2Client.getToken(code);
+
+    console.log("✅ Tokens received from Google:", {
+      hasAccessToken: !!tokens.access_token,
+      hasRefreshToken: !!tokens.refresh_token,
+      expiryDate: tokens.expiry_date,
+    });
 
     /*
       tokens = {
@@ -49,20 +58,32 @@ router.get("/auth/google/callback", async (req, res) => {
     //   cal => cal.primary
     // );
 
-    const calendarId = "primary";
+    // const calendarId = "primary";
+    console.log("🔍 Finding teacher with userId:", state);
+    const teacher = await Teacher.findOne({ userId: state });
 
-    // Store securely in DB
-    await Teacher.findOneAndUpdate({userId: state}, {
-          googleCalendar: {
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token, // STORE THIS
-            expiryDate: tokens.expiry_date,
-            calendarId: calendarId || "primary",
-            connected: true,
-          },
-        },
-      { new: true }
-    );
+    if (!teacher) {
+      console.error("❌ Teacher not found for userId:", state);
+      throw new Error("Teacher not found");
+    }
+    
+    console.log("✅ Teacher found:", teacher._id.toString());
+    // 🧠 Preserve existing refresh token if Google didn’t send one
+    const refreshTokenToSave =
+      tokens.refresh_token || teacher.googleCalendar?.refreshToken;
+    if (!refreshTokenToSave) {
+      console.warn("⚠️ No refresh token available (new or existing)");
+    }
+    // 💾 UPDATE TEACHER
+    teacher.googleCalendar = {
+      accessToken: tokens.access_token,
+      refreshToken: refreshTokenToSave,
+      expiryDate: tokens.expiry_date,
+      calendarId: "primary",
+      connected: true,
+    };
+    await teacher.save();
+    console.log("✅ Google Calendar data saved for teacher:", teacher._id);
 
     // Redirect back to frontend
     res.redirect(
