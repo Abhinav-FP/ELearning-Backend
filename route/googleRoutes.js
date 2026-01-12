@@ -4,9 +4,12 @@ const Teacher = require("../model/teacher");
 const router = express.Router();
 const { oauth2Client } = require("../utils/googleOAuth");
 const { verifyToken } = require("../middleware/tokenVerify");
+const { successResponse, errorResponse } = require("../utils/ErrorHandling");
+const logger = require("../utils/Logger");
 
 router.get("/auth/google", verifyToken, async (req, res) => {
   const teacherId = req.user.id;
+  logger.info(`Google calendar connect request from ${teacherId}`);
   const scopes = [
     "https://www.googleapis.com/auth/calendar.freebusy",
     "https://www.googleapis.com/auth/calendar.events",
@@ -83,7 +86,7 @@ router.get("/auth/google/callback", async (req, res) => {
       connected: true,
     };
     await teacher.save();
-    console.log("✅ Google Calendar data saved for teacher:", teacher._id);
+    logger.info("✅ Google Calendar data saved for teacher:", teacher._id);
 
     // Redirect back to frontend
     res.redirect(
@@ -91,10 +94,46 @@ router.get("/auth/google/callback", async (req, res) => {
     );
 
   } catch (err) {
-    console.error("Google OAuth Error:", err);
+    logger.error("Google OAuth Error:", err);
     res.redirect(
       `https://japaneseforme.com/teacher-dashboard/setting`
     );
+  }
+});
+
+router.post("/auth/google/disconnect", verifyToken, async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const teacher = await Teacher.findOne({ userId: teacherId });
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+    if (!teacher.googleCalendar?.connected) {
+      return res
+        .status(400)
+        .json({ message: "Google Calendar is not connected" });
+    }
+    // 🔐 Revoke token from Google (optional but recommended)
+    try {
+      if (teacher.googleCalendar.accessToken) {
+        await oauth2Client.revokeToken(teacher.googleCalendar.accessToken);
+      }
+    } catch (revokeErr) {
+      logger.error("⚠️ Failed to revoke Google token, continuing disconnect:", revokeErr.message);
+    }
+    teacher.googleCalendar = {
+      accessToken: null,
+      refreshToken: null,
+      expiryDate: null,
+      calendarId: "primary",
+      connected: false,
+    };
+    await teacher.save();
+    logger.info("✅ Google Calendar disconnected for teacher:", teacher._id);
+    return successResponse(res, "Google Calendar disconnected successfully", 200);
+  } catch (err) {
+    logger.error("❌ Google disconnect error:", err);
+    return errorResponse(res, err.message || "Failed to disconnect Google Calendar", 500);
   }
 });
 

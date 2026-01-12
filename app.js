@@ -27,6 +27,7 @@ const logger = require("./utils/Logger");
 const { uploadFileToSpaces } = require("./utils/FileUploader");
 const Loggers = require("./utils/Logger");
 const Bonus = require("./model/Bonus");
+const { getValidGoogleClient } = require("./utils/GoogleCalendar");
 
 // ✅ Security Headers
 app.use(
@@ -648,6 +649,140 @@ app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
     return res.status(500).send("Zoom OAuth failed");
   }
 });
+
+
+
+
+// app.get("/dev/google-calendar-test", async (req, res) => {
+//   try {
+//     const teacherId = "6879d84df1853235ae9b2b70";
+
+//     const teacher = await Teacher.findById(teacherId);
+//     if (!teacher) {
+//       return res.status(404).json({ message: "Teacher not found" });
+//     }
+
+//     const calendar = await getValidGoogleClient(teacher);
+
+//     const now = new Date();
+//     const end = new Date(now.getTime() + 30 * 60 * 1000);
+
+//     const event = {
+//       summary: "🧪 Japaneseforme Test Event",
+//       description: "Temporary test event to verify Google Calendar integration.",
+//       start: {
+//         dateTime: now.toISOString(),
+//       },
+//       end: {
+//         dateTime: end.toISOString(),
+//       },
+//       extendedProperties: {
+//         private: {
+//           source: "japaneseforme",
+//           type: "test",
+//         },
+//       },
+//     };
+
+//     const response = await calendar.events.insert({
+//       calendarId: "primary",
+//       requestBody: event,
+//     });
+
+//     res.json({
+//       success: true,
+//       eventId: response.data.id,
+//       eventLink: response.data.htmlLink,
+//     });
+//   } catch (err) {
+//     console.error("Google Calendar test failed:", err);
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// });
+
+app.put("/dev/google-calendar-test/update", async (req, res) => {
+  try {
+    const teacherId = "6879d84df1853235ae9b2b70";
+    const eventId = "1narcd2oeie7kqui43qd0fg7s0";
+
+    const teacher = await Teacher.findById(teacherId);
+    if (!teacher) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    const calendar = await getValidGoogleClient(teacher);
+
+    // New time: now + 1 hour
+    const start = new Date(Date.now() + 60 * 60 * 1000);
+    const end = new Date(start.getTime() + 30 * 60 * 1000);
+
+    const updatedEvent = {
+      summary: "🧪 Japaneseforme Test Event (Updated)",
+      description: "Updated test event to simulate reschedule.",
+      start: {
+        dateTime: start.toISOString(),
+      },
+      end: {
+        dateTime: end.toISOString(),
+      },
+    };
+
+    const response = await calendar.events.patch({
+      calendarId: "primary",
+      eventId,
+      requestBody: updatedEvent,
+    });
+
+    res.json({
+      success: true,
+      eventId: response.data.id,
+      updatedLink: response.data.htmlLink,
+    });
+  } catch (err) {
+    console.error("Update test event failed:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+// app.delete("/dev/google-calendar-test/delete", async (req, res) => {
+//   try {
+//     const teacherId = "6879d84df1853235ae9b2b70";
+//     const eventId = "1narcd2oeie7kqui43qd0fg7s0";
+
+//     const teacher = await Teacher.findById(teacherId);
+//     if (!teacher) {
+//       return res.status(404).json({ message: "Teacher not found" });
+//     }
+
+//     const calendar = await getValidGoogleClient(teacher);
+
+//     await calendar.events.delete({
+//       calendarId: "primary",
+//       eventId,
+//     });
+
+//     res.json({
+//       success: true,
+//       message: "Test event deleted successfully",
+//     });
+//   } catch (err) {
+//     console.error("Delete test event failed:", err);
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// });
+
+
+
+
 
 app.get("/", (req, res) => {
   res.json({

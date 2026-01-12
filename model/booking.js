@@ -103,6 +103,14 @@ const bookingSchema = new mongoose.Schema(
       ref: "bulkLessons",
       default: null
     },
+    calendarSynced: {
+      type: Boolean,
+      default: false
+    },
+    calendarEventId: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );

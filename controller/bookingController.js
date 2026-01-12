@@ -7,6 +7,8 @@ const AdminCancel = require("../EmailTemplate/AdminCancel");
 const { DateTime } = require("luxon");
 const sendEmail = require("../utils/EmailMailler");
 const BulkLesson = require("../model/bulkLesson");
+const Teacher = require("../model/teacher");
+const { getValidGoogleClient } = require("../utils/GoogleCalendar");
 
 exports.AddBooking = catchAsync(async (req, res) => {
   try {
@@ -35,48 +37,99 @@ exports.AddBooking = catchAsync(async (req, res) => {
 });
 
 exports.UpdateBooking = catchAsync(async (req, res) => {
-  try {
-    const { lessonCompletedStudent, lessonCompletedTeacher, startDateTime, endDateTime, timezone } = req.body;
-    const { id } = req.params;
-    if (!id) {
-      return errorResponse(res, "Booking ID is required", 400);
-    }
-    const booking = await Bookings.findById(id)
-        .populate('teacherId')
-        .populate('UserId')
-        .populate('LessonId');
-    if (!booking) {
-      return errorResponse(res, "Booking not found", 404);
-    }
-
-    if (lessonCompletedStudent != null) {
-      booking.lessonCompletedStudent = lessonCompletedStudent;
-    }
-
-    if (lessonCompletedTeacher != null) {
-      booking.lessonCompletedTeacher = lessonCompletedTeacher;
-    }
-
-    if (startDateTime != null &&  endDateTime != null && booking.rescheduled) {
-      return errorResponse(res, "Booking has already been rescheduled once", 404);
-    }
-
-    if (startDateTime != null &&  endDateTime != null && !booking.rescheduled) {
-      if(!timezone){
-        return errorResponse(res, "Timezone are required when updating startTIme", 400);
-      }
-      // Convert times from user's timezone to UTC
-      const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
-      const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
-      booking.startDateTime = startUTC;
-      booking.endDateTime = endUTC;
-      booking.rescheduled = true;
-    }
-    await booking.save();
-    return successResponse(res, "Booking updated successfully", 200);
-  } catch (error) {
-    return errorResponse(res, error.message || "Internal Server Error", 500);
+  const {
+    lessonCompletedStudent,
+    lessonCompletedTeacher,
+    startDateTime,
+    endDateTime,
+    timezone,
+  } = req.body;
+  const { id } = req.params;
+  if (!id) {
+    return errorResponse(res, "Booking ID is required", 400);
   }
+  const booking = await Bookings.findById(id)
+    .populate("teacherId")
+    .populate("UserId")
+    .populate("LessonId");
+  if (!booking) {
+    return errorResponse(res, "Booking not found", 404);
+  }
+  if (lessonCompletedStudent != null) {
+    booking.lessonCompletedStudent = lessonCompletedStudent;
+  }
+  if (lessonCompletedTeacher != null) {
+    booking.lessonCompletedTeacher = lessonCompletedTeacher;
+  }
+  let timeUpdated = false;
+  if (startDateTime && endDateTime) {
+    if (booking.rescheduled) {
+      return errorResponse(
+        res,
+        "Booking has already been rescheduled once",
+        400
+      );
+    }
+
+    if (!timezone) {
+      return errorResponse(
+        res,
+        "Timezone is required when updating time",
+        400
+      );
+    }
+
+    const startUTC = DateTime.fromISO(startDateTime, {
+      zone: timezone,
+    })
+      .toUTC()
+      .toJSDate();
+
+    const endUTC = DateTime.fromISO(endDateTime, {
+      zone: timezone,
+    })
+      .toUTC()
+      .toJSDate();
+
+    booking.startDateTime = startUTC;
+    booking.endDateTime = endUTC;
+    booking.rescheduled = true;
+    timeUpdated = true;
+  }
+
+  // ✅ Save booking FIRST
+  await booking.save();
+
+  // 🔄 Update Google Calendar AFTER save
+  if (
+    timeUpdated &&
+    booking.calendarSynced &&
+    booking.calendarEventId
+  ) {
+    try {
+      const teacher = await Teacher.findOne({
+        userId: booking.teacherId._id,
+      });
+      if (teacher?.googleCalendar?.connected) {
+        const calendar = await getValidGoogleClient(teacher);
+        await calendar.events.patch({
+          calendarId: teacher.googleCalendar.calendarId || "primary",
+          eventId: booking.calendarEventId,
+          requestBody: {
+            start: { dateTime: booking.startDateTime.toISOString() },
+            end: { dateTime: booking.endDateTime.toISOString() },
+          },
+        });
+        console.log(`🔄 Calendar updated for booking ${booking._id}`);
+      }
+    } catch (err) {
+      console.error(
+        `❌ Failed to update calendar for booking ${booking._id}`,
+        err
+      );
+    }
+  }
+  return successResponse(res, "Booking updated successfully", 200);
 });
 
 exports.GetBookings = catchAsync(async (req, res) => {
