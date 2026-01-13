@@ -24,6 +24,7 @@ const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const axios = require("axios");
 const ReviewTemplate = require("../EmailTemplate/Review");
+const { getValidGoogleClient } = require("../utils/GoogleCalendar");
 // const crypto = require("crypto");
 
 // configure DO Spaces S3 client (matches your uploader config)
@@ -1750,4 +1751,56 @@ exports.TeacherBulkLessonList = catchAsync(async (req, res) => {
     console.log("error", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
+});
+
+exports.SyncTeacherCalendar = catchAsync(async (req, res) => {
+  const teacherId = req.user.id;
+
+  const teacher = await Teacher.findOne({ userId: teacherId });
+  if (!teacher) {
+    return errorResponse(res, "Teacher not found", 404);
+  }
+  if (!teacher?.googleCalendar?.connected) {
+    return errorResponse(res, "Calendar not connected", 400);
+  }
+  const calendar = await getValidGoogleClient(teacher);
+  const now = new Date();
+  const bookings = await Bookings.find({
+    teacherId,
+    cancelled: false,
+    calendarSynced: false,
+    startDateTime: { $gt: now },
+  })
+    .populate("UserId")
+    .populate("LessonId");
+  if (!bookings.length) {
+    return successResponse(res, "Calendar already up to date", 200);
+  }
+  let syncedCount = 0;
+  for (const booking of bookings) {
+    try {
+      const event = {
+        summary: `${booking.LessonId?.title || "Lesson"} with ${booking.UserId?.name}`,
+        description: `Student: ${booking.UserId?.name}`,
+        start: {
+          dateTime: booking.startDateTime.toISOString(),
+        },
+        end: {
+          dateTime: booking.endDateTime.toISOString(),
+        },
+      };
+      const response = await calendar.events.insert({
+        calendarId: "primary",
+        requestBody: event,
+      });
+      booking.calendarSynced = true;
+      booking.calendarEventId = response.data.id;
+      await booking.save();
+      syncedCount++;
+    } catch (err) {
+      console.error("Calendar sync failed for booking:", booking._id, err.message);
+    }
+  }
+  logger.info(`${syncedCount} booking(s) synced to Google Calendar for teacherid ${teacher?._id}`);
+  return successResponse(res, `${syncedCount} booking(s) synced to Google Calendar`, 200);
 });
