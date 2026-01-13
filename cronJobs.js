@@ -349,7 +349,7 @@ module.exports = () => {
 
   cron.schedule("*/5 * * * *", async () => {
     // cron.schedule("* * * * *", async () => {
-    console.log("⏳ Running Google Calendar sync cron");
+    logger.info("⏳ Running Google Calendar sync cron");
     const now = new Date();
     // console.log("now", now);
     const bookings = await Bookings.find({

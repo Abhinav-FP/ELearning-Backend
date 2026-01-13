@@ -750,35 +750,35 @@ app.get("/api/v1/zoom/oauth-callback", async (req, res) => {
 //   }
 // });
 
-app.delete("/dev/google-calendar-test/delete", async (req, res) => {
-  try {
-    const teacherId = "6879d84df1853235ae9b2b70";
-    const eventId = "1narcd2oeie7kqui43qd0fg7s0";
+// app.delete("/dev/google-calendar-test/delete", async (req, res) => {
+//   try {
+//     const teacherId = "6879d84df1853235ae9b2b70";
+//     const eventId = "1narcd2oeie7kqui43qd0fg7s0";
 
-    const teacher = await Teacher.findById(teacherId);
-    if (!teacher) {
-      return res.status(404).json({ message: "Teacher not found" });
-    }
+//     const teacher = await Teacher.findById(teacherId);
+//     if (!teacher) {
+//       return res.status(404).json({ message: "Teacher not found" });
+//     }
 
-    const calendar = await getValidGoogleClient(teacher);
+//     const calendar = await getValidGoogleClient(teacher);
 
-    await calendar.events.delete({
-      calendarId: "primary",
-      eventId,
-    });
+//     await calendar.events.delete({
+//       calendarId: "primary",
+//       eventId,
+//     });
 
-    res.json({
-      success: true,
-      message: "Test event deleted successfully",
-    });
-  } catch (err) {
-    console.error("Delete test event failed:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-});
+//     res.json({
+//       success: true,
+//       message: "Test event deleted successfully",
+//     });
+//   } catch (err) {
+//     console.error("Delete test event failed:", err);
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// });
 
 
 

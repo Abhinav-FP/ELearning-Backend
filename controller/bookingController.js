@@ -9,6 +9,7 @@ const sendEmail = require("../utils/EmailMailler");
 const BulkLesson = require("../model/bulkLesson");
 const Teacher = require("../model/teacher");
 const { getValidGoogleClient } = require("../utils/GoogleCalendar");
+const logger = require("../utils/Logger");
 
 exports.AddBooking = catchAsync(async (req, res) => {
   try {
@@ -64,19 +65,11 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
   let timeUpdated = false;
   if (startDateTime && endDateTime) {
     if (booking.rescheduled) {
-      return errorResponse(
-        res,
-        "Booking has already been rescheduled once",
-        400
-      );
+      return errorResponse(res, "Booking has already been rescheduled once", 400);
     }
 
     if (!timezone) {
-      return errorResponse(
-        res,
-        "Timezone is required when updating time",
-        400
-      );
+      return errorResponse(res, "Timezone is required when updating time", 400);
     }
 
     const startUTC = DateTime.fromISO(startDateTime, {
@@ -120,13 +113,10 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
             end: { dateTime: booking.endDateTime.toISOString() },
           },
         });
-        console.log(`🔄 Calendar updated for booking ${booking._id}`);
+        logger.info(`🔄 Calendar updated for booking ${booking._id}`);
       }
     } catch (err) {
-      console.error(
-        `❌ Failed to update calendar for booking ${booking._id}`,
-        err
-      );
+      logger.error(`Failed to update calendar for booking ${booking._id}`, err);
     }
   }
   return successResponse(res, "Booking updated successfully", 200);
@@ -180,10 +170,10 @@ exports.CancelBooking = catchAsync(async (req, res) => {
             calendarId: teacher.googleCalendar.calendarId || "primary",
             eventId: booking.calendarEventId,
           });
-          console.log(`Calendar event deleted for booking ${booking._id}`);
+          logger.info(`Calendar event deleted for booking ${booking._id}`);
         }
       } catch (err) {
-        console.error(`Failed to delete calendar event for booking ${booking._id}`, err);
+        logger.error(`Failed to delete calendar event for booking ${booking._id}`, err);
       }
     }
 
