@@ -168,6 +168,25 @@ exports.CancelBooking = catchAsync(async (req, res) => {
     booking.cancelled = true;
     await booking.save();
 
+    if (booking.calendarSynced && booking.calendarEventId) {
+      try {
+        const teacher = await Teacher.findOne({
+          userId: booking.teacherId._id,
+        });
+
+        if (teacher?.googleCalendar?.connected) {
+          const calendar = await getValidGoogleClient(teacher);
+          await calendar.events.delete({
+            calendarId: teacher.googleCalendar.calendarId || "primary",
+            eventId: booking.calendarEventId,
+          });
+          console.log(`Calendar event deleted for booking ${booking._id}`);
+        }
+      } catch (err) {
+        console.error(`Failed to delete calendar event for booking ${booking._id}`, err);
+      }
+    }
+
     // --- Update BulkLesson record ---
     await BulkLesson.findOneAndUpdate(
       { "bookings.id": booking._id },
