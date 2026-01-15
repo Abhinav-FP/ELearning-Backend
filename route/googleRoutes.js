@@ -11,7 +11,7 @@ router.get("/auth/google", verifyToken, async (req, res) => {
   const teacherId = req.user.id;
   logger.info(`Google calendar connect request from ${teacherId}`);
   const scopes = [
-    "https://www.googleapis.com/auth/calendar.freebusy",
+    // "https://www.googleapis.com/auth/calendar.freebusy",
     "https://www.googleapis.com/auth/calendar.events",
   ];
   const url = oauth2Client.generateAuthUrl({
