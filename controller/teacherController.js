@@ -1757,6 +1757,8 @@ exports.SyncTeacherCalendar = catchAsync(async (req, res) => {
   const teacherId = req.user.id;
 
   const teacher = await Teacher.findOne({ userId: teacherId });
+  const user = await User.findById(teacherId);
+  
   if (!teacher) {
     return errorResponse(res, "Teacher not found", 404);
   }
@@ -1784,9 +1786,11 @@ exports.SyncTeacherCalendar = catchAsync(async (req, res) => {
         description: `Student: ${booking.UserId?.name}`,
         start: {
           dateTime: booking.startDateTime.toISOString(),
+          timeZone: user.time_zone || "UTC",
         },
         end: {
           dateTime: booking.endDateTime.toISOString(),
+          timeZone: user.time_zone || "UTC",
         },
       };
       const response = await calendar.events.insert({

@@ -16,7 +16,7 @@ const logger = require("./utils/Logger");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const Message = require("./model/message");
-// const User = require("./model/user");
+const User = require("./model/user");
 const MessageTemplate = require("./EmailTemplate/Message");
 const { getValidGoogleClient } = require("./utils/GoogleCalendar");
 
@@ -369,6 +369,7 @@ module.exports = () => {
       try {
         // 1️⃣ Find teacher using booking.teacherId (User ID)
         const teacher = await Teacher.findOne({ userId: booking.teacherId });
+        const user = await User.findById(booking.teacherId);
         if (!teacher?.googleCalendar?.connected) {
           logger.warn(`Calendar not connected for teacher ${booking.teacherId}`);
           continue;
@@ -381,9 +382,11 @@ module.exports = () => {
           description: `Lesson booking\nBooking ID: ${booking._id || ""}`,
           start: {
             dateTime: booking.startDateTime.toISOString(),
+            timeZone: user.time_zone || "UTC",
           },
           end: {
             dateTime: booking.endDateTime.toISOString(),
+            timeZone: user.time_zone || "UTC",
           },
           extendedProperties: {
             private: {

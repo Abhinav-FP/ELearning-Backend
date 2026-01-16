@@ -94,23 +94,25 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
   await booking.save();
 
   // 🔄 Update Google Calendar AFTER save
-  if (
-    timeUpdated &&
-    booking.calendarSynced &&
-    booking.calendarEventId
-  ) {
+  if (timeUpdated && booking.calendarSynced && booking.calendarEventId) {
     try {
-      const teacher = await Teacher.findOne({
-        userId: booking.teacherId._id,
-      });
+      const teacher = await Teacher.findOne({userId: booking.teacherId._id});
+      const user = await User.findById(booking.teacherId._id);
+
       if (teacher?.googleCalendar?.connected) {
         const calendar = await getValidGoogleClient(teacher);
         await calendar.events.patch({
           calendarId: teacher.googleCalendar.calendarId || "primary",
           eventId: booking.calendarEventId,
           requestBody: {
-            start: { dateTime: booking.startDateTime.toISOString() },
-            end: { dateTime: booking.endDateTime.toISOString() },
+            start: { 
+              dateTime: booking.startDateTime.toISOString(),
+              timeZone: user.time_zone || "UTC",
+            },
+            end: { 
+              dateTime: booking.endDateTime.toISOString(),
+              timeZone: user.time_zone || "UTC",
+            },
           },
         });
         logger.info(`🔄 Calendar updated for booking ${booking._id}`);
