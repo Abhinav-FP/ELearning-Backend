@@ -4,6 +4,7 @@ const { errorResponse, successResponse } = require("../utils/ErrorHandling");
 const catchAsync = require("../utils/catchAsync");
 const StudentCancel = require("../EmailTemplate/Cancelled");
 const AdminCancel = require("../EmailTemplate/AdminCancel");
+const Reschedule = require("../EmailTemplate/Reschedule");
 const { DateTime } = require("luxon");
 const sendEmail = require("../utils/EmailMailler");
 const BulkLesson = require("../model/bulkLesson");
@@ -38,13 +39,7 @@ exports.AddBooking = catchAsync(async (req, res) => {
 });
 
 exports.UpdateBooking = catchAsync(async (req, res) => {
-  const {
-    lessonCompletedStudent,
-    lessonCompletedTeacher,
-    startDateTime,
-    endDateTime,
-    timezone,
-  } = req.body;
+  const { lessonCompletedStudent, lessonCompletedTeacher, startDateTime, endDateTime, timezone } = req.body;
   const { id } = req.params;
   if (!id) {
     return errorResponse(res, "Booking ID is required", 400);
@@ -74,15 +69,11 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
 
     const startUTC = DateTime.fromISO(startDateTime, {
       zone: timezone,
-    })
-      .toUTC()
-      .toJSDate();
+    }).toUTC().toJSDate();
 
     const endUTC = DateTime.fromISO(endDateTime, {
       zone: timezone,
-    })
-      .toUTC()
-      .toJSDate();
+    }).toUTC().toJSDate();
 
     booking.startDateTime = startUTC;
     booking.endDateTime = endUTC;
@@ -90,10 +81,43 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
     timeUpdated = true;
   }
 
-  // ✅ Save booking FIRST
   await booking.save();
 
-  // 🔄 Update Google Calendar AFTER save
+  // Sending booking emails
+  if(timeUpdated){
+    const subject = "Booking Rescheduled";
+  
+    const utcDateTime = DateTime.fromJSDate(booking.startDateTime, { zone: "utc" });
+    
+    const userTimeISO = booking?.UserId?.time_zone
+          ? utcDateTime.setZone(booking.UserId.time_zone).toISO()
+          : utcDateTime.toISO();
+    
+    const teacherTimeISO = booking?.teacherId?.time_zone
+      ? utcDateTime.setZone(booking.teacherId.time_zone).toISO()
+      : utcDateTime.toISO();
+    
+    // Email to Student
+    const emailHtml = Reschedule(booking?.UserId?.name, booking?.teacherId?.name, userTimeISO , "https://japaneseforme.com/student/lessons");
+    logger.info(`Booking reschedule email sending to student at  ${booking?.UserId?.email}`);
+    await sendEmail({
+      email: booking?.UserId?.email,
+      subject: subject,
+      emailHtml: emailHtml,
+    });
+     
+    
+    // Email to teacher
+    const teacherEmailHtml = Reschedule(booking?.teacherId?.name, booking?.UserId?.name, teacherTimeISO, "https://japaneseforme.com/teacher-dashboard/booking");
+    logger.info(`Booking reschedule email sending to teacher at  ${booking?.teacherId?.email}`);
+    await sendEmail({
+      email: booking?.teacherId?.email,
+      subject: subject,
+      emailHtml: teacherEmailHtml,
+    });  
+  }
+
+  // Update Google Calendar event if time was changed
   if (timeUpdated && booking.calendarSynced && booking.calendarEventId) {
     try {
       const teacher = await Teacher.findOne({userId: booking.teacherId._id});
@@ -121,6 +145,7 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
       logger.error(`Failed to update calendar for booking ${booking._id}`, err);
     }
   }
+
   return successResponse(res, "Booking updated successfully", 200);
 });
 
