@@ -57,15 +57,21 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
   if (lessonCompletedTeacher != null) {
     booking.lessonCompletedTeacher = lessonCompletedTeacher;
   }
+
+  let oldStartTime = booking.startDateTime;
+  const oldStartUTC = DateTime.fromJSDate(oldStartTime, { zone: "utc" });
+
   let timeUpdated = false;
   if (startDateTime && endDateTime) {
-    if (booking.rescheduled) {
-      return errorResponse(res, "Booking has already been rescheduled once", 400);
-    }
+    // if (booking.rescheduled) {
+    //   return errorResponse(res, "Booking has already been rescheduled once", 400);
+    // }
 
     if (!timezone) {
       return errorResponse(res, "Timezone is required when updating time", 400);
     }
+
+    logger.info(`Rescheduling booking ${booking._id} from ${booking.startDateTime} to ${startDateTime} (${timezone})`);
 
     const startUTC = DateTime.fromISO(startDateTime, {
       zone: timezone,
@@ -92,13 +98,21 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
     const userTimeISO = booking?.UserId?.time_zone
           ? utcDateTime.setZone(booking.UserId.time_zone).toISO()
           : utcDateTime.toISO();
+
+    const userOldStartTimeISO = booking?.UserId?.time_zone
+          ? oldStartUTC.setZone(booking.UserId.time_zone).toISO()
+          : oldStartUTC.toISO();
     
     const teacherTimeISO = booking?.teacherId?.time_zone
       ? utcDateTime.setZone(booking.teacherId.time_zone).toISO()
       : utcDateTime.toISO();
-    
+
+    const teacherOldStartTimeISO = booking?.teacherId?.time_zone
+          ? oldStartUTC.setZone(booking.teacherId.time_zone).toISO()
+          : oldStartUTC.toISO();
+
     // Email to Student
-    const emailHtml = Reschedule(booking?.UserId?.name, booking?.teacherId?.name, userTimeISO , "https://japaneseforme.com/student/lessons");
+    const emailHtml = Reschedule(booking?.UserId?.name, booking?.teacherId?.name, userTimeISO, userOldStartTimeISO, "https://japaneseforme.com/student/lessons");
     logger.info(`Booking reschedule email sending to student at  ${booking?.UserId?.email}`);
     await sendEmail({
       email: booking?.UserId?.email,
@@ -108,7 +122,7 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
      
     
     // Email to teacher
-    const teacherEmailHtml = Reschedule(booking?.teacherId?.name, booking?.UserId?.name, teacherTimeISO, "https://japaneseforme.com/teacher-dashboard/booking");
+    const teacherEmailHtml = Reschedule(booking?.teacherId?.name, booking?.UserId?.name, teacherTimeISO, teacherOldStartTimeISO, "https://japaneseforme.com/teacher-dashboard/booking");
     logger.info(`Booking reschedule email sending to teacher at  ${booking?.teacherId?.email}`);
     await sendEmail({
       email: booking?.teacherId?.email,

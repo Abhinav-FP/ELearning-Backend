@@ -1,7 +1,7 @@
 const moment = require("moment");
 
-module.exports = (receiverName, nonReceiverName, startDateTime, link) => {
-    return `
+module.exports = (receiverName, nonReceiverName, startDateTime, oldStartDateTime, link) => {
+  return `
 <div id="email" style="background: #fdf6f7;padding: 20px 0;">
      <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">        
         <tr>
@@ -22,6 +22,28 @@ module.exports = (receiverName, nonReceiverName, startDateTime, link) => {
                 <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: center;color: #333333;margin: 0.8rem 0 .7rem;">Hi ${receiverName},</p>
 
                 <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 .5rem;">Your booking with ${nonReceiverName}  has been rescheduled!
+                </p>
+                <p style="font-size: 1rem;font-weight: 600;text-align: center;color:#666;margin-bottom:.5rem;">
+                  Previous Schedule
+                </p>
+        
+                <div style="max-width: 300px; margin: 0 auto 1.2rem;padding-bottom: 15px;">
+                    <div style="border:6px dashed #999; border-radius: 20px;">
+                        <table cellspacing="0" cellpadding="0" style="width: 100%;margin: 0">
+                        <tr>
+                            <td width="30%" style="font-size: 1rem; font-weight: 600; line-height: 18px;text-align: left;color: #999;padding: 1rem 1.3rem;border-bottom: 1px dashed #999;">Date:</td> 
+                            <td width="70%" style="font-size: 1rem; font-weight: 400; line-height: 1.3rem;text-align: left;color: #999;padding: 1rem 1.3rem;border-bottom: 1px dashed #999;">${moment.parseZone(oldStartDateTime).format("DD MMM. YYYY")}</td> 
+                        </tr>
+                         <tr>
+                            <td width="30%" style="font-size: 1rem; font-weight: 600; line-height: 18px;text-align: left;color: #999;padding: .6rem 1.3rem;border-bottom: 1px dashed #999;">Time:</td> 
+                            <td width="70%" style="font-size: 1rem; font-weight: 400; line-height: 1.3rem;text-align: left;color: #999;padding: .6rem 1.3rem;border-bottom: 1px dashed #999;">${moment.parseZone(oldStartDateTime).format("hh:mm A")} </td> 
+                        </tr>
+                    </table>
+                    </div>
+                </div>
+                
+                <p style="font-size: 1rem;font-weight: 600;text-align: center;color:#CC2828;margin-bottom:.5rem;">
+                  New Schedule
                 </p>
                 <div style="max-width: 300px; margin: 0 auto 1.2rem;padding-bottom: 15px;background-image: url(https://student-teacher-platform.sgp1.digitaloceanspaces.com/pc-bg.png); background-repeat: no-repeat;background-position: bottom center;    background-size: contain;">
                     <div style="border:6px solid #CC2828;border-radius: 20px;">
@@ -53,5 +75,5 @@ module.exports = (receiverName, nonReceiverName, startDateTime, link) => {
         </tr> 
      </table>
     </div>
-    `}
-
+    `;
+};
