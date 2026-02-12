@@ -5,7 +5,7 @@ module.exports = (receiverName, senderName ,link) => {
     <tr>
       <td style="padding: .5rem 1rem; text-align: center;">
         <a href="https://www.akitainakaschoolonline.com/" style="text-decoration: none;">
-          <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Japanese For Me" style="max-width: 150px;">
+          <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Akita Inaka School Online" style="max-width: 150px;">
         </a>
       </td>
     </tr>
@@ -43,7 +43,7 @@ module.exports = (receiverName, senderName ,link) => {
 
         <p style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: left; color: #333333; margin: 0 0 1.5rem;">
           Happy Learning,<br>
-          Japanese for Me Team
+          Akita Inaka School Online Team
         </p>
       </td>
     </tr>
@@ -52,7 +52,7 @@ module.exports = (receiverName, senderName ,link) => {
       <td style="padding: .1rem 0rem 1rem;">
         <div style="padding: 1.3rem 1rem; background: #55844D;">
           <p style="font-size: 12px; font-weight: 400; line-height: 18px; text-align: center; color: #55844D; margin: 0 auto; max-width: 260px;">
-            © 2025 Japanese for Me. All Rights Reserved.
+            © 2025 Akita Inaka School Online. All Rights Reserved.
           </p>
         </div>
       </td>

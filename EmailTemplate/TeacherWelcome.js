@@ -5,7 +5,7 @@ module.exports = (userName) => {
     <tr>
       <td style="padding: .5rem  1rem;text-align: center;"> 
         <a href="https://www.akitainakaschoolonline.com/" style="text-decoration: none;">
-          <img style="logo.png" src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Japanese For Me">
+          <img style="logo.png" src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Akita Inaka School Online">
         </a>
       </td> 
     </tr>
@@ -16,21 +16,21 @@ module.exports = (userName) => {
     </tr>
     <tr>
       <td style="padding: .1rem 1rem 1rem ;border-bottom: 1px solid rgba(0,0,0,.1)">
-        <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.6rem; text-align: left;color: #55844D;margin: 0 0 .6rem;">Welcome to Japanese for Me</p> 
+        <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.6rem; text-align: left;color: #55844D;margin: 0 0 .6rem;">Welcome to Akita Inaka School Online</p> 
         <p style="font-size: 1.1rem; font-weight: bold; line-height: 1.6rem; text-align: left;color: #333333;margin: 0 0 .7rem;">Hi ${userName},</p>
 
         <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: left;color: #333333;margin: 0 0 1.3rem;">
-          Welcome to Japanese for Me as a teacher! 🎉<br><br>
+          Welcome to Akita Inaka School Online as a teacher! 🎉<br><br>
           Your application has been received and is currently pending approval from our team. Once your account is approved, you’ll be able to create lessons and start teaching students on our platform.
         </p>
 
-        <p style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: left;color: #333333;margin: 0 0 1.5rem;">Thank you for joining us, <br>Japanese for Me Team</p>  
+        <p style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: left;color: #333333;margin: 0 0 1.5rem;">Thank you for joining us, <br>Akita Inaka School Online Team</p>  
       </td>
     </tr>
     <tr>
       <td style="padding: .1rem 0rem 1rem ;">
         <div style="padding: 1.3rem  1rem;background: #55844D;">
-          <p style="font-size: 12px; font-weight: 400; line-height: 18px;  text-align: center;color: #ffff;margin: 0 auto; max-width: 260px;">© 2025 Japanese for Me. All Rights Reserved.</p>
+          <p style="font-size: 12px; font-weight: 400; line-height: 18px;  text-align: center;color: #ffff;margin: 0 auto; max-width: 260px;">© 2025 Akita Inaka School Online. All Rights Reserved.</p>
         </div>
       </td>
     </tr>

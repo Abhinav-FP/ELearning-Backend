@@ -5,7 +5,7 @@ module.exports = (userName, teacherName, link) => {
         <tr>
             <td style="padding: .5rem  1rem;text-align: center;"> 
                 <a href="https://www.akitainakaschoolonline.com/" style="text-decoration: none;">
-                  <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Japanese For Me">
+                  <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Akita Inaka School Online">
                 </a>
             </td> 
         </tr>
@@ -26,14 +26,14 @@ module.exports = (userName, teacherName, link) => {
                     <a href=${link} style="background:#55844D;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">Confirm Lesson Taught</a>
                 </p>  
                 <p style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: center;color: #333333;margin: 0 0 1.3rem;">
-                    Thank you for confirming!<br>— The Japanese for Me Team
+                    Thank you for confirming!<br>— The Akita Inaka School Online Team
                 </p>
             </td>
         </tr>
         <tr> 
             <td style="padding:0;">  
                 <div style="padding: 1.3rem  1rem;background: #55844D;">
-                    <p style="font-size: 12px; font-weight: 400; line-height: 18px;  text-align: center;color: #ffff;margin: 0 auto; max-width: 260px;">© 2025 Japanese for Me. All Rights Reserved.</p>
+                    <p style="font-size: 12px; font-weight: 400; line-height: 18px;  text-align: center;color: #ffff;margin: 0 auto; max-width: 260px;">© 2025 Akita Inaka School Online. All Rights Reserved.</p>
                 </div>
             </td>
         </tr> 

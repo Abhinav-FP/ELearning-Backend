@@ -6,7 +6,7 @@ module.exports = (userName, link) => {
     <tr>
       <td style="padding: .5rem  1rem;text-align: center;">
         <a href="https://www.akitainakaschoolonline.com/" style="text-decoration: none;">
-          <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Japanese For Me" />
+          <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Akita Inaka School Online" />
         </a>
       </td>
     </tr>
@@ -28,7 +28,7 @@ module.exports = (userName, link) => {
 
         <p
           style="font-size: 1rem; font-weight: 400; line-height: 1.5rem; text-align: left;color: #333333;margin: 0 0 1.3rem;">
-          Thank you for attending your lesson with Japanese for Me. Your feedback helps us improve and ensures better
+          Thank you for attending your lesson with Akita Inaka School Online. Your feedback helps us improve and ensures better
           experiences for everyone.
           Please take a moment to share your thoughts by clicking the button below.
         </p>
@@ -40,7 +40,7 @@ module.exports = (userName, link) => {
         </p>
         <p
           style="font-size: 1rem; font-weight: 400; line-height: 22px; text-align: left;color: #333333;margin: 0 0 1.5rem;">
-          Thank you again, <br>The Japanese for Me Team
+          Thank you again, <br>The Akita Inaka School Online Team
         </p>
       </td>
     </tr>
@@ -49,7 +49,7 @@ module.exports = (userName, link) => {
         <div style="padding: 1.3rem  1rem;background: #55844D;">
           <p
             style="font-size: 12px; font-weight: 400; line-height: 18px; text-align: center;color: #55844D;margin: 0 auto; max-width: 260px;">
-            © 2025 Japanese for Me. All Rights Reserved.
+            © 2025 Akita Inaka School Online. All Rights Reserved.
           </p>
         </div>
       </td>
