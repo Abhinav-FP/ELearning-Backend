@@ -28,7 +28,7 @@ exports.forgotlinkrecord = catchAsync(
         return errorResponse(res, "No user found with this email", 404);
       }
       const token = await signEmail(record._id);
-      const resetLink = `https://www.japaneseforme.com/forget-password/${token}`;
+      const resetLink = `https://www.akitainakaschoolonline.com/forget-password/${token}`;
       const customerUser = record.name;
       const registrationSubject =
         "Reset Your Password";

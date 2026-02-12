@@ -112,7 +112,7 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
           : oldStartUTC.toISO();
 
     // Email to Student
-    const emailHtml = Reschedule(booking?.UserId?.name, booking?.teacherId?.name, userTimeISO, userOldStartTimeISO, "https://japaneseforme.com/student/lessons");
+    const emailHtml = Reschedule(booking?.UserId?.name, booking?.teacherId?.name, userTimeISO, userOldStartTimeISO, "https://akitainakaschoolonline.com/student/lessons");
     logger.info(`Booking reschedule email sending to student at  ${booking?.UserId?.email}`);
     await sendEmail({
       email: booking?.UserId?.email,
@@ -122,7 +122,7 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
      
     
     // Email to teacher
-    const teacherEmailHtml = Reschedule(booking?.teacherId?.name, booking?.UserId?.name, teacherTimeISO, teacherOldStartTimeISO, "https://japaneseforme.com/teacher-dashboard/booking");
+    const teacherEmailHtml = Reschedule(booking?.teacherId?.name, booking?.UserId?.name, teacherTimeISO, teacherOldStartTimeISO, "https://akitainakaschoolonline.com/teacher-dashboard/booking");
     logger.info(`Booking reschedule email sending to teacher at  ${booking?.teacherId?.email}`);
     await sendEmail({
       email: booking?.teacherId?.email,

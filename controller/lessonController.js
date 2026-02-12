@@ -157,7 +157,7 @@ exports.LessonDone = catchAsync(async (req, res) => {
     ) {
       const userdata = await User.findById(updatedBooking?.UserId);
       if (userdata?.email) {
-        const reviewLink = `https://japaneseforme.com/student/review/${updatedBooking._id}`;
+        const reviewLink = `https://akitainakaschoolonline.com/student/review/${updatedBooking._id}`;
         const reviewSubject = "🎉 Share your feedback with Japanese for Me!";
         const emailHtml = Review(userdata?.name, reviewLink);
 

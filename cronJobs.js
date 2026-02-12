@@ -128,7 +128,7 @@ module.exports = () => {
           userName,
           zoomLink ||
             booking.zoom?.meetingLink ||
-            "https://japaneseforme.com/student/lessons",
+            "https://akitainakaschoolonline.com/student/lessons",
           time,
           teacherName,
           lessonName
@@ -147,7 +147,7 @@ module.exports = () => {
           userName,
           zoomLink ||
             booking.zoom?.meetingLink ||
-            "https://japaneseforme.com/teacher-dashboard/booking",
+            "https://akitainakaschoolonline.com/teacher-dashboard/booking",
           time,
           teacherName,
           lessonName
@@ -192,7 +192,7 @@ module.exports = () => {
         // const studentDoneEmailHtml = StudentLessonDone(
         //   userName,
         //   teacherName,
-        //   `https://japaneseforme.com/confirm-lesson/${token}`
+        //   `https://akitainakaschoolonline.com/confirm-lesson/${token}`
         // );
 
         // await sendEmail({
@@ -214,7 +214,7 @@ module.exports = () => {
         const teacherDoneEmailHtml = TeacherLessonDone(
           userName,
           teacherName,
-          `https://japaneseforme.com/confirm-lesson/${teacherToken}`
+          `https://akitainakaschoolonline.com/confirm-lesson/${teacherToken}`
         );
 
         await sendEmail({
@@ -313,8 +313,8 @@ module.exports = () => {
         if (!receiver?.email) continue;
         const link =
           sender.role === "teacher"
-            ? "https://japaneseforme.com/student/message"
-            : "https://japaneseforme.com/teacher-dashboard/message";
+            ? "https://akitainakaschoolonline.com/student/message"
+            : "https://akitainakaschoolonline.com/teacher-dashboard/message";
         await sendEmail({
           email: receiver.email,
           subject: `New message from ${sender.name}`,

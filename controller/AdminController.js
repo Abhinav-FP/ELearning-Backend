@@ -77,7 +77,7 @@ exports.ApproveRejectTeacher = catchAsync(async (req, res) => {
     ).populate('userId', 'name email');
     if(approved){
       const token = await signEmail(teacher.userId);
-      const link = `https://japaneseforme.com/verify/${token}`;
+      const link = `https://akitainakaschoolonline.com/verify/${token}`;
       const registrationSubject =
         "Your Account Has Been Approved! 🎉";
       const emailHtml = TeacherApprove(teacher?.userId?.name || "", link);

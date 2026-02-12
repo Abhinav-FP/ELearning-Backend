@@ -90,13 +90,13 @@ router.get("/auth/google/callback", async (req, res) => {
 
     // Redirect back to frontend
     res.redirect(
-      `https://japaneseforme.com/teacher-dashboard/setting`
+      `https://akitainakaschoolonline.com/teacher-dashboard/setting`
     );
 
   } catch (err) {
     logger.error("Google OAuth Error:", err);
     res.redirect(
-      `https://japaneseforme.com/teacher-dashboard/setting`
+      `https://akitainakaschoolonline.com/teacher-dashboard/setting`
     );
   }
 });

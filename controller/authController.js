@@ -67,7 +67,7 @@ exports.studentSignup = catchAsync(async (req, res) => {
     // console.log("userResult", userResult)
     const token = await signEmail(userResult._id);
     // console.log("token", token)
-    const link = `https://japaneseforme.com/verify/${token}`;
+    const link = `https://akitainakaschoolonline.com/verify/${token}`;
 
     const registrationSubject = "Welcome to Japanese for Me!🎉 Your account has been created.";
     const emailHtml = Welcome(name, link);
@@ -447,7 +447,7 @@ exports.ResendVerificationLink = catchAsync(async (req, res) => {
     }
     const userResult = await User.findById({ _id: userId });
     const token = await signEmail(userResult._id);
-    const link = `https://japaneseforme.com/verify/${token}`;
+    const link = `https://akitainakaschoolonline.com/verify/${token}`;
 
     // Send email logic for student
     const registrationSubject =

@@ -4,7 +4,7 @@ module.exports = (teacherName, link) => {
   <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">
     <tr>
       <td style="padding: .5rem 1rem;text-align: center;">
-        <a href="https://www.japaneseforme.com/" style="text-decoration: none;">
+        <a href="https://www.akitainakaschoolonline.com/" style="text-decoration: none;">
           <img style="logo.png" src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Japanese For Me">
         </a>
       </td>

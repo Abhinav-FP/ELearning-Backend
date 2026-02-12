@@ -4,7 +4,7 @@ module.exports = (userName, multipleLessons, teacherName, lessonName) => {
         <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">
             <tr>
             <td style="padding: .5rem 1rem;text-align: center;">
-                <a href="https://www.japaneseforme.com/" style="text-decoration: none;">
+                <a href="https://www.akitainakaschoolonline.com/" style="text-decoration: none;">
                 <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Japanese For Me" style="max-width:160px;">
                 </a>
             </td>
@@ -29,7 +29,7 @@ module.exports = (userName, multipleLessons, teacherName, lessonName) => {
                 You can schedule these lessons anytime in the future at your convenience. Your purchased lessons are now added to your account as credits.
                 </p>
                 <p style="margin: 0 0 1.3rem; text-align: center;">
-                <a href="https://japaneseforme.com/student/bulk" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">
+                <a href="https://akitainakaschoolonline.com/student/bulk" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">
                     View Your Lesson Credits
                 </a>
                 </p>

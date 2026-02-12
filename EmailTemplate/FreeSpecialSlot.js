@@ -6,7 +6,7 @@ module.exports = (userName, teacherName, startDateTime, endUTC) => {
   <table role="presentation" border="0" cellspacing="0" width="100%" style="font-family: arial;max-width:450px; margin: auto;background-color: #fff;">        
     <tr>
       <td style="padding: .5rem  1rem;text-align: center;"> 
-        <a href="https://www.japaneseforme.com/" style="text-decoration: none;">
+        <a href="https://www.akitainakaschoolonline.com/" style="text-decoration: none;">
           <img style="logo.png" src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/logo.png" alt="Japanese For Me">
         </a>
       </td> 
@@ -63,7 +63,7 @@ module.exports = (userName, teacherName, startDateTime, endUTC) => {
         </div>
 
         <p style="margin: 0 0 1.3rem;text-align: center;">
-          <a href="https://japaneseforme.com/student/lessons" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">
+          <a href="https://akitainakaschoolonline.com/student/lessons" style="background:#CC2828;color:#fff;border-radius: 7px;font-size: 1.1rem;text-decoration: none;display: inline-block;padding: .8rem 1.5rem;">
             View Your Lesson
           </a>
         </p>

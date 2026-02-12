@@ -347,7 +347,7 @@ exports.DeleteCheck = catchAsync(async (req, res) => {
 
 exports.EmailCheck = catchAsync(async (req, res) => {
   try {
-        const link = `https://japaneseforme.com/verify/123456`;
+        const link = `https://akitainakaschoolonline.com/verify/123456`;
         const registrationSubject = "Welcome to Japanese for Me!🎉 Your account has been created.";
         const emailHtml = Welcome("Abhinav", link);
         console.log("About to send email");
@@ -1278,7 +1278,7 @@ exports.SpecialSlotCreate = catchAsync(async (req, res) => {
       process.env.JWT_SECRET_KEY,
       { expiresIn: "48h" }
     );
-    const link = `https://japaneseforme.com/slot/${token}`;
+    const link = `https://akitainakaschoolonline.com/slot/${token}`;
 
     // Convert to ISO format for moment parsing in email templates
     const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
@@ -1690,7 +1690,7 @@ exports.LessonDone = catchAsync(async (req, res) => {
     );
     const userdata = await User.findById(updatedBooking?.UserId);
     if (userdata?.email) {
-      const reviewLink = `https://japaneseforme.com/student/review/${updatedBooking._id}`;
+      const reviewLink = `https://akitainakaschoolonline.com/student/review/${updatedBooking._id}`;
       const reviewSubject = "🎉 Share your feedback with Japanese for Me!";
       const emailHtml = ReviewTemplate(userdata?.name, reviewLink);
       await sendEmail({

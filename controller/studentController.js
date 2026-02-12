@@ -501,7 +501,7 @@ exports.SpecialSlotPaymentLink = catchAsync(async (req, res) => {
       { expiresIn: "48h" }
     );
 
-    const link = `https://japaneseforme.com/slot/${token}`;
+    const link = `https://akitainakaschoolonline.com/slot/${token}`;
     successResponse(res, "Special Slots retrieved successfully!", 200, { link });
   } catch (error) {
     console.log("error", error);

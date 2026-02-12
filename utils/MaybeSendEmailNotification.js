@@ -34,7 +34,7 @@ exports.MaybeSendEmailNotification = async (senderId, receiverId) => {
 
     if (!receiver || !receiver.email) return;
 
-    const link = senderId.role === "teacher" ? "https://japaneseforme.com/student/message" : "https://japaneseforme.com/teacher-dashboard/message";
+    const link = senderId.role === "teacher" ? "https://akitainakaschoolonline.com/student/message" : "https://akitainakaschoolonline.com/teacher-dashboard/message";
     const subject = `New message from ${sender?.name}`;
 
     const emailHtml = Message(receiver?.name || "", sender?.name || "" ,link);
