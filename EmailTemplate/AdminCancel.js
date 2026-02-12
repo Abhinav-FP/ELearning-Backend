@@ -19,7 +19,7 @@ module.exports = (studentName, teacherName, date) => {
 
     <tr>
       <td style="padding: .1rem 1rem 1rem ;border-bottom: 1px solid rgba(0,0,0,.1);">
-        <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #CC2828;margin: 0 0 .6rem;">
+        <p style="font-size: 1.5rem; font-weight: bold; line-height: 1.9rem; text-align: center;color: #55844D;margin: 0 0 .6rem;">
           Lesson Cancelled by ${teacherName}
         </p>
 
@@ -38,8 +38,8 @@ module.exports = (studentName, teacherName, date) => {
     </tr>
     <tr>
       <td style="padding:0;">
-        <div style="padding: 1.3rem  1rem;background: #EFD1D1;">
-          <p style="font-size: 12px; font-weight: 400; line-height: 18px;  text-align: center;color: #CC2828;margin: 0 auto; max-width: 260px;">
+        <div style="padding: 1.3rem  1rem;background: #55844D;">
+          <p style="font-size: 12px; font-weight: 400; line-height: 18px;  text-align: center;color: #ffff;margin: 0 auto; max-width: 260px;">
             © 2025 Japanese for Me. All Rights Reserved.
           </p>
         </div>
