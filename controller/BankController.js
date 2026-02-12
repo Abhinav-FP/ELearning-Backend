@@ -4,61 +4,75 @@ const Loggers = require("../utils/Logger");
 
 exports.BankAddOrEdit = catchAsync(async (req, res) => {
     const userId = req?.user?.id;
+
     if (!userId) {
-        return res.status(400).json({
+        return res.status(401).json({
             status: false,
-            message: "User ID is missing.",
+            message: "Unauthorized user.",
         });
     }
-    const { BankName, BankNumber, BranchName, IFSC, _id, AccountHolderName, BranchCode, AccountType, OverseasDetails } = req.body;
+
+    const {
+        BankName,
+        BankNumber,
+        BranchName,
+        IFSC,
+        AccountHolderName,
+        BranchCode,
+        AccountType,
+        OverseasDetails
+    } = req.body;
+
+    // Basic validation (optional but recommended)
+    if (!BankName || !BankNumber || !AccountHolderName) {
+        return res.status(400).json({
+            status: false,
+            message: "Required bank details are missing.",
+        });
+    }
 
     try {
-        let result;
-        if (_id) {
-            // Edit existing record
-            result = await Bank.findByIdAndUpdate(
-                _id,
-                { BankName, BankNumber, BranchName, IFSC, userId, AccountHolderName, BranchCode, AccountType, OverseasDetails },
-                { new: true, runValidators: true }
-            );
-
-            if (!result) {
-                return res.status(404).json({
-                    status: false,
-                    message: "Bank record not found.",
-                });
-            }
-
-            return res.status(200).json({
-                status: true,
-                message: "Bank details have been successfully updated!",
-                data: result,
-            });
-        } else {
-            // Add new record
-            const record = new Bank({
+        const bank = await Bank.findOneAndUpdate(
+            { userId }, // 👈 ALWAYS by userId
+            {
                 BankName,
                 BankNumber,
                 BranchName,
                 IFSC,
-                userId,
                 AccountHolderName,
-                BranchCode, AccountType, OverseasDetails
-            });
+                BranchCode,
+                AccountType,
+                OverseasDetails,
+                userId
+            },
+            {
+                new: true,          // return updated doc
+                upsert: true,       // create if not exists
+                runValidators: true,
+                setDefaultsOnInsert: true,
+            }
+        );
 
-            result = await record.save();
+        return res.status(200).json({
+            status: true,
+            message: "Bank details saved successfully.",
+            data: bank,
+        });
 
-            return res.status(201).json({
-                status: true,
-                message: "Bank details have been successfully added!",
-                data: result,
+    } catch (error) {
+        Loggers.error(error);
+
+        // Handle unique index race condition gracefully
+        if (error.code === 11000) {
+            return res.status(409).json({
+                status: false,
+                message: "Bank details already exist for this user.",
             });
         }
-    } catch (error) {
-        Loggers.error(error)
+
         return res.status(500).json({
             status: false,
-            message: "Failed to process bank details.",
+            message: "Failed to save bank details.",
             error: error.message,
         });
     }
