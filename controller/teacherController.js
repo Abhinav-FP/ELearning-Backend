@@ -1808,3 +1808,66 @@ exports.SyncTeacherCalendar = catchAsync(async (req, res) => {
   logger.info(`${syncedCount} booking(s) synced to Google Calendar for teacherid ${teacher?._id}`);
   return successResponse(res, `${syncedCount} booking(s) synced to Google Calendar`, 200);
 });
+
+exports.ReschedulePastBooking = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { startDateTime, endDateTime, timezone } = req.body;
+
+  if (!id) {
+    return errorResponse(res, "Booking ID is required", 400);
+  }
+
+  if (!startDateTime || !endDateTime || !timezone) {
+    return errorResponse(res, "startDateTime, endDateTime and timezone are required", 400);
+  }
+
+  const booking = await Bookings.findById(id)
+    .populate("teacherId")
+    .populate("UserId");
+
+  if (!booking) {
+    return errorResponse(res, "Booking not found", 404);
+  }
+
+  if (booking.lessonCompletedTeacher) {
+    return errorResponse(res, "Completed lesson cannot be rescheduled", 400);
+  }
+
+  if (DateTime.fromJSDate(booking.startDateTime) > DateTime.now()) {
+    return errorResponse(res, "Booking is not in the past", 400);
+  }
+
+  const newStartUTC = DateTime.fromISO(startDateTime, {
+    zone: timezone,
+  }).toUTC();
+
+  const newEndUTC = DateTime.fromISO(endDateTime, {
+    zone: timezone,
+  }).toUTC();
+
+  const tenMinutesFromNow = DateTime.utc().plus({ minutes: 10 });
+
+  if (newStartUTC < tenMinutesFromNow) {
+    return errorResponse(
+      res,
+      "Start time must be at least 10 minutes from now",
+      400
+    );
+  }
+
+  booking.rescheduleHistory.push({
+    before: booking.startDateTime,
+    after: newStartUTC.toJSDate(),
+    oldZoom: booking.zoom,
+  });
+
+  // 🔄 Update booking timing
+  booking.startDateTime = newStartUTC.toJSDate();
+  booking.endDateTime = newEndUTC.toJSDate();
+  booking.rescheduled = true;
+  booking.zoom = null;
+
+  await booking.save();
+
+  return successResponse(res, "Booking rescheduled successfully", 200, booking);
+});

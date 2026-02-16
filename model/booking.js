@@ -55,6 +55,30 @@ const bookingSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    rescheduleHistory: {
+      type: [
+        {
+          before: {
+            type: Date,
+            required: true,
+          },
+          after: {
+            type: Date,
+            required: true,
+          },
+          oldZoom: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Zoom",
+            default: null,
+          },
+          rescheduledAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      default: [],
+    },
     totalAmount: {
       type: Number,
       required: [true, "Amount is required"],
