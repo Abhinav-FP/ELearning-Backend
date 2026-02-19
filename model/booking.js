@@ -127,6 +127,15 @@ const bookingSchema = new mongoose.Schema(
       ref: "bulkLessons",
       default: null
     },
+    isSpecial: {
+      type: Boolean,
+      default: false
+    },
+    specialSlotId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SpecialSlots",
+      default: null
+    },
     calendarSynced: {
       type: Boolean,
       default: false

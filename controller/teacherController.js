@@ -1483,6 +1483,212 @@ exports.SpecialSlotwithZeroAmount = catchAsync(async (req, res) => {
   }
 });
 
+exports.SpecialSlotUsingBulk = catchAsync(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const teacherId = req.user.id;
+    const teacherObjectId = new mongoose.Types.ObjectId(teacherId);
+    const { student, lesson, startDateTime, endDateTime } = req.body;
+    const time_zone = req.user.time_zone;
+
+    if (!teacherId) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorResponse(res, "Teacher ID is required", 400);
+    }
+
+    if (!student || !lesson || !startDateTime || !endDateTime) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorResponse(res, "All fields are required", 400);
+    }
+
+    // 🔎 Zoom Check
+    const zoomConnected = await Teacher.findOne({
+      userId: teacherId,
+      access_token: { $ne: null },
+      refresh_token: { $ne: null },
+    }).session(session);
+
+    if (!zoomConnected) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorResponse(res, "Please connect your Zoom account before creating special slot", 400);
+    }
+
+    // 🕒 Convert to UTC
+    const start = DateTime.fromISO(startDateTime, { zone: time_zone });
+    const end = DateTime.fromISO(endDateTime, { zone: time_zone });
+
+    const startUTC = start.toUTC().toJSDate();
+    const endUTC = end.toUTC().toJSDate();
+
+    const nowUTC = new Date();
+    const tenMinutesLater = new Date(nowUTC.getTime() + 10 * 60 * 1000);
+
+    if (startUTC <= nowUTC || startUTC < tenMinutesLater) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorResponse(res, "Start time must be at least 10 minutes from now.", 400);
+    }
+
+    // 🚫 Availability overlap
+    const availabilityConflict = await TeacherAvailability.findOne({
+      teacher: teacherObjectId,
+      startDateTime: { $lt: endUTC },
+      endDateTime: { $gt: startUTC }
+    }).session(session);
+
+    if (availabilityConflict) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorResponse(
+        res,
+        "You already have an availability in the given time.",
+        400
+      );
+    }
+
+    // 🚫 Special slot overlap
+    const specialSlotConflict = await SpecialSlot.findOne({
+      teacher: teacherObjectId,
+      startDateTime: { $lt: endUTC },
+      endDateTime: { $gt: startUTC },
+      cancelled: { $ne: true }
+    }).session(session);
+
+    if (specialSlotConflict) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorResponse(
+        res,
+        "You already have a special slot in the given time.",
+        400
+      );
+    }
+
+    // 👤 Validate student
+    const studentUser = await User.findById(student).session(session);
+    if (!studentUser) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorResponse(res, "Invalid student id", 400);
+    }
+
+    // 🔥 Atomic bulk decrement
+    const bulkRecord = await BulkLesson.findOneAndUpdate(
+      {
+        teacherId,
+        UserId: student,
+        LessonId: lesson,
+        lessonsRemaining: { $gt: 0 }
+      },
+      { $inc: { lessonsRemaining: -1 } },
+      { new: true, session }
+    );
+
+    if (!bulkRecord) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorResponse(res, "No bulk lesson credits available", 400);
+    }
+
+    // 💰 Calculate per-lesson financial breakdown
+    const perLessonTotal = bulkRecord.totalAmount / bulkRecord.totalLessons;
+    const perLessonTeacher = bulkRecord.teacherEarning / bulkRecord.totalLessons;
+    const perLessonAdmin = bulkRecord.adminCommission / bulkRecord.totalLessons;
+    const perLessonProcessing = bulkRecord.processingFee / bulkRecord.totalLessons;
+
+    // 🆕 Create Special Slot (store real amount)
+    const slotDoc = await SpecialSlot.create({
+      student,
+      lesson,
+      teacher: teacherId,
+      amount: perLessonTotal,
+      paymentStatus: "paid",
+      startDateTime: startUTC,
+      endDateTime: endUTC,
+    }, { session });
+
+    // 🆕 Create Booking (single direction relation)
+    const bookingDoc = await Bookings.create({
+      teacherId,
+      UserId: student,
+      LessonId: lesson,
+      startDateTime: startUTC,
+      endDateTime: endUTC,
+      totalAmount: perLessonTotal,
+      teacherEarning: perLessonTeacher,
+      adminCommission: perLessonAdmin,
+      processingFee: perLessonProcessing,
+      isSpecial: true,
+      isFromBulk: true,
+      bulkId: bulkRecord._id,
+      specialSlotId: slotDoc._id
+    }, { session });
+
+    // 🔗 Push booking inside bulk
+    await BulkLesson.updateOne(
+      { _id: bulkRecord._id },
+      {
+        $push: {
+          bookings: {
+            id: bookingDoc._id,
+            cancelled: false
+          }
+        }
+      },
+      { session }
+    );
+
+    // ✅ Commit transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    // ================================
+    // 📧 EMAIL AFTER COMMIT
+    // ================================
+    const utcStart = DateTime.fromJSDate(startUTC, { zone: "utc" });
+    const utcEnd = DateTime.fromJSDate(endUTC, { zone: "utc" });
+
+    const startISO = studentUser?.time_zone
+      ? utcStart.setZone(studentUser.time_zone).toISO()
+      : utcStart.toISO();
+
+    const endISO = studentUser?.time_zone
+      ? utcEnd.setZone(studentUser.time_zone).toISO()
+      : utcEnd.toISO();
+
+    const teacherUser = await User.findById(teacherId);
+
+    await sendEmail({
+      email: studentUser.email,
+      subject: "Special Slot Created 🎉",
+      emailHtml: SpecialSlotFreeEmail(
+        studentUser?.name,
+        teacherUser?.name,
+        startISO,
+        endISO
+      )
+    });
+
+    return successResponse(
+      res,
+      "Special Slot created successfully using bulk credit",
+      201,
+      slotDoc
+    );
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("SpecialSlotUsingBulk Error:", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
 exports.StudentLessonListing = catchAsync(async (req, res) => {
   try {
     const lessons = await Lesson.find({ teacher: req.user.id, is_deleted: { $ne: true } });
@@ -1563,7 +1769,6 @@ exports.DeleteGetLesson = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
-
 
 exports.GetReview = catchAsync(async (req, res) => {
   try {
