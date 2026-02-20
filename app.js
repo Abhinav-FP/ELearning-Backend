@@ -257,6 +257,11 @@ app.post(
             { paymentStatus: "paid" },
             { new: true, runValidators: true }
           );
+          if (updatedSlot) {
+            await Bookings.findByIdAndUpdate(record._id, {
+              specialSlotId: updatedSlot._id,
+            });
+          }
         }
 
         // Send confirmation email to student

@@ -272,7 +272,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       endDateTime: endUTC,
       processingFee,
     });
-    await Bookingsave.save();
+    const record = await Bookingsave.save();
 
     // Updating Special Slot
     if (isSpecialSlot) {
@@ -287,6 +287,11 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
         { paymentStatus: "paid" },
         { new: true, runValidators: true }
       );
+      if (updatedSlot) {
+        await Bookings.findByIdAndUpdate(record._id, {
+          specialSlotId: updatedSlot._id,
+        });
+      }
     }
 
 
