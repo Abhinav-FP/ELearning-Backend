@@ -70,6 +70,10 @@ const teacherSchema =  mongoose.Schema({
     type: Number,
     default: null,
   },
+  bulk_bookings_allowed: {
+    type: Boolean,
+    default: false,
+  },
   // google calendar fields
   googleCalendar: {
   accessToken: {
