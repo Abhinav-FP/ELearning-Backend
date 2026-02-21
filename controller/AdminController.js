@@ -363,6 +363,16 @@ exports.AdminEarning = catchAsync(async (req, res) => {
       }
     ]);
 
+    if (!count.length) {
+      count = [{
+        totalAmount: 0,
+        teacherEarning: 0,
+        adminCommission: 0,
+        processingFee: 0,
+        bonus: 0
+      }];
+    }
+
     const totalBookings = await Bookings.countDocuments(filter); // <— total records
     const currentPage = parseInt(page);
     const perPage = parseInt(limit);

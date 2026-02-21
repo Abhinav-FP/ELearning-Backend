@@ -81,6 +81,12 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
       zone: timezone,
     }).toUTC().toJSDate();
 
+    booking.rescheduleHistory.push({
+      before: booking.startDateTime,
+      after: startUTC,
+      oldZoom: booking.zoom || "",
+    });
+
     booking.startDateTime = startUTC;
     booking.endDateTime = endUTC;
     booking.rescheduled = true;
