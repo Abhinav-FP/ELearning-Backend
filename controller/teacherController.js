@@ -2091,7 +2091,7 @@ exports.ReschedulePastBooking = catchAsync(async (req, res) => {
   booking.rescheduleHistory.push({
     before: booking.startDateTime,
     after: newStartUTC.toJSDate(),
-    oldZoom: booking.zoom,
+    oldZoom: booking.zoom ? booking.zoom : null,
   });
 
   // 🔄 Update booking timing

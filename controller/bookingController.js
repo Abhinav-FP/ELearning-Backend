@@ -16,11 +16,11 @@ exports.AddBooking = catchAsync(async (req, res) => {
   try {
     const { startDateTime, endDateTime, teacher_id, lesson_id } = req.body;
 
-    if (!startDateTime, !endDateTime, !teacher_id || !lesson_id ) {
+    if ((!startDateTime, !endDateTime, !teacher_id || !lesson_id)) {
       return errorResponse(
         res,
         "Teacher ID, Lesson ID, and time are required",
-        400
+        400,
       );
     }
 
@@ -39,142 +39,190 @@ exports.AddBooking = catchAsync(async (req, res) => {
 });
 
 exports.UpdateBooking = catchAsync(async (req, res) => {
-  const { lessonCompletedStudent, lessonCompletedTeacher, startDateTime, endDateTime, timezone } = req.body;
-  const { id } = req.params;
-  if (!id) {
-    return errorResponse(res, "Booking ID is required", 400);
-  }
-  const booking = await Bookings.findById(id)
-    .populate("teacherId")
-    .populate("UserId")
-    .populate("LessonId");
-  if (!booking) {
-    return errorResponse(res, "Booking not found", 404);
-  }
-  if (lessonCompletedStudent != null) {
-    booking.lessonCompletedStudent = lessonCompletedStudent;
-  }
-  if (lessonCompletedTeacher != null) {
-    booking.lessonCompletedTeacher = lessonCompletedTeacher;
-  }
-
-  let oldStartTime = booking.startDateTime;
-  const oldStartUTC = DateTime.fromJSDate(oldStartTime, { zone: "utc" });
-
-  let timeUpdated = false;
-  if (startDateTime && endDateTime) {
-    // if (booking.rescheduled) {
-    //   return errorResponse(res, "Booking has already been rescheduled once", 400);
-    // }
-
-    if (!timezone) {
-      return errorResponse(res, "Timezone is required when updating time", 400);
+  try {
+    const {
+      lessonCompletedStudent,
+      lessonCompletedTeacher,
+      startDateTime,
+      endDateTime,
+      timezone,
+    } = req.body;
+    const { id } = req.params;
+    if (!id) {
+      return errorResponse(res, "Booking ID is required", 400);
+    }
+    const booking = await Bookings.findById(id)
+      .populate("teacherId")
+      .populate("UserId")
+      .populate("LessonId");
+    if (!booking) {
+      return errorResponse(res, "Booking not found", 404);
+    }
+    if (lessonCompletedStudent != null) {
+      booking.lessonCompletedStudent = lessonCompletedStudent;
+    }
+    if (lessonCompletedTeacher != null) {
+      booking.lessonCompletedTeacher = lessonCompletedTeacher;
     }
 
-    logger.info(`Rescheduling booking ${booking._id} from ${booking.startDateTime} to ${startDateTime} (${timezone})`);
+    let oldStartTime = booking.startDateTime;
+    const oldStartUTC = DateTime.fromJSDate(oldStartTime, { zone: "utc" });
 
-    const startUTC = DateTime.fromISO(startDateTime, {
-      zone: timezone,
-    }).toUTC().toJSDate();
+    let timeUpdated = false;
+    if (startDateTime && endDateTime) {
+      // if (booking.rescheduled) {
+      //   return errorResponse(res, "Booking has already been rescheduled once", 400);
+      // }
 
-    const endUTC = DateTime.fromISO(endDateTime, {
-      zone: timezone,
-    }).toUTC().toJSDate();
-
-    booking.rescheduleHistory.push({
-      before: booking.startDateTime,
-      after: startUTC,
-      oldZoom: booking.zoom || "",
-    });
-
-    booking.startDateTime = startUTC;
-    booking.endDateTime = endUTC;
-    booking.rescheduled = true;
-    timeUpdated = true;
-  }
-
-  await booking.save();
-
-  // Sending booking emails
-  if(timeUpdated){
-    const subject = "Booking Rescheduled";
-  
-    const utcDateTime = DateTime.fromJSDate(booking.startDateTime, { zone: "utc" });
-    
-    const userTimeISO = booking?.UserId?.time_zone
-          ? utcDateTime.setZone(booking.UserId.time_zone).toISO()
-          : utcDateTime.toISO();
-
-    const userOldStartTimeISO = booking?.UserId?.time_zone
-          ? oldStartUTC.setZone(booking.UserId.time_zone).toISO()
-          : oldStartUTC.toISO();
-    
-    const teacherTimeISO = booking?.teacherId?.time_zone
-      ? utcDateTime.setZone(booking.teacherId.time_zone).toISO()
-      : utcDateTime.toISO();
-
-    const teacherOldStartTimeISO = booking?.teacherId?.time_zone
-          ? oldStartUTC.setZone(booking.teacherId.time_zone).toISO()
-          : oldStartUTC.toISO();
-
-    // Email to Student
-    const emailHtml = Reschedule(booking?.UserId?.name, booking?.teacherId?.name, userTimeISO, userOldStartTimeISO, "https://akitainakaschoolonline.com/student/lessons");
-    logger.info(`Booking reschedule email sending to student at  ${booking?.UserId?.email}`);
-    await sendEmail({
-      email: booking?.UserId?.email,
-      subject: subject,
-      emailHtml: emailHtml,
-    });
-     
-    
-    // Email to teacher
-    const teacherEmailHtml = Reschedule(booking?.teacherId?.name, booking?.UserId?.name, teacherTimeISO, teacherOldStartTimeISO, "https://akitainakaschoolonline.com/teacher-dashboard/booking");
-    logger.info(`Booking reschedule email sending to teacher at  ${booking?.teacherId?.email}`);
-    await sendEmail({
-      email: booking?.teacherId?.email,
-      subject: subject,
-      emailHtml: teacherEmailHtml,
-    });  
-  }
-
-  // Update Google Calendar event if time was changed
-  if (timeUpdated && booking.calendarSynced && booking.calendarEventId) {
-    try {
-      const teacher = await Teacher.findOne({userId: booking.teacherId._id});
-      const user = await User.findById(booking.teacherId._id);
-
-      if (teacher?.googleCalendar?.connected) {
-        const calendar = await getValidGoogleClient(teacher);
-        await calendar.events.patch({
-          calendarId: teacher.googleCalendar.calendarId || "primary",
-          eventId: booking.calendarEventId,
-          requestBody: {
-            start: { 
-              dateTime: booking.startDateTime.toISOString(),
-              timeZone: user.time_zone || "UTC",
-            },
-            end: { 
-              dateTime: booking.endDateTime.toISOString(),
-              timeZone: user.time_zone || "UTC",
-            },
-          },
-        });
-        logger.info(`🔄 Calendar updated for booking ${booking._id}`);
+      if (!timezone) {
+        return errorResponse(
+          res,
+          "Timezone is required when updating time",
+          400,
+        );
       }
-    } catch (err) {
-      logger.error(`Failed to update calendar for booking ${booking._id}`, err);
-    }
-  }
 
-  return successResponse(res, "Booking updated successfully", 200);
+      logger.info(
+        `Rescheduling booking ${booking._id} from ${booking.startDateTime} to ${startDateTime} (${timezone})`,
+      );
+
+      const startUTC = DateTime.fromISO(startDateTime, {
+        zone: timezone,
+      })
+        .toUTC()
+        .toJSDate();
+
+      const endUTC = DateTime.fromISO(endDateTime, {
+        zone: timezone,
+      })
+        .toUTC()
+        .toJSDate();
+
+      booking.rescheduleHistory.push({
+        before: booking.startDateTime,
+        after: startUTC,
+        oldZoom: booking.zoom ? booking.zoom : null,
+      });
+
+      booking.startDateTime = startUTC;
+      booking.endDateTime = endUTC;
+      booking.rescheduled = true;
+      timeUpdated = true;
+    }
+
+    await booking.save();
+
+    // Sending booking emails
+    if (timeUpdated) {
+      const subject = "Booking Rescheduled";
+
+      const utcDateTime = DateTime.fromJSDate(booking.startDateTime, {
+        zone: "utc",
+      });
+
+      const userTimeISO = booking?.UserId?.time_zone
+        ? utcDateTime.setZone(booking.UserId.time_zone).toISO()
+        : utcDateTime.toISO();
+
+      const userOldStartTimeISO = booking?.UserId?.time_zone
+        ? oldStartUTC.setZone(booking.UserId.time_zone).toISO()
+        : oldStartUTC.toISO();
+
+      const teacherTimeISO = booking?.teacherId?.time_zone
+        ? utcDateTime.setZone(booking.teacherId.time_zone).toISO()
+        : utcDateTime.toISO();
+
+      const teacherOldStartTimeISO = booking?.teacherId?.time_zone
+        ? oldStartUTC.setZone(booking.teacherId.time_zone).toISO()
+        : oldStartUTC.toISO();
+
+      // Email to Student
+      const emailHtml = Reschedule(
+        booking?.UserId?.name,
+        booking?.teacherId?.name,
+        userTimeISO,
+        userOldStartTimeISO,
+        "https://akitainakaschoolonline.com/student/lessons",
+      );
+      logger.info(
+        `Booking reschedule email sending to student at  ${booking?.UserId?.email}`,
+      );
+      await sendEmail({
+        email: booking?.UserId?.email,
+        subject: subject,
+        emailHtml: emailHtml,
+      });
+
+      // Email to teacher
+      const teacherEmailHtml = Reschedule(
+        booking?.teacherId?.name,
+        booking?.UserId?.name,
+        teacherTimeISO,
+        teacherOldStartTimeISO,
+        "https://akitainakaschoolonline.com/teacher-dashboard/booking",
+      );
+      logger.info(
+        `Booking reschedule email sending to teacher at  ${booking?.teacherId?.email}`,
+      );
+      await sendEmail({
+        email: booking?.teacherId?.email,
+        subject: subject,
+        emailHtml: teacherEmailHtml,
+      });
+    }
+
+    // Update Google Calendar event if time was changed
+    if (timeUpdated && booking.calendarSynced && booking.calendarEventId) {
+      try {
+        const teacher = await Teacher.findOne({
+          userId: booking.teacherId._id,
+        });
+        const user = await User.findById(booking.teacherId._id);
+
+        if (teacher?.googleCalendar?.connected) {
+          const calendar = await getValidGoogleClient(teacher);
+          await calendar.events.patch({
+            calendarId: teacher.googleCalendar.calendarId || "primary",
+            eventId: booking.calendarEventId,
+            requestBody: {
+              start: {
+                dateTime: booking.startDateTime.toISOString(),
+                timeZone: user.time_zone || "UTC",
+              },
+              end: {
+                dateTime: booking.endDateTime.toISOString(),
+                timeZone: user.time_zone || "UTC",
+              },
+            },
+          });
+          logger.info(`🔄 Calendar updated for booking ${booking._id}`);
+        }
+      } catch (err) {
+        logger.error(
+          `Failed to update calendar for booking ${booking._id}`,
+          err,
+        );
+      }
+    }
+
+    return successResponse(res, "Booking updated successfully", 200);
+  } catch (error) {
+    console.log("Error in UpdateBooking:", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
 });
 
 exports.GetBookings = catchAsync(async (req, res) => {
   try {
-    const { role,id } = req.user;
+    const { role, id } = req.user;
 
     let data;
-      data = await Bookings.find({ UserId: id }).populate('teacherId').populate('UserId').populate('LessonId').populate('zoom').sort({startDateTime: 1});
+    data = await Bookings.find({ UserId: id })
+      .populate("teacherId")
+      .populate("UserId")
+      .populate("LessonId")
+      .populate("zoom")
+      .sort({ startDateTime: 1 });
 
     if (!data || data.length === 0) {
       return errorResponse(res, "No bookings found", 200);
@@ -192,16 +240,17 @@ exports.CancelBooking = catchAsync(async (req, res) => {
     if (!id) {
       return errorResponse(res, "Booking ID is required", 400);
     }
-    const booking = await Bookings.findById(id).populate('UserId')
-      .populate('UserId')
+    const booking = await Bookings.findById(id)
+      .populate("UserId")
+      .populate("UserId")
       .populate("teacherId");
 
     if (!booking) {
       return errorResponse(res, "Booking not found", 404);
     }
-     if (booking.cancelled) {
-       return successResponse(res, "Booking is already cancelled", 200);
-     }
+    if (booking.cancelled) {
+      return successResponse(res, "Booking is already cancelled", 200);
+    }
     booking.cancelled = true;
     await booking.save();
 
@@ -220,7 +269,10 @@ exports.CancelBooking = catchAsync(async (req, res) => {
           logger.info(`Calendar event deleted for booking ${booking._id}`);
         }
       } catch (err) {
-        logger.error(`Failed to delete calendar event for booking ${booking._id}`, err);
+        logger.error(
+          `Failed to delete calendar event for booking ${booking._id}`,
+          err,
+        );
       }
     }
 
@@ -229,30 +281,36 @@ exports.CancelBooking = catchAsync(async (req, res) => {
       { "bookings.id": booking._id },
       {
         $set: { "bookings.$.cancelled": true },
-        $inc: { lessonsRemaining: 1 }
-      }
+        $inc: { lessonsRemaining: 1 },
+      },
     );
 
     const admin = await User.findOne({ role: "admin" });
     // console.log("admin", admin);
 
     // Convert to ISO format for moment parsing in email templates
-    const utcDateTime = DateTime.fromJSDate(new Date(booking?.startDateTime), { zone: "utc" });
-    
+    const utcDateTime = DateTime.fromJSDate(new Date(booking?.startDateTime), {
+      zone: "utc",
+    });
+
     const studentTimeISO = booking?.UserId?.time_zone
-        ? utcDateTime.setZone(booking?.UserId?.time_zone).toISO()
-        : utcDateTime.toISO();
-        
+      ? utcDateTime.setZone(booking?.UserId?.time_zone).toISO()
+      : utcDateTime.toISO();
+
     const adminTimeISO = admin?.time_zone
-        ? utcDateTime.setZone(admin.time_zone).toISO()
-        : utcDateTime.toISO();
-        
+      ? utcDateTime.setZone(admin.time_zone).toISO()
+      : utcDateTime.toISO();
+
     // console.log("studentTimeISO", studentTimeISO);
     // console.log("adminTimeISO", adminTimeISO);
 
     // Send email logic for student
     const studentSubject = `Your Lesson with ${booking?.teacherId?.name} Has Been Cancelled`;
-    const emailHtml = StudentCancel(booking?.UserId?.name, booking?.teacherId?.name, studentTimeISO);
+    const emailHtml = StudentCancel(
+      booking?.UserId?.name,
+      booking?.teacherId?.name,
+      studentTimeISO,
+    );
     await sendEmail({
       email: booking?.UserId?.email,
       subject: studentSubject,
@@ -261,7 +319,11 @@ exports.CancelBooking = catchAsync(async (req, res) => {
 
     // Send email logic for admin
     const adminSubject = `Lesson Cancelled by ${booking?.teacherId?.name}`;
-    const adminHtml = AdminCancel(booking?.UserId?.name, booking?.teacherId?.name, adminTimeISO);
+    const adminHtml = AdminCancel(
+      booking?.UserId?.name,
+      booking?.teacherId?.name,
+      adminTimeISO,
+    );
     await sendEmail({
       email: "winniedk@gmail.com",
       subject: adminSubject,
