@@ -72,7 +72,7 @@ const teacherSchema =  mongoose.Schema({
   },
   bulk_bookings_allowed: {
     type: Boolean,
-    default: false,
+    default: true,
   },
   // google calendar fields
   googleCalendar: {
