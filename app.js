@@ -202,7 +202,7 @@ app.post(
 
         logger.info("📦 Metadata:", metadata);
         console.log("📦 Metadata:", metadata);
-        if(metadata?.isWallet === "true"){
+        if(metadata?.isWallet && metadata?.isWallet === "true"){
           logger.info("Wallet webhook hit in payment intent succeeded");
           return;
         }
