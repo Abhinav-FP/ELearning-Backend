@@ -204,6 +204,7 @@ app.post(
         console.log("📦 Metadata:", metadata);
         if(metadata?.isWallet && metadata?.isWallet === "true"){
           logger.info("Wallet webhook hit in payment intent succeeded");
+          res.json({ received: true });
           return;
         }
         // Handle bulk lesson purchase
@@ -882,7 +883,7 @@ app.get("/", (req, res) => {
   });
 });
 
-require("./cronJobs")();
+// require("./cronJobs")();
 
 const server = app.listen(PORT, () =>
   console.log("Server is running at port : " + PORT)
