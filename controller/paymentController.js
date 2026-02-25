@@ -532,10 +532,54 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
   }
 });
 
+exports.WalletPaymentCreate = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { amount, currency, email } = req.body;
 
+    const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
+    const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
 
+    const amountInCents = Math.round(Number(amount) * 100);
 
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"], // ✅ Apple Pay is auto-included under "card"
+      customer_email: email,
 
+      line_items: [
+        {
+          price_data: {
+            currency,
+            product_data: {
+              name: "Wallet Recharge",
+            },
+            unit_amount: amountInCents,
+          },
+          quantity: 1,
+        },
+      ],
+
+      metadata: {
+        userId,
+        amount,
+        currency,
+        isWallet: true,
+        srNo: srNo.toString(),
+      },
+
+      success_url: `${process.env.DOMAIN}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.DOMAIN}/cancel`,
+    });
+
+    res.json({
+      checkoutUrl: session.url,
+    });
+  } catch (error) {
+    console.error("Stripe checkout error:", error);
+    res.status(500).json({ error: "Unable to create checkout session" });
+  }
+});
 
 // Stripe Checkout Sytem 
 // const fetchPaymentId = async (sessionId, srNo) => {

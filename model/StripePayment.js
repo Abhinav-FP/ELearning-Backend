@@ -17,6 +17,7 @@ const PaymentSchema = mongoose.Schema({
     LessonId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Lesson',
+        default: null,
     },
     UserId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -36,13 +37,20 @@ const PaymentSchema = mongoose.Schema({
     },
     currency: {
         type: String,
-        default: "JPY",
+        default: "USD",
     },
     created_at: {
         type: Date,
         default: Date.now,
     },
-    IsBonus: { type: Boolean, default: false },
+    IsBonus: { 
+        type: Boolean, 
+        default: false 
+    },
+    isWallet: { 
+        type: Boolean, 
+        default: false 
+    },
 });
 
 const payment = mongoose.model("stripepayments", PaymentSchema);

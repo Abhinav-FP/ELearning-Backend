@@ -23,10 +23,25 @@ const walletTransactionSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Booking",
     default: null
-  }
+  },
+  stripePaymentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "stripepayments",
+    default: null
+  },
+  paypalPaymentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "paypalpayments",
+    default: null
+  },
+  // This is the balance after the transaction takes place
+  balance: { 
+    type: Number, 
+    required: true 
+  },
 }, { timestamps: true });
 
-walletTransactionSchema.index({ userId: 1 }, { unique: true });
+walletTransactionSchema.index({ userId: 1 });
 
 const WalletTransaction = mongoose.model('WalletTransaction', walletTransactionSchema);
 

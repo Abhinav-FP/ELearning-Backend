@@ -107,6 +107,86 @@ app.post(
         break;
       }
 
+      case "checkout.session.completed": {
+        const session = event.data.object;
+        logger.info(`✅ Checkout completed: ${session.id}`);
+        console.log(`✅ Checkout completed: ${session.id}`);
+
+        // 🔐 Safety check
+        if (session.payment_status !== "paid") {
+          logger.warn("Checkout session not paid, skipping");
+          console.log("Checkout session not paid, skipping");
+          return res.json({ received: true });
+        }
+
+        const paymentIntentId = session.payment_intent;
+
+        // Fetch PaymentIntent
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+        const metadata = session.metadata;
+        logger.info("📦 Metadata:", metadata);
+        console.log("📦 Metadata:", metadata);
+
+        // 🔁 Idempotency check (CRITICAL)
+        const alreadyExists = await StripePayment.findOne({
+          payment_id: paymentIntentId,
+        });
+
+        if (alreadyExists) {
+          logger.warn(`⚠️ Wallet payment already processed: ${paymentIntentId}`);
+          console.log(`Wallet payment already processed: ${paymentIntentId}`);
+          return res.json({ received: true });
+        }
+
+        if (metadata?.isWallet  || metadata?.isWallet === "true") {
+          const userId = metadata.userId;
+          const rechargeAmount = Number(metadata.amount);
+
+          // 1️⃣ Create StripePayment record
+          const stripePayment = await StripePayment.create({
+            srNo: parseInt(metadata.srNo),
+            payment_type: "card",
+            payment_id: paymentIntentId,
+            currency: pi.currency,
+            amount: rechargeAmount,
+            UserId: userId,
+            payment_status: pi.status,
+            isWallet: true,
+          });
+
+          // 2️⃣ Find or create wallet
+          let wallet = await Wallet.findOne({ userId });
+
+          if (!wallet) {
+            wallet = await Wallet.create({
+              userId,
+              balance: 0,
+            });
+          }
+
+          const oldBalance = wallet.balance;
+          const newBalance = oldBalance + rechargeAmount;
+
+          // 3️⃣ Update wallet balance
+          wallet.balance = newBalance;
+          await wallet.save();
+
+          // 4️⃣ Create wallet transaction
+          await WalletTransaction.create({
+            userId,
+            type: "credit",
+            amount: rechargeAmount,
+            reason: "Wallet Recharge",
+            stripePaymentId: stripePayment._id,
+            balance: newBalance,
+          });
+          logger.info(`Wallet credited successfully | User: ${userId} | Amount: ${rechargeAmount} | Balance: ${newBalance}`);
+          console.log(`Wallet credited successfully | User: ${userId} | Amount: ${rechargeAmount} | Balance: ${newBalance}`);
+          return res.json({ received: true });
+        }
+      }
+
       case "payment_intent.succeeded": {
         const pi = event.data.object;
         logger.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
@@ -120,6 +200,10 @@ app.post(
 
         logger.info("📦 Metadata:", metadata);
         console.log("📦 Metadata:", metadata);
+        if(metadata?.isWallet === "true"){
+          logger.info("Wallet webhook hit in payment intent succeeded");
+          return;
+        }
         // Handle bulk lesson purchase
         if (metadata.isBulk === "true") {
           const payment = await StripePayment.create({
@@ -796,7 +880,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// require("./cronJobs")();
+require("./cronJobs")();
 
 const server = app.listen(PORT, () =>
   console.log("Server is running at port : " + PORT)

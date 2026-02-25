@@ -17,6 +17,8 @@ router.post('/cancel-order', verifyToken, paymentController.PaymentcancelOrder);
 
 
 router.post("/create-payment-intent", verifyToken, paymentController.PaymentCreate)
+// Wallet Stripe payment route
+router.post("/create-wallet-payment-intent", verifyToken, paymentController.WalletPaymentCreate)
 
 
 module.exports = router;
