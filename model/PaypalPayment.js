@@ -29,13 +29,21 @@ const orderSchema = new mongoose.Schema({
   LessonId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Lesson',
+    default: null,
   },
   UserId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
   created_at: { type: Date, default: Date.now },
-  IsBonus: { type: Boolean, default: false },
+  IsBonus: { 
+    type: Boolean, 
+    default: false 
+  },
+  isWallet: { 
+      type: Boolean, 
+      default: false 
+  },
 });
 
 module.exports = mongoose.model('paypalpayments', orderSchema);

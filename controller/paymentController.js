@@ -13,6 +13,8 @@ const BulkEmail = require("../EmailTemplate/BulkLesson");
 const TeacherBooking = require("../EmailTemplate/TeacherBooking");
 const sendEmail = require("../utils/EmailMailler");
 const User = require("../model/user");
+const Wallet = require("../model/wallet");
+const WalletTransaction = require("../model/walletTransaction");
 const SpecialSlot = require("../model/SpecialSlot");
 const mongoose = require("mongoose");
 const Bonus = require('../model/Bonus');
@@ -337,6 +339,79 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
     console.error(" Error capturing PayPal order:", error?.response?.data || error.message);
     logger.error(`Error capturing PayPal order: ${JSON.stringify(error?.response?.data || error.message || 'Unknown error')}`);
     res.status(500).json({ error: error || "Failed to capture and save PayPal order" });
+  }
+});
+
+exports.PaymentWalletCaptureOrder = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { orderID } = req.body;
+
+    const accessToken = await generateAccessToken();
+
+    const response = await axios.post(
+      `${paypalApiUrl}/v2/checkout/orders/${orderID}/capture`,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    const captureData = response.data;
+
+    const capture = captureData.purchase_units[0].payments.captures[0];
+
+    const rechargeAmount = Number(capture.amount.value);
+
+    // 1️⃣ Save PayPal Payment
+    const newPayment = await Payment.create({
+      orderID: captureData.id,
+      intent: captureData.intent,
+      status: captureData.status,
+      purchase_units: captureData.purchase_units,
+      payer: captureData.payer,
+      payment_source: captureData.payment_source,
+      capturedAt: new Date(),
+      UserId: userId,
+      amount: rechargeAmount,
+      currency: capture.amount.currency_code,
+      isWallet: true,
+    });
+
+    // 2️⃣ Atomic Wallet Update (safe & professional way)
+    const wallet = await Wallet.findOneAndUpdate(
+      { userId },
+      { $inc: { balance: rechargeAmount } },
+      { new: true, upsert: true }
+    );
+
+    // 3️⃣ Create Wallet Transaction Entry
+    await WalletTransaction.create({
+      userId,
+      type: "credit",
+      amount: rechargeAmount,
+      reason: "Wallet Recharge (PayPal)",
+      paypalPaymentId: newPayment._id,
+      balance: wallet.balance, // running balance
+    });
+
+    console.log(`Wallet credited via PayPal | User: ${userId} | Amount: ${rechargeAmount} | Balance: ${wallet.balance}`);
+
+    return res.status(200).json({
+      success: true,
+      payment: newPayment,
+      walletBalance: wallet.balance,
+    });
+
+  } catch (error) {
+    console.error("Error capturing PayPal Wallet order:", error?.response?.data || error.message);
+    logger.error(`Error capturing PayPal order: ${JSON.stringify(error?.response?.data || error.message || "Unknown error")}`);
+    return res.status(500).json({
+      error: "Failed to capture and process wallet recharge",
+    });
   }
 });
 
