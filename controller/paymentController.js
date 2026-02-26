@@ -656,191 +656,249 @@ exports.WalletPaymentCreate = catchAsync(async (req, res) => {
   }
 });
 
-// Stripe Checkout Sytem 
-// const fetchPaymentId = async (sessionId, srNo) => {
-//   try {
-//     const session = await stripe.checkout.sessions.retrieve(sessionId);
-//     const paymentId = session.payment_intent;
-//     if (!srNo) {
-//       return;
-//     }
-//     const data = await StripePayment.findOne({ srNo: srNo });
-//     if (!data) {
-//       return null;
-//     }
-//     data.payment_id = paymentId;
-//     await data.save();
-//     return paymentId;
-//   } catch (error) {
-//     console.error("Error fetching payment ID:", error);
-//     logger.error("Error fetching payment ID:", error);
-//     return null;
-//   }
-// };
+async function handleBulkWalletBooking(data) {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
+  try {
+    const {
+      teacherId,
+      LessonId,
+      totalAmount,
+      adminCommission,
+      email,
+      processingFee,
+      multipleLessons,
+      UserId,
+      res
+    } = data;
 
-// exports.createCheckout = catchAsync(async (req, res) => {
-//   try {
-//     const userId = req.user.id;
-//     const { amount, LessonId, currency, teacherId, startDateTime, endDateTime, timezone, adminCommission, email } = req?.body;
-//     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
-//     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
-//     const amountInCents = Math.round(amount * 100);
-//     const session = await stripe.checkout.sessions.create({
-//       payment_method_types: ['card'],
-//       mode: 'payment', // Correct mode value
-//       // success_url: `${process.env.stripe_link}/stripe/success/${srNo}`,
-//       success_url: `https://japaneseforme.com/stripe/success/${srNo}`,
-//       // cancel_url: `${process.env.stripe_link}/stripe/cancel/${srNo}`,
-//       cancel_url: `https://japaneseforme.com/stripe/cancel/${srNo}`,
-//       submit_type: "pay",
-//       customer_email: email || "ankitjain@gmail.com",
-//       billing_address_collection: "auto",
-//       line_items: [
-//         {
-//           price_data: {
-//             currency: currency,
-//             product_data: {
-//               name: "Booking Payment",
-//             },
-//             unit_amount: amountInCents,
-//           },
-//           quantity: 1,
-//         },
-//       ],
-//     });
+    // 1️⃣ Check wallet balance
+    const wallet = await Wallet.findOne({ userId: UserId }).session(session);
 
+    if (!wallet || wallet.balance < totalAmount) {
+      throw new Error("Insufficient wallet balance");
+    }
 
-//     const newPayment = new StripePayment({
-//       srNo,
-//       payment_type: "card",
-//       payment_id: null,
-//       session_id: session?.id,
-//       currency,
-//       LessonId,
-//       amount,
-//       srNo,
-//       UserId: userId
-//     });
-//     const record = await newPayment.save();
+    // 2️⃣ Deduct balance atomically
+    wallet.balance -= totalAmount;
+    await wallet.save({ session });
 
-//     // Convert times from user's timezone to UTC
-//     const startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
-//     const endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+    // 3️⃣ Create bulk lesson record
+    const bulkLesson = await BulkLessons.create([{
+      teacherId,
+      UserId,
+      LessonId,
+      paypalpaymentId: null,
+      StripepaymentId: null,
+      totalAmount,
+      teacherEarning: (totalAmount - processingFee) * 0.90,
+      adminCommission,
+      processingFee,
+      totalLessons: multipleLessons,
+      lessonsRemaining: multipleLessons,
+    }], { session });
 
-//     const teacherEarning = amount - adminCommission;
-//     const Bookingsave = new Bookings({
-//       teacherId,
-//       UserId: userId,
-//       teacherEarning,
-//       adminCommission,
-//       LessonId,
-//       StripepaymentId: record?._id,
-//       startDateTime: startUTC,
-//       endDateTime: endUTC,
-//       currency,
-//       totalAmount: amount,
-//       srNo
-//     });
-//     await Bookingsave.save();
-//     const user = await User.findById({ _id: req.user.id });
-//     const registrationSubject = "Booking Confirmed 🎉";
-//     const Username = user.name
-//     const emailHtml = BookingSuccess(startUTC, Username);
-//     await sendEmail({
-//       email: email,
-//       subject: registrationSubject,
-//       emailHtml: emailHtml,
-//     });
-//     res.status(200).json({ url: session.url, status: "true" });
-//   } catch (err) {
-//     res.status(err.statusCode || 500).json({ error: err.message });
-//   }
-// });
+    // 4️⃣ Wallet transaction (debit)
+    await WalletTransaction.create([{
+      userId: UserId,
+      type: "debit",
+      amount: totalAmount,
+      reason: "Bulk Lesson Purchase (Wallet)",
+      bulkLessonId: bulkLesson[0]._id,
+      balance: wallet.balance,
+    }], { session });
 
+    await session.commitTransaction();
+    session.endSession();
 
-// exports.PaymentSuccess = catchAsync(async (req, res) => {
-//   try {
-//     const { srNo } = req.params;
-//     if (!srNo) {
-//       return res.status(400).json({
-//         message: "srNo is required.",
-//         status: false,
-//       });
-//     }
-//     const data = await StripePayment.findOne({ srNo: srNo });
-//     if (!data) {
-//       return res.status(404).json({
-//         message: "Data not found",
-//         status: false,
-//       });
-//     }
-//     data.payment_status = "success";
-//     await data.save();
-//     const Payment_ID = await fetchPaymentId(data?.session_id, srNo, "success");
-//     res.status(200).json({
-//       message: `Payment status updated`,
-//       status: true,
-//       data: data,
-//     });
-//   } catch (error) {
-//     console.error("Error updating booking status:", error);
-//     logger.error("Error updating booking status:", error);
-//     res.status(500).json({
-//       message: "Internal Server Error",
-//       status: false,
-//     });
-//   }
-// });
+    // 5️⃣ Send email (outside transaction)
+    const user = await User.findById(UserId);
+    const teacher = await User.findById(teacherId);
+    const lesson = await Lesson.findById(LessonId);
 
+    const emailHtml = BulkEmail(user?.name, multipleLessons, teacher?.name, lesson?.title);
 
-// exports.PaymentCancel = catchAsync(async (req, res) => {
-//   try {
-//     const { srNo } = req.params;
-//     if (!srNo) {
-//       return res.status(400).json({
-//         message: "srNo is required.",
-//         status: false,
-//       });
-//     }
-//     const data = await StripePayment.findOne({ srNo: srNo });
-//     if (!data) {
-//       return res.status(404).json({
-//         message: "Data not found",
-//         status: false,
-//       });
-//     }
-//     data.payment_status = "failed";
-//     await data.save();
-//     fetchPaymentId(data?.session_id, srNo, "cancel");
-//     res.status(200).json({
-//       message: `Payment status updated`,
-//       status: true,
-//       data: data,
-//     });
-//   } catch (error) {
-//     console.error("Error updating booking status:", error);
-//     logger.error("Error updating booking status:", error);
-//     res.status(500).json({
-//       message: "Internal Server Error",
-//       status: false,
-//     });
-//   }
-// });
+    await sendEmail({
+      email,
+      subject: "Bulk Lesson Purchase is Successful! 🎉",
+      emailHtml
+    });
 
+    return res.status(200).json({ status: true });
 
-// exports.createpayment = async (req, res) => {
-//   try {
-//     const { amount = 2000, currency = 'usd' } = req.body;
-//     const paymentIntent = await stripe.paymentIntents.create({
-//       amount,
-//       currency,
-//       metadata: req.body.metadata || {},
-//     });
-//     console.log("paymentIntent", paymentIntent)
-//     return res.json({ clientSecret: paymentIntent.client_secret });;
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({ error: err.message });
-//   }
-// }
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+
+    return data.res.status(400).json({
+      status: false,
+      error: err.message
+    });
+  }
+}
+
+exports.WalletBookingPayment = catchAsync(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const UserId = req.user.id;
+
+    const {
+      teacherId,
+      startDateTime,
+      endDateTime,
+      LessonId,
+      timezone,
+      totalAmount,
+      adminCommission,
+      email,
+      isSpecial,
+      processingFee,
+      isBulk,
+      multipleLessons
+    } = req.body;
+
+    // 🔥 BULK HANDLING
+    if (isBulk) {
+      await session.abortTransaction();
+      session.endSession();
+      return handleBulkWalletBooking({
+        ...req.body,
+        UserId,
+        res
+      });
+    }
+
+    // 🔹 TIME CONVERSION (EXACT COPY)
+    let startUTC, endUTC;
+
+    if (isSpecial) {
+      startUTC = new Date(startDateTime);
+      endUTC = new Date(endDateTime);
+    } else {
+      startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+      endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+    }
+
+    // 🔹 10 MIN CHECK
+    const nowUTC = new Date();
+    const timeDiffInMinutes = (startUTC - nowUTC) / (1000 * 60);
+
+    if (timeDiffInMinutes < 10) {
+      throw new Error("Cannot create booking less than 10 minutes before start time");
+    }
+
+    // 🔹 SLOT CONFLICT CHECK
+    const existingBooking = await Bookings.findOne({
+      teacherId: new mongoose.Types.ObjectId(teacherId),
+      cancelled: false,
+      startDateTime: { $lt: endUTC },
+      endDateTime: { $gt: startUTC },
+    }).session(session);
+
+    if (existingBooking) {
+      throw new Error("Booking already exists at the given slot for this teacher.");
+    }
+
+    // 🔥 WALLET CHECK
+    const wallet = await Wallet.findOne({ userId: UserId }).session(session);
+
+    if (!wallet || wallet.balance < totalAmount) {
+      throw new Error("Insufficient wallet balance");
+    }
+
+    // 🔥 DEDUCT WALLET
+    wallet.balance -= totalAmount;
+    await wallet.save({ session });
+
+    // 🔥 CREATE BOOKING
+    const teacherEarning = (totalAmount - processingFee) * 0.90;
+
+    const booking = await Bookings.create([{
+      teacherId,
+      totalAmount,
+      adminCommission,
+      teacherEarning,
+      UserId,
+      LessonId,
+      paypalpaymentId: null,
+      StripepaymentId: null,
+      startDateTime: startUTC,
+      endDateTime: endUTC,
+      processingFee,
+    }], { session });
+
+    // 🔥 SPECIAL SLOT UPDATE
+    if (isSpecial) {
+      const updatedSlot = await SpecialSlot.findOneAndUpdate(
+        {
+          student: UserId,
+          lesson: LessonId,
+          startDateTime: startUTC,
+        },
+        { paymentStatus: "paid" },
+        { new: true, session }
+      );
+
+      if (updatedSlot) {
+        await Bookings.findByIdAndUpdate(
+          booking[0]._id,
+          { specialSlotId: updatedSlot._id },
+          { session }
+        );
+      }
+    }
+
+    // 🔥 WALLET TRANSACTION
+    await WalletTransaction.create([{
+      userId: UserId,
+      type: "debit",
+      amount: totalAmount,
+      reason: "Lesson Booking (Wallet)",
+      bookingId: booking[0]._id,
+      balance: wallet.balance,
+    }], { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // 📧 EMAILS (outside transaction)
+    const user = await User.findById(UserId);
+    const teacher = await User.findById(teacherId);
+
+    const utcDateTime = DateTime.fromJSDate(new Date(startUTC), { zone: "utc" });
+
+    const userTimeISO = user?.time_zone
+      ? utcDateTime.setZone(user.time_zone).toISO()
+      : utcDateTime.toISO();
+
+    const teacherTimeISO = teacher?.time_zone
+      ? utcDateTime.setZone(teacher.time_zone).toISO()
+      : utcDateTime.toISO();
+
+    await sendEmail({
+      email,
+      subject: "Booking Confirmed 🎉",
+      emailHtml: BookingSuccess(userTimeISO, user?.name, teacher?.name)
+    });
+
+    await sendEmail({
+      email: teacher.email,
+      subject: "New Booking 🎉",
+      emailHtml: TeacherBooking(teacherTimeISO, user?.name, teacher?.name)
+    });
+
+    return res.status(200).json({ status: true });
+
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
+    return res.status(400).json({
+      status: false,
+      error: error.message
+    });
+  }
+});

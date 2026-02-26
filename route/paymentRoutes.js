@@ -22,5 +22,8 @@ router.post("/create-payment-intent", verifyToken, paymentController.PaymentCrea
 // Wallet Stripe payment route
 router.post("/create-wallet-payment-intent", verifyToken, paymentController.WalletPaymentCreate)
 
+// Booking payment via wallet route
+router.post("/wallet-booking", verifyToken, paymentController.WalletBookingPayment)
+
 
 module.exports = router;

@@ -136,6 +136,15 @@ const bookingSchema = new mongoose.Schema(
       ref: "SpecialSlots",
       default: null
     },
+    isFromWallet: {
+      type: Boolean,
+      default: false
+    },
+    walletTransactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "WalletTransaction",
+      default: null
+    },
     calendarSynced: {
       type: Boolean,
       default: false

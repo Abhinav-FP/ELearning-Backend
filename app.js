@@ -883,7 +883,7 @@ app.get("/", (req, res) => {
   });
 });
 
-require("./cronJobs")();
+// require("./cronJobs")();
 
 const server = app.listen(PORT, () =>
   console.log("Server is running at port : " + PORT)
