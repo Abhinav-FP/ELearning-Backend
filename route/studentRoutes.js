@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { paymentget, GetFavouriteTeachers, teacherget, reviewUserGet, studentDashboard, teachergetByID, GetTeacherAvailability, GetLessonsByTeacher, SpecialSlotList, SpecialSlotPaymentLink, BulkLessonList, BulkLessonRedeem, BulkLessonCheck } = require("../controller/studentController");
+const { paymentget, GetFavouriteTeachers, teacherget, reviewUserGet, studentDashboard, teachergetByID, GetTeacherAvailability, GetLessonsByTeacher, SpecialSlotList, SpecialSlotPaymentLink, BulkLessonList, BulkLessonRedeem, BulkLessonCheck, WalletGet } = require("../controller/studentController");
 const { verifyToken } = require("../middleware/tokenVerify");
 
 router.get("/student/payment", verifyToken, paymentget);
@@ -15,5 +15,6 @@ router.get("/student/specialSlot/payment/:id", verifyToken, SpecialSlotPaymentLi
 router.post("/student/bulkLessons/check", verifyToken, BulkLessonCheck);
 router.get("/student/bulkLessons", verifyToken, BulkLessonList);
 router.post("/student/bulkLessons/redeem", verifyToken, BulkLessonRedeem);
+router.get("/student/wallet", verifyToken, WalletGet);
 
 module.exports = router;

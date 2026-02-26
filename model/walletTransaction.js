@@ -21,7 +21,7 @@ const walletTransactionSchema = mongoose.Schema({
   }, // The reason for the transaction (e.g., "Wallet Recharge", "lesson payment", "refund", "admin adjustment")
   bookingId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Booking",
+    ref: "Bookings",
     default: null
   },
   stripePaymentId: {

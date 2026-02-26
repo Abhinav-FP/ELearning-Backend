@@ -12,6 +12,8 @@ const { successResponse, errorResponse, validationErrorResponse } = require("../
 const Loggers = require("../utils/Logger");
 const Booking = require("../model/booking");
 const BulkLesson = require("../model/bulkLesson");
+const Wallet = require("../model/wallet");
+const WalletTransaction = require("../model/walletTransaction");
 const SpecialSlot = require("../model/SpecialSlot");
 const mongoose = require('mongoose');
 const moment = require("moment"); 
@@ -692,6 +694,41 @@ exports.BulkLessonRedeem = catchAsync(async (req, res) => {
     logger.info("Bulk booking redeem successfull!");
   
     successResponse(res, "Special Slots retrieved successfully!", 200);
+  } catch (error) {
+    console.log("error", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
+exports.WalletGet = catchAsync(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const objectId = new mongoose.Types.ObjectId(userId);
+
+    const wallet = await Wallet.findOne({ userId: objectId });
+
+    if (!wallet) {
+      return successResponse(res, "Wallet retrieved successfully!", 200, {
+        balance: 0,
+        transactions: [],
+      });
+    }
+
+    const transactions = await WalletTransaction.find({
+      userId: objectId,
+    })
+      .populate("bookingId")
+      .populate("stripePaymentId")
+      .populate("paypalPaymentId")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const data = {
+      balance: wallet.balance,
+      transactions,
+    };
+
+    return successResponse(res, "Wallet retrieved successfully!", 200, data);
   } catch (error) {
     console.log("error", error);
     return errorResponse(res, error.message || "Internal Server Error", 500);
