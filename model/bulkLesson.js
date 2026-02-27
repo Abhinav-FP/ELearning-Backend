@@ -65,6 +65,15 @@ const bulkLessonSchema = new mongoose.Schema(
       ],
       default: null,
     },
+    isFromWallet: {
+      type: Boolean,
+      default: false
+    },
+    walletTransactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "WalletTransaction",
+      default: null
+    },
   },
   { timestamps: true }
 );

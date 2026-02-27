@@ -723,10 +723,11 @@ async function handleBulkWalletBooking(data) {
       processingFee,
       totalLessons: multipleLessons,
       lessonsRemaining: multipleLessons,
+      isFromWallet: true,
     }], { session });
 
     // 4️⃣ Wallet transaction (debit)
-    await WalletTransaction.create([{
+    const walletTransaction = await WalletTransaction.create([{
       userId: UserId,
       type: "debit",
       amount: totalAmount,
@@ -734,6 +735,15 @@ async function handleBulkWalletBooking(data) {
       bulkLessonId: bulkLesson[0]._id,
       balance: wallet.balance,
     }], { session });
+
+    await BulkLessons.findByIdAndUpdate(
+      bulkLesson[0]._id,
+      {
+        isFromWallet: true,
+        walletTransactionId: walletTransaction[0]._id
+      },
+      { session }
+    );
 
     await session.commitTransaction();
     session.endSession();
@@ -864,6 +874,7 @@ exports.WalletBookingPayment = catchAsync(async (req, res) => {
       startDateTime: startUTC,
       endDateTime: endUTC,
       processingFee,
+      isFromWallet: true
     }], { session });
 
     // 🔥 SPECIAL SLOT UPDATE
@@ -888,7 +899,7 @@ exports.WalletBookingPayment = catchAsync(async (req, res) => {
     }
 
     // 🔥 WALLET TRANSACTION
-    await WalletTransaction.create([{
+    const walletTransaction = await WalletTransaction.create([{
       userId: UserId,
       type: "debit",
       amount: totalAmount,
@@ -896,6 +907,12 @@ exports.WalletBookingPayment = catchAsync(async (req, res) => {
       bookingId: booking[0]._id,
       balance: wallet.balance,
     }], { session });
+
+    await Bookings.findByIdAndUpdate(
+      booking[0]._id,
+      { walletTransactionId: walletTransaction[0]._id },
+      { session }
+    );
 
     await session.commitTransaction();
     session.endSession();
