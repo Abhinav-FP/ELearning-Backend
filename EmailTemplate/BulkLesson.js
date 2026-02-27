@@ -11,7 +11,7 @@ module.exports = (userName, multipleLessons, teacherName, lessonName) => {
             </tr>
             <tr>
             <td style="padding: 1.5rem 1rem 2rem;">
-                <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/booked.png" alt="banner" style="max-width:100%;margin: auto;display: block;" />
+                <img src="https://student-teacher-platform.sgp1.digitaloceanspaces.com/bulk.png" alt="banner" style="max-width:100%;margin: auto;display: block;" />
             </td>
             </tr>
             <tr>

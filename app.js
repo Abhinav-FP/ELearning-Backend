@@ -13,6 +13,7 @@ const Lesson = require("./model/lesson");
 const Wallet = require("./model/wallet");
 const WalletTransaction = require("./model/walletTransaction");
 const BulkEmail = require("./EmailTemplate/BulkLesson");
+const TeacherBulkEmail = require("./EmailTemplate/TeacherBulkLesson");
 const Zoom = require("./model/Zoom");
 const crypto = require("crypto");
 const User = require("./model/user");
@@ -187,26 +188,6 @@ app.post(
           console.log(`Wallet credited successfully | User: ${userId} | Amount: ${rechargeAmount} | Balance: ${newBalance}`);
           return res.json({ received: true });
         }
-      }
-
-      case "payment_intent.succeeded": {
-        const pi = event.data.object;
-        logger.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
-        const metadata = pi.metadata;
-
-        const alreadyExists = await StripePayment.findOne({ payment_id: pi.id });
-        if (alreadyExists) {
-          logger.warn(`⚠️ Stripe payment already processed. payment_id: ${pi.id}`);
-          return res.status(200).json({ message: "Payment already processed" }); 
-        }
-
-        logger.info("📦 Metadata:", metadata);
-        console.log("📦 Metadata:", metadata);
-        if(metadata?.isWallet && metadata?.isWallet === "true"){
-          logger.info("Wallet webhook hit in payment intent succeeded");
-          res.json({ received: true });
-          return;
-        }
         // Handle bulk lesson purchase
         if (metadata.isBulk === "true") {
           const payment = await StripePayment.create({
@@ -235,17 +216,29 @@ app.post(
           });
           const savedBulkLesson = await bulkLesson.save();
           logger.info(`Bulk lesson record created: ${JSON.stringify(savedBulkLesson || "")}`);
+
+          // Sending email to student
           const user = await User.findById({ _id: metadata?.userId });
           const teacher = await User.findById({ _id: metadata?.teacherId });
           const lesson = await Lesson.findById(metadata?.LessonId);
           const Username = user?.name;
           const emailHtml = BulkEmail(Username , multipleLessons, teacher?.name, lesson?.title);
           const subject = "Bulk Lesson Purchase is Successful! 🎉";
-          logger.info(`Paypal sending bulk email to student at  ${email}`);
+          logger.info(`Stripe sending bulk email to student at  ${email}`);
           await sendEmail({
             email: email,
             subject: subject,
             emailHtml: emailHtml,
+          });
+
+          // Sending email to teacher
+          const TeacheremailHtml = TeacherBulkEmail(Username , multipleLessons, teacher?.name, lesson?.title);
+          const TeacherSubject = "New Bulk Lesson Purchase Received 🎉";
+          logger.info(`Stripe sending bulk email to teacher at  ${teacher?.email}`);
+          await sendEmail({
+            email: teacher?.email,
+            subject: TeacherSubject,
+            emailHtml: TeacheremailHtml,
           });
           return;          
         }
@@ -401,6 +394,232 @@ app.post(
           "Stripe webhook received successfully. Payment processed and booking with special slot completed."
         );
         break;
+      }
+
+      case "payment_intent.succeeded": {
+        const pi = event.data.object;
+        logger.info(`✅ PaymentIntent succeeded for amount: ${pi.amount}`);
+        // const metadata = pi.metadata;
+
+        // const alreadyExists = await StripePayment.findOne({ payment_id: pi.id });
+        // if (alreadyExists) {
+        //   logger.warn(`⚠️ Stripe payment already processed. payment_id: ${pi.id}`);
+        //   return res.status(200).json({ message: "Payment already processed" }); 
+        // }
+
+        // logger.info("📦 Metadata:", metadata);
+        // console.log("📦 Metadata:", metadata);
+        // if(metadata?.isWallet && metadata?.isWallet === "true"){
+        //   logger.info("Wallet webhook hit in payment intent succeeded");
+        //   res.json({ received: true });
+        //   return;
+        // }
+        // // Handle bulk lesson purchase
+        // if (metadata.isBulk === "true") {
+        //   const payment = await StripePayment.create({
+        //     srNo: parseInt(metadata.srNo),
+        //     payment_type: "card",
+        //     payment_id: pi.id,
+        //     currency: pi.currency,
+        //     LessonId: metadata.LessonId,
+        //     amount: pi.amount / 100,
+        //     UserId: metadata.userId,
+        //     payment_status: pi.status,
+        //   });
+        //   logger.info(`Stripe payment saved for bulk lesson, paymentId: ${JSON.stringify(payment || "")}`);
+        //   const teacherEarnings = (pi.amount / 100 - metadata.processingFee) * 0.9;
+        //   const bulkLesson = new BulkLessons({
+        //     teacherId:  metadata.teacherId,
+        //     UserId: metadata.userId,
+        //     LessonId: metadata.LessonId,
+        //     StripepaymentId: payment._id,
+        //     totalAmount: pi.amount / 100 || metadata.amount,
+        //     teacherEarning: teacherEarnings || 0,
+        //     adminCommission: metadata.adminCommission,
+        //     processingFee: metadata.processingFee || 0,
+        //     totalLessons: metadata.multipleLessons || 0,
+        //     lessonsRemaining: metadata.multipleLessons || 0,
+        //   });
+        //   const savedBulkLesson = await bulkLesson.save();
+        //   logger.info(`Bulk lesson record created: ${JSON.stringify(savedBulkLesson || "")}`);
+
+        //   // Sending email to student
+        //   const user = await User.findById({ _id: metadata?.userId });
+        //   const teacher = await User.findById({ _id: metadata?.teacherId });
+        //   const lesson = await Lesson.findById(metadata?.LessonId);
+        //   const Username = user?.name;
+        //   const emailHtml = BulkEmail(Username , multipleLessons, teacher?.name, lesson?.title);
+        //   const subject = "Bulk Lesson Purchase is Successful! 🎉";
+        //   logger.info(`Stripe sending bulk email to student at  ${email}`);
+        //   await sendEmail({
+        //     email: email,
+        //     subject: subject,
+        //     emailHtml: emailHtml,
+        //   });
+
+        //   // Sending email to teacher
+        //   const TeacheremailHtml = TeacherBulkEmail(Username , multipleLessons, teacher?.name, lesson?.title);
+        //   const TeacherSubject = "New Bulk Lesson Purchase Received 🎉";
+        //   logger.info(`Stripe sending bulk email to teacher at  ${teacher?.email}`);
+        //   await sendEmail({
+        //     email: teacher?.email,
+        //     subject: TeacherSubject,
+        //     emailHtml: TeacheremailHtml,
+        //   });
+        //   return;          
+        // }
+        // if (metadata.IsBonus) {
+        //   const payment = await StripePayment.create({
+        //     srNo: parseInt(metadata.srNo),
+        //     payment_type: "card",
+        //     payment_id: pi.id,
+        //     currency: pi.currency,
+        //     LessonId: metadata.LessonId,
+        //     amount: pi.amount / 100,
+        //     UserId: metadata.userId,
+        //     payment_status: pi.status,
+        //     IsBonus: true,
+        //   });
+        //   // Create Bonus record
+        //   const record = await Bonus.create({
+        //     userId: metadata.userId,
+        //     teacherId: metadata.teacherId,
+        //     LessonId: metadata.LessonId,
+        //     bookingId: metadata.BookingId,
+        //     amount: metadata.amount,
+        //     currency: pi.currency,
+        //     StripepaymentId: payment._id, // ✅ updated to reflect Stripe
+        //   });
+        //   // Update Booking with Bonus
+        //   await Bookings.findOneAndUpdate(
+        //     { _id: metadata.BookingId },
+        //     {
+        //       IsBonus: true,
+        //       BonusId: record._id,
+        //     },
+        //     { new: true }
+        //   );
+        //   return;
+        // }
+        // // Bonus Case ends here
+        // let startUTC, endUTC;
+        // // Convert times to UTC
+        // if (metadata?.isSpecial) {
+        //   startUTC = metadata.startDateTime;
+        //   endUTC = metadata.endDateTime;
+        // } else {
+        //   startUTC = DateTime.fromISO(metadata.startDateTime, {
+        //     zone: metadata.timezone,
+        //   })
+        //     .toUTC()
+        //     .toJSDate();
+        //   endUTC = DateTime.fromISO(metadata.endDateTime, {
+        //     zone: metadata.timezone,
+        //   })
+        //     .toUTC()
+        //     .toJSDate();
+        // }
+        // // Save payment record
+        // const payment = new StripePayment({
+        //   srNo: parseInt(metadata.srNo || 1),
+        //   payment_type: "card",
+        //   payment_id: pi.id,
+        //   currency: pi.currency,
+        //   LessonId: metadata.LessonId,
+        //   amount: pi.amount / 100,
+        //   UserId: metadata.userId,
+        //   payment_status: pi.status,
+        // });
+        // const savedPayment = await payment.save();
+        // const teacherEarning = (pi.amount / 100 - metadata.processingFee) * 0.9; // 90% to teacher, 10% to admin as discussed with client
+        // // Save booking record
+        // const booking = new Bookings({
+        //   teacherId: metadata.teacherId,
+        //   UserId: metadata.userId,
+        //   teacherEarning,
+        //   adminCommission: metadata.adminCommission,
+        //   LessonId: metadata.LessonId,
+        //   StripepaymentId: savedPayment._id,
+        //   startDateTime: startUTC,
+        //   endDateTime: endUTC,
+        //   currency: pi.currency,
+        //   totalAmount: pi.amount / 100,
+        //   srNo: parseInt(metadata.srNo),
+        //   processingFee: metadata.processingFee || 0,
+        //   notes: metadata.notes || "",
+        // });
+        // const record = await booking.save();
+
+        // // Updating Specialslot
+        // if (metadata?.isSpecial) {
+        //   const studentId = new mongoose.Types.ObjectId(metadata.userId);
+        //   const lessonId = new mongoose.Types.ObjectId(metadata.LessonId);
+        //   const updatedSlot = await SpecialSlot.findOneAndUpdate(
+        //     {
+        //       student: studentId,
+        //       lesson: lessonId,
+        //       startDateTime: startUTC,
+        //     },
+        //     { paymentStatus: "paid" },
+        //     { new: true, runValidators: true }
+        //   );
+        //   if (updatedSlot) {
+        //     await Bookings.findByIdAndUpdate(record._id, {
+        //       specialSlotId: updatedSlot._id,
+        //     });
+        //   }
+        // }
+
+        // // Send confirmation email to student
+        // const user = await User.findById(metadata.userId);
+        // const teacher = await User.findById(metadata.teacherId);
+        // const registrationSubject = "Booking Confirmed 🎉";
+
+        // // Convert to ISO format for moment parsing in email templates
+        // // console.log("startUTC", startUTC);
+        // const utcDateTime = DateTime.fromJSDate(new Date(startUTC), {
+        //   zone: "utc",
+        // });
+        // // console.log("utcDateTime", utcDateTime);
+        // // console.log("user",user);
+        // // console.log("teacher",teacher);
+
+        // const userTimeISO = user?.time_zone
+        //   ? utcDateTime.setZone(user.time_zone).toISO()
+        //   : utcDateTime.toISO();
+
+        // const teacherTimeISO = teacher?.time_zone
+        //   ? utcDateTime.setZone(teacher.time_zone).toISO()
+        //   : utcDateTime.toISO();
+        // // console.log("userTimeISO", userTimeISO);
+        // // console.log("teacherTimeISO", teacherTimeISO);
+
+        // const emailHtml = BookingSuccess(
+        //   userTimeISO,
+        //   user?.name,
+        //   teacher?.name
+        // );
+        // await sendEmail({
+        //   email: metadata.email,
+        //   subject: registrationSubject,
+        //   emailHtml,
+        // });
+        // // Send Confirmation email to teacher
+        // const TeacherSubject = "New Booking 🎉";
+        // const TeacheremailHtml = TeacherBooking(
+        //   teacherTimeISO,
+        //   user?.name,
+        //   teacher?.name
+        // );
+        // await sendEmail({
+        //   email: teacher.email,
+        //   subject: TeacherSubject,
+        //   emailHtml: TeacheremailHtml,
+        // });
+        // logger.info(
+        //   "Stripe webhook received successfully. Payment processed and booking with special slot completed."
+        // );
+        // break;
       }
 
       default:
@@ -883,7 +1102,7 @@ app.get("/", (req, res) => {
   });
 });
 
-require("./cronJobs")();
+// require("./cronJobs")();
 
 const server = app.listen(PORT, () =>
   console.log("Server is running at port : " + PORT)

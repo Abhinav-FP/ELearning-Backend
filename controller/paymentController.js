@@ -10,6 +10,7 @@ const BulkLessons = require("../model/bulkLesson");
 const { DateTime } = require("luxon");
 const BookingSuccess = require("../EmailTemplate/BookingSuccess");
 const BulkEmail = require("../EmailTemplate/BulkLesson");
+const TeacherBulkEmail = require("../EmailTemplate/TeacherBulkLesson");
 const TeacherBooking = require("../EmailTemplate/TeacherBooking");
 const sendEmail = require("../utils/EmailMailler");
 const User = require("../model/user");
@@ -152,6 +153,8 @@ async function handleBulkBooking(data) {
     const teacher = await User.findById({ _id: teacherId });
     const lesson = await Lesson.findById(LessonId);
     const Username = user?.name;
+
+    // Sending bulk email to student
     const emailHtml = BulkEmail(Username , multipleLessons, teacher?.name, lesson?.title);
     const subject = "Bulk Lesson Purchase is Successful! 🎉";
     logger.info(`Paypal sending bulk email to student at  ${email}`);
@@ -159,6 +162,16 @@ async function handleBulkBooking(data) {
       email: email,
       subject: subject,
       emailHtml: emailHtml,
+    });
+
+    // Sending bulk email to teacher
+    const TeacheremailHtml = TeacherBulkEmail(Username , multipleLessons, teacher?.name, lesson?.title);
+    const TeacherSubject = "New Bulk Lesson Purchase Received 🎉";
+    logger.info(`Paypal sending bulk email to teacher at  ${teacher?.email}`);
+    await sendEmail({
+      email: teacher?.email,
+      subject: TeacherSubject,
+      emailHtml: TeacheremailHtml,
     });
     res.status(200).json(savedPayment);
   } catch (err) {
@@ -526,59 +539,70 @@ exports.PaymentcaptureTipsOrder = catchAsync(async (req, res) => {
 exports.PaymentCreate = catchAsync(async (req, res) => {
   try {
     const userId = req.user.id;
+
     const { amount, LessonId, currency, teacherId, startDateTime, 
       endDateTime, timezone, adminCommission, email, isSpecial, 
       IsBonus, BookingId, processingFee, isBulk, multipleLessons
-    } = req?.body;
-    // console.log("req?.body", req?.body)
+    } = req.body;
 
-    // Checking if the booking with the same slot already exists
     let startUTC, endUTC;
+
     if(!isBulk){
-    if (isSpecial) {
-      startUTC = new Date(startDateTime);
-      endUTC = new Date(endDateTime);
-    }
-    else {
-      startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
-      endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
-    }
+      if (isSpecial) {
+        startUTC = new Date(startDateTime);
+        endUTC = new Date(endDateTime);
+      } else {
+        startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
+        endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
+      }
 
-    // ✅ Get current UTC time
-    const nowUTC = new Date();
+      const nowUTC = new Date();
+      const timeDiffInMinutes = (startUTC - nowUTC) / (1000 * 60);
 
-    // ✅ Check if slot is in the past or less than 10 minutes from now
-    const timeDiffInMs = startUTC - nowUTC;
-    const timeDiffInMinutes = timeDiffInMs / (1000 * 60);
-    if (timeDiffInMinutes < 10) {
-      return res.status(400).json({
-        status: false,
-        error: "Cannot select a slot that starts in less than 10 minutes or is in the past"
+      if (timeDiffInMinutes < 10) {
+        return res.status(400).json({
+          status: false,
+          error: "Cannot select a slot that starts in less than 10 minutes or is in the past"
+        });
+      }
+
+      const existingBooking = await Bookings.findOne({
+        teacherId: new mongoose.Types.ObjectId(teacherId),
+        cancelled: false,
+        startDateTime: { $lt: endUTC },
+        endDateTime: { $gt: startUTC },
       });
+
+      if (existingBooking) {
+        return res.status(400).json({
+          status: false,
+          error: "Booking already exists at the given slot for this teacher.",
+        });
+      }
     }
 
-    // Check for booking conflict for the same teacher
-    const existingBooking = await Bookings.findOne({
-      teacherId: new mongoose.Types.ObjectId(teacherId),
-      cancelled: false, // Only consider active bookings
-      startDateTime: { $lt: endUTC },
-      endDateTime: { $gt: startUTC },
-    });
-
-    if (existingBooking) {
-      return res.status(400).json({
-        status: false,
-        error: "Booking already exists at the given slot for this teacher.",
-      });
-    }    
-    }
     const lastpayment = await StripePayment.findOne().sort({ srNo: -1 });
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
-      currency: currency,
+
+    const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      mode: 'payment',
+      customer_email: email,
+      line_items: [
+        {
+          price_data: {
+            currency: currency,
+            product_data: {
+              name: "Lesson Booking Payment",
+            },
+            unit_amount: amountInCents,
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `${process.env.FRONTEND_URL}/success`,
+      cancel_url: `${process.env.FRONTEND_URL}/cancel`,
       metadata: {
         userId,
         LessonId,
@@ -595,14 +619,16 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
         BookingId,
         IsBonus,
         processingFee,
-        isBulk, 
+        isBulk,
         multipleLessons
       }
     });
-    res.json({ clientSecret: paymentIntent.client_secret });
+
+    res.json({ url: session.url });
+
   } catch (error) {
-    console.error('Error creating payment intent:', error);
-    logger.error(`Error creating payment intent: ${JSON.stringify(error || 'Unknown error')}`);
+    console.error('Error creating checkout session:', error);
+    logger.error(`Error creating checkout session: ${JSON.stringify(error || 'Unknown error')}`);
     res.status(500).json({ error: error || 'Internal Server Error' });
   }
 });
@@ -717,12 +743,22 @@ async function handleBulkWalletBooking(data) {
     const teacher = await User.findById(teacherId);
     const lesson = await Lesson.findById(LessonId);
 
+    // Sending bulk email to student
     const emailHtml = BulkEmail(user?.name, multipleLessons, teacher?.name, lesson?.title);
-
     await sendEmail({
       email,
       subject: "Bulk Lesson Purchase is Successful! 🎉",
       emailHtml
+    });
+
+    // Sending bulk email to teacher
+    const TeacheremailHtml = TeacherBulkEmail(Username , multipleLessons, teacher?.name, lesson?.title);
+    const TeacherSubject = "New Bulk Lesson Purchase Received 🎉";
+    logger.info(`Paypal sending bulk email to teacher at  ${teacher?.email}`);
+    await sendEmail({
+      email: teacher?.email,
+      subject: TeacherSubject,
+      emailHtml: TeacheremailHtml,
     });
 
     return res.status(200).json({ status: true });

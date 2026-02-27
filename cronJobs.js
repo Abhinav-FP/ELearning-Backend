@@ -267,20 +267,20 @@ module.exports = () => {
     }
   });
 
-  // cron.schedule('46 16 * * *', async () => {
-  //   try {
-  //     console.log('⏰ Currency update cron job triggered!');
-  //     const emailHtml = currency('Success', true, '', 'May 29, 2025 11:25 AM');
-  //     const record = await updateCurrencyRatesJob();
-  //     await sendEmail({
-  //       email: "ankit.jain@internetbusinesssolutionsindia.com",
-  //       subject: 'Currency Rate Update - Success',
-  //       emailHtml: emailHtml,
-  //     });
-  //   } catch (err) {
-  //     console.error('❌ Cron job error:', err);
-  //   }
-  // });
+  cron.schedule('46 16 * * *', async () => {
+    try {
+      console.log('⏰ Currency update cron job triggered!');
+      const emailHtml = currency('Success', true, '', 'May 29, 2025 11:25 AM');
+      const record = await updateCurrencyRatesJob();
+      await sendEmail({
+        email: "ankit.jain@internetbusinesssolutionsindia.com",
+        subject: 'Currency Rate Update - Success',
+        emailHtml: emailHtml,
+      });
+    } catch (err) {
+      console.error('❌ Cron job error:', err);
+    }
+  });
 
   cron.schedule("* * * * *", async () => {
     try {
