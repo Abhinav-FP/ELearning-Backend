@@ -137,8 +137,8 @@ app.post(
         });
 
         if (alreadyExists) {
-          logger.warn(`⚠️ Wallet payment already processed: ${paymentIntentId}`);
-          console.log(`Wallet payment already processed: ${paymentIntentId}`);
+          logger.warn(`⚠️ Payment already processed: ${paymentIntentId}`);
+          console.log(`Payment already processed: ${paymentIntentId}`);
           return res.json({ received: true });
         }
 
@@ -1102,7 +1102,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// require("./cronJobs")();
+require("./cronJobs")();
 
 const server = app.listen(PORT, () =>
   console.log("Server is running at port : " + PORT)

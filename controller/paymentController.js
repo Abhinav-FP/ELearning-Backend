@@ -601,8 +601,8 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.FRONTEND_URL}/success`,
-      cancel_url: `${process.env.FRONTEND_URL}/cancel`,
+      success_url: `${process.env.DOMAIN}/success`,
+      cancel_url: `${process.env.DOMAIN}/cancel`,
       metadata: {
         userId,
         LessonId,
