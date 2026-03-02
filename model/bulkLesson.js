@@ -49,6 +49,54 @@ const bulkLessonSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    status: {
+      type: String,
+      enum: [
+        "active",
+        "cancelled",
+        "completed",
+        "partially_refunded",
+        "refunded"
+      ],
+      default: "active"
+    },
+
+    refundAmount: {
+      type: Number,
+      default: 0
+    },
+    adminAdjustments: {
+      type:[
+        {
+          type: {
+            type: String, // "credit_add", "credit_deduct", "manual_refund", "cancel"
+            required: true,
+          },
+          lessonsChanged: {
+            type: Number,
+            default: 0,
+          },
+          amountChanged: {
+            type: Number,
+            default: 0,
+          },
+          reason: {
+            type: String,
+            required: true,
+          },
+          adminId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+          },
+          createdAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      default: null,
+    },
     bookings: {
       type: [
         {

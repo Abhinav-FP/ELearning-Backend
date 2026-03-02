@@ -812,3 +812,128 @@ exports.emulateUser = catchAsync(async (req, res) => {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }
 });
+
+exports.updateBulkByAdmin = catchAsync(async (req, res) => {
+  try {
+    const { bulkId } = req.params;
+    const {
+      actionType,
+      lessonsChanged,
+      refundAmount,
+      status,
+      reason,
+      sendNotification
+    } = req.body;
+
+    const bulk = await BulkLesson.findById(bulkId);
+
+    if (!bulk) {
+      return res.status(404).json({ message: "Bulk not found" });
+    }
+
+    let updateData = {};
+    let adjustmentRecord = null;
+
+    // 1️⃣ Adjust Credits
+    if (actionType === "adjust_credits") {
+
+      if (!lessonsChanged || !reason) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      if (bulk.lessonsRemaining + lessonsChanged < 0){
+        return res.status(400).json({ message: "Lessons remaining cannot be negative" });
+      }
+
+      updateData.$inc = {
+        lessonsRemaining: lessonsChanged,
+        totalLessons: lessonsChanged > 0 ? lessonsChanged : 0
+      };
+
+      adjustmentRecord = {
+        type: lessonsChanged > 0 ? "credit_add" : "credit_deduct",
+        lessonsChanged,
+        amountChanged: 0,
+        reason,
+        adminId: req.user._id
+      };
+    }
+
+    // 2️⃣ Refund
+    if (actionType === "refund") {
+
+      if (!refundAmount || !reason) {
+        return res.status(400).json({ message: "Refund amount and reason required" });
+      }
+
+      updateData.status =
+        refundAmount === bulk.totalAmount
+          ? "refunded"
+          : "partially_refunded";
+
+      updateData.$inc = {
+        lessonsRemaining: -Math.abs(lessonsChanged || 0)
+      };
+
+      updateData.refundAmount =
+        (bulk.refundAmount || 0) + refundAmount;
+
+      adjustmentRecord = {
+        type: "manual_refund",
+        lessonsChanged: -Math.abs(lessonsChanged || 0),
+        amountChanged: refundAmount,
+        reason,
+        adminId: req.user._id
+      };
+    }
+
+    // 3️⃣ Cancel
+    if (actionType === "cancel") {
+      updateData.status = "cancelled";
+      updateData.lessonsRemaining = 0;
+
+      adjustmentRecord = {
+        type: "cancel",
+        lessonsChanged: -bulk.lessonsRemaining,
+        amountChanged: 0,
+        reason,
+        adminId: req.user._id
+      };
+    }
+
+    if (adjustmentRecord) {
+      updateData.$push = {
+        adminAdjustments: adjustmentRecord
+      };
+    }
+
+    const updatedBulk = await BulkLesson.findByIdAndUpdate(
+      bulkId,
+      updateData,
+      { new: true }
+    );
+
+    // Send notification if requested
+    if (sendNotification) {
+      const student = await User.findById(bulk.UserId);
+
+      await sendEmail({
+        email: student.email,
+        subject: "Update Regarding Your Bulk Lessons",
+        emailHtml: AdminBulkUpdateTemplate(
+          student.name,
+          actionType,
+          reason
+        )
+      });
+    }
+
+    res.json({
+      message: "Bulk updated successfully",
+      data: updatedBulk
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});

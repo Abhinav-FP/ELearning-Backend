@@ -153,6 +153,10 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    usdToJpyRate: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

@@ -15,6 +15,10 @@ const PayoutSchema = mongoose.Schema({
         type: Number,
         required: [true, "amount is required."],
     },
+    amountInJpy: {
+        type: Number,
+        required: [true, "amount in JPY is required."],
+    },
     Status: {
         type: String,
         enum: ["approved", "rejected", "pending"],

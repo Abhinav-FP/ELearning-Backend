@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { TeacherList, StudentList, AdminBlockUser, ApproveRejectTeacher, PayoutAcceptorReject, PayoutListing, AdminBookingsGet, TeacherAllData, Admindashbaord , AdminEarning, AistrainedApprove, DeleteUser, UpdateTeacherVideo, UpdateFeaturedTeachers, AddCourse, getCourse, UpdateCourse, deleteCourse, UpdateTeacherRank, GetRankedTeachers, emulateUser } = require("../controller/AdminController");
+const { TeacherList, StudentList, AdminBlockUser, ApproveRejectTeacher, PayoutAcceptorReject, PayoutListing, AdminBookingsGet, TeacherAllData, Admindashbaord , AdminEarning, AistrainedApprove, DeleteUser, UpdateTeacherVideo, UpdateFeaturedTeachers, AddCourse, getCourse, UpdateCourse, deleteCourse, UpdateTeacherRank, GetRankedTeachers, emulateUser, updateBulkByAdmin } = require("../controller/AdminController");
 const { verifyToken } = require("../middleware/tokenVerify");
 const { upload } = require("../utils/FileUploader");
 
@@ -25,5 +25,6 @@ router.post("/admin/course/edit/:id", verifyToken, upload.single('thumbnail'), U
 router.post("/admin/course/delete/:id", verifyToken, deleteCourse);
 router.get("/admin/course/get", verifyToken, getCourse);
 router.get("/admin/emulate/:id", verifyToken, emulateUser);
+router.get("/admin/bulk/:bulkId", verifyToken, updateBulkByAdmin);
 
 module.exports = router;

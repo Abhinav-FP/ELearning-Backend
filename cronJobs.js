@@ -267,7 +267,7 @@ module.exports = () => {
     }
   });
 
-  cron.schedule('46 16 * * *', async () => {
+  cron.schedule('0 6,18 * * *', async () => {
     try {
       console.log('⏰ Currency update cron job triggered!');
       const emailHtml = currency('Success', true, '', 'May 29, 2025 11:25 AM');
