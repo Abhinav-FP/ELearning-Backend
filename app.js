@@ -321,6 +321,7 @@ app.post(
           srNo: parseInt(metadata.srNo),
           processingFee: metadata.processingFee || 0,
           notes: metadata.notes || "",
+          usdToJpyRate: metadata?.rate || 0,
         });
         const record = await booking.save();
 

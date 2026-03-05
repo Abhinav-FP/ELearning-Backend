@@ -7,7 +7,7 @@ const Loggers = require("../utils/Logger");
 
 exports.PayoutAdd = catchAsync(async (req, res) => {
   const userId = req?.user?.id;
-  const { amount } = req.body;
+  const { amount, amountInJpy } = req.body;
 
   if (!userId) {
     return res.status(400).json({
@@ -16,10 +16,10 @@ exports.PayoutAdd = catchAsync(async (req, res) => {
     });
   }
   
-  if (!amount) {
+  if (!amount || !amountInJpy) {
     return res.status(400).json({
       status: false,
-      message: "Amount is required.",
+      message: "Amount and amount in JPY are required.",
     });
   }
   
@@ -63,6 +63,7 @@ exports.PayoutAdd = catchAsync(async (req, res) => {
     const record = new Payout({
       BankId: Banks._id,
       amount,
+      amountInJpy,
       userId,
       createdAt: time,
     });

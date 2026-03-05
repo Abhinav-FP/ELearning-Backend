@@ -20,6 +20,7 @@ const SpecialSlot = require("../model/SpecialSlot");
 const mongoose = require("mongoose");
 const Bonus = require('../model/Bonus');
 const logger = require("../utils/Logger");
+const Currencies = require("../model/Currency");
 
 const clientId = process.env.PAYPAL_CLIENT_ID;
 const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -274,6 +275,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
       endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
     }
+    const rate = await Currencies.findOne({ currency: "JPY" });
     const teacherEarning = (totalAmount - processingFee) * 0.90; // 90% to teacher, 10% to admin as discussed with client
     const Bookingsave = new Bookings({
       teacherId,
@@ -286,6 +288,7 @@ exports.PaymentcaptureOrder = catchAsync(async (req, res) => {
       startDateTime: startUTC,
       endDateTime: endUTC,
       processingFee,
+      usdToJpyRate: rate?.rate || 0,      
     });
     const record = await Bookingsave.save();
 
@@ -585,6 +588,8 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
     const srNo = lastpayment ? lastpayment.srNo + 1 : 1;
     const amountInCents = Math.round(amount * 100);
 
+    const rate = await Currencies.findOne({ currency: "JPY" });
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
@@ -620,7 +625,8 @@ exports.PaymentCreate = catchAsync(async (req, res) => {
         IsBonus,
         processingFee,
         isBulk,
-        multipleLessons
+        multipleLessons,
+        rate: rate?.rate || 0,
       }
     });
 
@@ -862,6 +868,7 @@ exports.WalletBookingPayment = catchAsync(async (req, res) => {
     // 🔥 CREATE BOOKING
     const teacherEarning = (totalAmount - processingFee) * 0.90;
 
+    const rate = await Currencies.findOne({ currency: "JPY" });
     const booking = await Bookings.create([{
       teacherId,
       totalAmount,
@@ -874,7 +881,8 @@ exports.WalletBookingPayment = catchAsync(async (req, res) => {
       startDateTime: startUTC,
       endDateTime: endUTC,
       processingFee,
-      isFromWallet: true
+      isFromWallet: true,
+      usdToJpyRate: rate?.rate || 0,
     }], { session });
 
     // 🔥 SPECIAL SLOT UPDATE

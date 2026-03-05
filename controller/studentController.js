@@ -23,6 +23,7 @@ const User = require("../model/user");
 const sendEmail = require("../utils/EmailMailler");
 const BookingSuccess = require("../EmailTemplate/BookingSuccess");
 const TeacherBooking = require("../EmailTemplate/TeacherBooking");
+const Currencies = require("../model/Currency");
 
 exports.paymentget = catchAsync(async (req, res) => {
   try {
@@ -630,7 +631,9 @@ exports.BulkLessonRedeem = catchAsync(async (req, res) => {
     let startUTC, endUTC;
     startUTC = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC().toJSDate();
     endUTC = DateTime.fromISO(endDateTime, { zone: timezone }).toUTC().toJSDate();
-    
+
+    const rate = await Currencies.findOne({ currency: "JPY" });
+
     const Bookingsave = new Booking({
       teacherId: data?.teacherId,
       totalAmount: data?.totalAmount/data?.totalLessons || 0,
@@ -643,7 +646,8 @@ exports.BulkLessonRedeem = catchAsync(async (req, res) => {
       endDateTime: endUTC,
       processingFee: data?.processingFee/data?.totalLessons || 0,
       isFromBulk: true,
-      bulkId: id
+      bulkId: id,
+      usdToJpyRate: rate?.rate || 0,
     });
     await Bookingsave.save();
 
