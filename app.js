@@ -142,7 +142,7 @@ app.post(
           return res.json({ received: true });
         }
 
-        if (metadata?.isWallet  || metadata?.isWallet === "true") {
+        if (metadata?.isWallet === "true") {
           const userId = metadata.userId;
           const rechargeAmount = Number(metadata.amount);
 
@@ -190,6 +190,8 @@ app.post(
         }
         // Handle bulk lesson purchase
         if (metadata.isBulk === "true") {
+          const multipleLessons = Number(metadata.multipleLessons);
+
           const payment = await StripePayment.create({
             srNo: parseInt(metadata.srNo),
             payment_type: "card",
@@ -224,9 +226,9 @@ app.post(
           const Username = user?.name;
           const emailHtml = BulkEmail(Username , multipleLessons, teacher?.name, lesson?.title);
           const subject = "Bulk Lesson Purchase is Successful! 🎉";
-          logger.info(`Stripe sending bulk email to student at  ${email}`);
+          logger.info(`Stripe sending bulk email to student at  ${metadata.email}`);
           await sendEmail({
-            email: email,
+            email: metadata.email,
             subject: subject,
             emailHtml: emailHtml,
           });
@@ -240,7 +242,7 @@ app.post(
             subject: TeacherSubject,
             emailHtml: TeacheremailHtml,
           });
-          return;          
+          return res.json({ received: true });          
         }
         if (metadata.IsBonus) {
           const payment = await StripePayment.create({
@@ -1103,7 +1105,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// require("./cronJobs")();
+require("./cronJobs")();
 
 const server = app.listen(PORT, () =>
   console.log("Server is running at port : " + PORT)
