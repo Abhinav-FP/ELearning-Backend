@@ -56,38 +56,28 @@ const bulkLessonSchema = new mongoose.Schema(
         "cancelled",
         "completed",
         "partially_refunded",
-        "refunded"
+        "refunded",
       ],
-      default: "active"
+      default: "active",
     },
 
     refundAmount: {
       type: Number,
-      default: 0
+      default: 0,
     },
     adminAdjustments: {
-      type:[
+      type: [
         {
           type: {
-            type: String, // "credit_add", "credit_deduct", "manual_refund", "cancel"
-            required: true,
-          },
-          lessonsChanged: {
-            type: Number,
-            default: 0,
-          },
-          amountChanged: {
-            type: Number,
-            default: 0,
-          },
-          reason: {
             type: String,
-            required: true,
+            enum: ["credit_add", "credit_deduct", "manual_refund", "cancel"],
           },
+          lessonsChanged: Number,
+          amountChanged: Number,
+          reason: String,
           adminId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-            required: true,
           },
           createdAt: {
             type: Date,
@@ -95,7 +85,7 @@ const bulkLessonSchema = new mongoose.Schema(
           },
         },
       ],
-      default: null,
+      default: [],
     },
     bookings: {
       type: [
@@ -115,15 +105,15 @@ const bulkLessonSchema = new mongoose.Schema(
     },
     isFromWallet: {
       type: Boolean,
-      default: false
+      default: false,
     },
     walletTransactionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "WalletTransaction",
-      default: null
+      default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const bulkLessons = mongoose.model("bulkLessons", bulkLessonSchema);

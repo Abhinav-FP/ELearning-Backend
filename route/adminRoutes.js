@@ -25,6 +25,6 @@ router.post("/admin/course/edit/:id", verifyToken, upload.single('thumbnail'), U
 router.post("/admin/course/delete/:id", verifyToken, deleteCourse);
 router.get("/admin/course/get", verifyToken, getCourse);
 router.get("/admin/emulate/:id", verifyToken, emulateUser);
-router.get("/admin/bulk/:bulkId", verifyToken, updateBulkByAdmin);
+router.post("/admin/bulk/:bulkId", verifyToken, updateBulkByAdmin);
 
 module.exports = router;

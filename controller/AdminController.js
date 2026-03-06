@@ -825,6 +825,10 @@ exports.updateBulkByAdmin = catchAsync(async (req, res) => {
       sendNotification
     } = req.body;
 
+    if (!bulkId) {
+      return res.status(400).json({ message: "Bulk Id is required" });
+    }
+
     const bulk = await BulkLesson.findById(bulkId);
 
     if (!bulk) {
@@ -906,6 +910,11 @@ exports.updateBulkByAdmin = catchAsync(async (req, res) => {
       };
     }
 
+    await BulkLesson.updateOne(
+      { _id: bulkId, adminAdjustments: null },
+      { $set: { adminAdjustments: [] } }
+    );
+
     const updatedBulk = await BulkLesson.findByIdAndUpdate(
       bulkId,
       updateData,
@@ -926,11 +935,7 @@ exports.updateBulkByAdmin = catchAsync(async (req, res) => {
         )
       });
     }
-
-    res.json({
-      message: "Bulk updated successfully",
-      data: updatedBulk
-    });
+ return successResponse(res, "Bulk booking updated successfully", 200, updatedBulk);
 
   } catch (err) {
     console.error(err);
