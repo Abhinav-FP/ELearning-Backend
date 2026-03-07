@@ -427,7 +427,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
       timezone,
       nationality,
       languages_spoken,
-      gender,
+      // gender,
       ais_trained,
       intro_video,
       interest,
@@ -504,7 +504,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
     }
 
     if (languages_spoken !== undefined && languages_spoken !== null && languages_spoken !== '[]') teacherUpdates.languages_spoken = languages_spoken;
-    if (gender !== undefined && gender !== null && gender !== '') teacherUpdates.gender = gender;
+    // if (gender !== undefined && gender !== null && gender !== '') teacherUpdates.gender = gender;
     if (ais_trained !== undefined && ais_trained !== null && ais_trained !== '') teacherUpdates.ais_trained = ais_trained;
     if (bulk_bookings_allowed !== undefined && bulk_bookings_allowed !== null && bulk_bookings_allowed !== '') teacherUpdates.bulk_bookings_allowed = bulk_bookings_allowed;
     if (intro_video !== undefined && intro_video !== null && intro_video !== '') teacherUpdates.intro_video = intro_video;
