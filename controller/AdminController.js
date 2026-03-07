@@ -11,6 +11,7 @@ const Bonus = require("../model/Bonus");
 const Bank = require("../model/Bank");
 const AdminCourse = require("../model/AdminCourse");
 const TeacherApprove = require("../EmailTemplate/TeacherApprove");
+const AdminBulkUpdateTemplate = require("../EmailTemplate/AdminBulkUpdateTemplate");
 const sendEmail = require("../utils/EmailMailler");
 const jwt = require("jsonwebtoken");
 const logger = require("../utils/Logger");
@@ -829,7 +830,7 @@ exports.updateBulkByAdmin = catchAsync(async (req, res) => {
       return res.status(400).json({ message: "Bulk Id is required" });
     }
 
-    const bulk = await BulkLesson.findById(bulkId);
+    const bulk = await BulkLesson.findById(bulkId).populate("teacherId").populate("UserId").populate("LessonId");
 
     if (!bulk) {
       return res.status(404).json({ message: "Bulk not found" });
@@ -931,7 +932,11 @@ exports.updateBulkByAdmin = catchAsync(async (req, res) => {
         emailHtml: AdminBulkUpdateTemplate(
           student.name,
           actionType,
-          reason
+          reason,
+          bulk?.teacherId?.name || "",
+          bulk?.LessonId?.title || "",
+          lessonsChanged,
+          refundAmount
         )
       });
     }
