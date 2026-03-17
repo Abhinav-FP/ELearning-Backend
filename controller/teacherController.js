@@ -172,19 +172,34 @@ exports.UpdateAvailability = catchAsync(async (req, res) => {
 
 exports.RemoveAvailability = catchAsync(async (req, res) => {
   try {
-    const { id } = req.params;
+    const { slots } = req.body;
+    const id = req.user.id;
 
-    if (!id) {
-      return errorResponse(res, "ID is required", 400);
+    if (!slots) {
+      return errorResponse(res, "Slots are required", 400);
     }
 
-    const availability = await TeacherAvailability.findOneAndDelete({ _id: id });
+    const slotsArray = Array.isArray(slots) ? slots : [slots];
 
-    if (!availability) {
-      return errorResponse(res, "Invalid Id. No data found", 404);
+    if (slotsArray.length === 0) {
+      return errorResponse(res, "Slots array cannot be empty", 400);
     }
 
-    return successResponse(res, "Availability removed successfully", 200);
+    const result = await TeacherAvailability.deleteMany({
+      _id: { $in: slotsArray },
+      teacher: id,
+    });
+
+    if (result.deletedCount === 0) {
+      return errorResponse(res, "No availability found for given IDs", 404);
+    }
+
+    const message =
+      result.deletedCount === 1
+        ? "Availability removed successfully"
+        : `${result.deletedCount} availability slots removed successfully`;
+
+    return successResponse(res, message, 200);
   } catch (error) {
     return errorResponse(res, error.message || "Internal Server Error", 500);
   }

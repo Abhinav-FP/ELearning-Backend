@@ -9,7 +9,7 @@ router.post("/teacher/availability/add", verifyToken, AddAvailability);
 
 router.put("/teacher/availability/update/:id", verifyToken, UpdateAvailability);
 
-router.delete("/teacher/availability/delete/:id", verifyToken, RemoveAvailability);
+router.post("/teacher/availability/delete", verifyToken, RemoveAvailability);
 
 router.get("/teacher/availability/get", verifyToken, GetAvailability);
 
