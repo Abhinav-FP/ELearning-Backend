@@ -51,7 +51,7 @@ module.exports = (receiverName, senderName ,link) => {
     <tr>
       <td style="padding: .1rem 0rem 1rem;">
         <div style="padding: 1.3rem 1rem; background: #55844D;">
-          <p style="font-size: 12px; font-weight: 400; line-height: 18px; text-align: center; color: #55844D; margin: 0 auto; max-width: 260px;">
+          <p style="font-size: 12px; font-weight: 400; line-height: 18px; text-align: center; color: #ffff; margin: 0 auto; max-width: 260px;">
             © 2025 Akita Inaka School Online. All Rights Reserved.
           </p>
         </div>
