@@ -46,6 +46,14 @@ const teacherSchema =  mongoose.Schema({
     type: Boolean,
     default: null,
   },
+  englishSupportRequested: {
+    type: Boolean,
+    default: false
+  },
+  englishSupportApproved: {
+    type: Boolean,
+    default: false
+  },
   documentlink: {
     type: String,
     default: ""
