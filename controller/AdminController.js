@@ -573,6 +573,41 @@ exports.AistrainedApprove = catchAsync(async (req, res) => {
   }
 });
 
+exports.ApproveEnglishSupport = catchAsync(async (req, res) => {
+  try {
+    const { id, status } = req.body;
+    const allowedStatuses = ["approved", "rejected"];
+    if (!allowedStatuses.includes(status)) {
+      return errorResponse(res, "Invalid status value", 400);
+    }
+    const teacher = await Teacher.findById(id);
+    if (!teacher) {
+      return errorResponse(res, "Teacher not found", 404);
+    }
+
+    // ✅ Only allow action if currently pending
+    if (teacher.englishSupportStatus !== "pending") {
+      return errorResponse(
+        res,
+        "Only pending requests can be updated",
+        400
+      );
+    }
+
+    teacher.englishSupportStatus = status;
+    await teacher.save();
+    const message =
+      status === "approved"
+        ? "English support approved successfully"
+        : "English support rejected successfully";
+
+    return successResponse(res, message, 200, teacher);
+  } catch (error) {
+    console.error("Error:", error);
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});
+
 exports.UpdateTeacherVideo = catchAsync(async (req, res) => {
   try {
     const { id, link } = req.body;

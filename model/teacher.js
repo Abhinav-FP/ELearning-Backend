@@ -46,13 +46,18 @@ const teacherSchema =  mongoose.Schema({
     type: Boolean,
     default: null,
   },
-  englishSupportRequested: {
-    type: Boolean,
-    default: false
-  },
-  englishSupportApproved: {
-    type: Boolean,
-    default: false
+  // englishSupportRequested: {
+  //   type: Boolean,
+  //   default: false
+  // },
+  // englishSupportApproved: {
+  //   type: Boolean,
+  //   default: false
+  // },
+  englishSupportStatus: {
+    type: String,
+    enum: ["none", "pending", "approved", "rejected"],
+    default: "none"
   },
   documentlink: {
     type: String,

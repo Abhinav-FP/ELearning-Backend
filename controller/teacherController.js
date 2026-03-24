@@ -2256,3 +2256,23 @@ exports.ReschedulePastBooking = catchAsync(async (req, res) => {
 
   return successResponse(res, "Booking rescheduled successfully", 200, booking);
 });
+
+exports.RequestEnglishSupport = catchAsync(async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    if (!teacherId) {
+      return errorResponse(res, "Teacher ID is required", 400);
+    }
+    const updatedTeacher = await Teacher.findOneAndUpdate(
+     { userId: teacherId },
+     { englishSupportStatus: "pending"},
+     { new: true }
+    );
+    if (!updatedTeacher) {
+      return errorResponse(res, "Teacher not found", 404);
+    }
+    return successResponse(res, "English Support Requested Successfully", 200, updatedTeacher);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
+});

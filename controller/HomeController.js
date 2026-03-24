@@ -113,7 +113,7 @@ exports.GetTeachers = catchAsync(async (req, res, next) => {
 
     const teacherFilter = {};
     if (isEnglish) {
-      teacherFilter.englishSupportApproved = true;
+      teacherFilter.englishSupportStatus = "approved";
     }
 
     // Step 1: Get all teachers with userId populated (only where user is verified and not blocked)

@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const { BankAddOrEdit, BankList } = require("../controller/BankController");
 const { PayoutAdd, payoutList } = require("../controller/PayoutController");
-const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck, TeacherGet, EarningsGet, BookingsGet, updateProfile, DashboardApi, SpecialSlotCreate, StudentLessonListing, SpecialSlotList, SpecialSlotData, DeleteGetLesson, GetReview, EmailCheck, GetZoomTeacher, DisconnectZoom, DownloadRecording, LessonDone, SpecialSlotwithZeroAmount, SpecialSlotCancel, TeacherBulkLessonList, SyncTeacherCalendar, ReschedulePastBooking, SpecialSlotUsingBulk } = require("../controller/teacherController");
+const { AddAvailability, UpdateAvailability, GetLessons, GetAvailability, RemoveAvailability, UploadCheck, DeleteCheck, TeacherGet, EarningsGet, BookingsGet, updateProfile, DashboardApi, SpecialSlotCreate, StudentLessonListing, SpecialSlotList, SpecialSlotData, DeleteGetLesson, GetReview, EmailCheck, GetZoomTeacher, DisconnectZoom, DownloadRecording, LessonDone, SpecialSlotwithZeroAmount, SpecialSlotCancel, TeacherBulkLessonList, SyncTeacherCalendar, ReschedulePastBooking, SpecialSlotUsingBulk, RequestEnglishSupport } = require("../controller/teacherController");
 const { verifyToken } = require("../middleware/tokenVerify");
 const { upload } = require("../utils/FileUploader");
 
@@ -66,6 +66,8 @@ router.get("/teacher/bulkLesson", verifyToken, TeacherBulkLessonList);
 router.get("/teacher/google-calendar/sync", verifyToken, SyncTeacherCalendar);
 
 router.post("/teacher/booking/reschedule-from-past/:id", verifyToken, ReschedulePastBooking);
+
+router.get("/teacher/requestEnglishSupport", verifyToken, RequestEnglishSupport);
 
 // router.post("/teacher/token-update", TokenUpdate);
 
