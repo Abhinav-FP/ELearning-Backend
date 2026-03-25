@@ -97,6 +97,12 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
       })
         .toUTC()
         .toJSDate();
+      
+      const startUTCObj = DateTime.fromISO(startDateTime, { zone: timezone }).toUTC(); 
+      const tenMinutesFromNow = DateTime.utc().plus({ minutes: 10 });
+      if (startUTCObj < tenMinutesFromNow) {
+        return errorResponse(res, "Start time must be at least 10 minutes from now", 400);
+      }
 
       booking.rescheduleHistory.push({
         before: booking.startDateTime,
@@ -107,6 +113,7 @@ exports.UpdateBooking = catchAsync(async (req, res) => {
       booking.startDateTime = startUTC;
       booking.endDateTime = endUTC;
       booking.rescheduled = true;
+      booking.zoom = null;
       timeUpdated = true;
     }
 
