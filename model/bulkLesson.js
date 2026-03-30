@@ -101,7 +101,7 @@ const bulkLessonSchema = new mongoose.Schema(
           },
         },
       ],
-      default: null,
+      default: [],
     },
     isFromWallet: {
       type: Boolean,
