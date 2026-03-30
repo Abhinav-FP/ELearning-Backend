@@ -1809,14 +1809,23 @@ exports.SpecialSlotUsingBulk = catchAsync(async (req, res) => {
     // 🔗 Push booking inside bulk
     await BulkLesson.updateOne(
       { _id: bulkRecord._id },
-      {
-        $push: {
-          bookings: {
-            id: bookingDoc._id,
-            cancelled: false,
+      [
+        {
+          $set: {
+            bookings: {
+              $concatArrays: [
+                { $ifNull: ["$bookings", []] },
+                [
+                  {
+                    id: bookingDoc._id,
+                    cancelled: false,
+                  },
+                ],
+              ],
+            },
           },
         },
-      },
+      ],
       { session }
     );
 
