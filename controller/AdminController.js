@@ -76,7 +76,7 @@ exports.ApproveRejectTeacher = catchAsync(async (req, res) => {
       { admin_approved: approved },
       { new: true }
     ).populate('userId', 'name email');
-    if(approved){
+    if (approved) {
       const token = await signEmail(teacher.userId);
       const link = `https://akitainakaschoolonline.com/verify/${token}`;
       const registrationSubject =
@@ -333,7 +333,7 @@ exports.AdminBookingsGet = catchAsync(async (req, res) => {
 exports.AdminEarning = catchAsync(async (req, res) => {
   try {
     const { date, search, page, limit = 15 } = req.query;
-    const filter = {cancelled: false, isFromBulk: { $ne: true }};
+    const filter = { cancelled: false, isFromBulk: { $ne: true } };
     if (date) {
       const now = new Date();
       if (date === "last7") {
@@ -380,21 +380,21 @@ exports.AdminEarning = catchAsync(async (req, res) => {
     const totalPages = Math.ceil(totalBookings / perPage);
     const skip = (currentPage - 1) * perPage;
     let query;
-    if (search && search.trim() !== ""){
-      query= Bookings.find(filter).sort({ startDateTime: -1 })
-      .populate('StripepaymentId')
-      .populate('paypalpaymentId')
-      .populate('UserId')
-      .populate('teacherId')
-      .populate('LessonId');
-    }
-    else{
+    if (search && search.trim() !== "") {
       query = Bookings.find(filter).sort({ startDateTime: -1 })
-      .populate('StripepaymentId')
-      .populate('paypalpaymentId')
-      .populate('UserId')
-      .populate('teacherId')
-      .populate('LessonId').skip(skip).limit(parseInt(limit)); 
+        .populate('StripepaymentId')
+        .populate('paypalpaymentId')
+        .populate('UserId')
+        .populate('teacherId')
+        .populate('LessonId');
+    }
+    else {
+      query = Bookings.find(filter).sort({ startDateTime: -1 })
+        .populate('StripepaymentId')
+        .populate('paypalpaymentId')
+        .populate('UserId')
+        .populate('teacherId')
+        .populate('LessonId').skip(skip).limit(parseInt(limit));
     }
 
     let bookings = await query;
@@ -420,16 +420,16 @@ exports.AdminEarning = catchAsync(async (req, res) => {
       : { bulkTotalAmount: 0, bulkTeacherEarning: 0, bulkProcessingFee: 0 };
 
     const bulkPurchases = await BulkLesson.find()
-    .populate("UserId")
-    .populate("teacherId")
-    .populate("LessonId")
-    .populate("StripepaymentId")
-    .populate("paypalpaymentId")
-    .populate({
-      path: "bookings.id",
-      model: "Bookings"
-    })
-    .sort({ createdAt: -1 })
+      .populate("UserId")
+      .populate("teacherId")
+      .populate("LessonId")
+      .populate("StripepaymentId")
+      .populate("paypalpaymentId")
+      .populate({
+        path: "bookings.id",
+        model: "Bookings"
+      })
+      .sort({ createdAt: -1 })
 
     const bonus = await Bonus.aggregate([
       {
@@ -593,6 +593,11 @@ exports.ApproveEnglishSupport = catchAsync(async (req, res) => {
         400
       );
     }
+    if (status === "approved") {
+      if (!teacher.languages_spoken.includes("English")) {
+        teacher.languages_spoken.push("English");
+      }
+    }
 
     teacher.englishSupportStatus = status;
     await teacher.save();
@@ -675,7 +680,7 @@ exports.UpdateTeacherRank = catchAsync(async (req, res) => {
 
 exports.GetRankedTeachers = catchAsync(async (req, res, next) => {
   try {
-    const teachers = await Teacher.find({rank: {$ne: null}})
+    const teachers = await Teacher.find({ rank: { $ne: null } })
       .sort({ rank: 1 })
       .select("_id rank")
       .lean();
@@ -693,50 +698,50 @@ exports.GetRankedTeachers = catchAsync(async (req, res, next) => {
 });
 
 exports.AddCourse = catchAsync(async (req, res) => {
-    try {        
-        const { title, description, link } = req.body;
-        if (!title || !description || !link ) {
-            return errorResponse(res, "All fields are required", 400);
-        }
-        if (!req.file ) {
-            return errorResponse(res, "Image is required", 400);
-        }
-        let thumbnail = null;
-        if (req.file) {
-          const fileKey = await uploadFileToSpaces(req.file);
-          thumbnail = fileKey;
-        }
-        const courseRecord = new AdminCourse({
-            title,
-            description,
-            thumbnail,
-            link,
-        });
-        const courseResult = await courseRecord.save();
-        if (!courseResult) {
-            return errorResponse(res, "Failed to add course.", 500);
-        }
-        return successResponse(res, "course added successfully", 201);
-    } catch (error) {
-        return errorResponse(res, error.message || "Internal Server Error", 500);
+  try {
+    const { title, description, link } = req.body;
+    if (!title || !description || !link) {
+      return errorResponse(res, "All fields are required", 400);
     }
+    if (!req.file) {
+      return errorResponse(res, "Image is required", 400);
+    }
+    let thumbnail = null;
+    if (req.file) {
+      const fileKey = await uploadFileToSpaces(req.file);
+      thumbnail = fileKey;
+    }
+    const courseRecord = new AdminCourse({
+      title,
+      description,
+      thumbnail,
+      link,
+    });
+    const courseResult = await courseRecord.save();
+    if (!courseResult) {
+      return errorResponse(res, "Failed to add course.", 500);
+    }
+    return successResponse(res, "course added successfully", 201);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
 });
 
 exports.getCourse = catchAsync(async (req, res) => {
-    try {        
-        const data = await AdminCourse.find({});
-        if (!data) {
-            return errorResponse(res, "No course found", 200);
-        }
-        return successResponse(res, "Courses fetched successfully", 200, data);
-    } catch (error) {
-        return errorResponse(res, error.message || "Internal Server Error", 500);
+  try {
+    const data = await AdminCourse.find({});
+    if (!data) {
+      return errorResponse(res, "No course found", 200);
     }
+    return successResponse(res, "Courses fetched successfully", 200, data);
+  } catch (error) {
+    return errorResponse(res, error.message || "Internal Server Error", 500);
+  }
 });
 
 exports.UpdateCourse = catchAsync(async (req, res) => {
   try {
-    const { id } = req.params; 
+    const { id } = req.params;
     const { title, description, link } = req.body;
     if (!id) {
       return errorResponse(res, "Course ID is required", 400);
@@ -754,14 +759,14 @@ exports.UpdateCourse = catchAsync(async (req, res) => {
     let thumbnail = course.thumbnail;
     if (req.file) {
       if (course.thumbnail) {
-            const isDeleted = await deleteFileFromSpaces(course.thumbnail);
-            if (!isDeleted) {
-              return res.status(500).json({
-                status: false,
-                message: "Unable to delete old profile photo",
-              });
-            }
-          }
+        const isDeleted = await deleteFileFromSpaces(course.thumbnail);
+        if (!isDeleted) {
+          return res.status(500).json({
+            status: false,
+            message: "Unable to delete old profile photo",
+          });
+        }
+      }
       const fileKey = await uploadFileToSpaces(req.file);
       thumbnail = fileKey;
     }
@@ -786,7 +791,7 @@ exports.UpdateCourse = catchAsync(async (req, res) => {
 
 exports.deleteCourse = catchAsync(async (req, res) => {
   try {
-    const { id } = req.params; 
+    const { id } = req.params;
     if (!id) {
       return errorResponse(res, "Course ID is required", 400);
     }
@@ -794,10 +799,10 @@ exports.deleteCourse = catchAsync(async (req, res) => {
     if (!course) {
       return errorResponse(res, "Course not found", 404);
     }
-    if(course.is_deleted){
+    if (course.is_deleted) {
       course.is_deleted = false;
     }
-    else{
+    else {
       course.is_deleted = true;
     }
     const updatedCourse = await course.save();
@@ -818,14 +823,14 @@ exports.emulateUser = catchAsync(async (req, res) => {
       return errorResponse(res, "User id is required", 400);
     }
     // console.log("req.user", req.user);
-    if(req.user.role != "admin"){
+    if (req.user.role != "admin") {
       return errorResponse(res, "Only admin can emulate users", 403);
     }
     const user = await User.findById(id);
     if (!user) {
       return errorResponse(res, "User not found", 404);
     }
-    if(!user?.email_verify){
+    if (!user?.email_verify) {
       return errorResponse(res, "Cannot emulate users where email is not verified", 200);
     }
     const token = jwt.sign(
@@ -880,7 +885,7 @@ exports.updateBulkByAdmin = catchAsync(async (req, res) => {
       if (!lessonsChanged || !reason) {
         return res.status(400).json({ message: "Missing required fields" });
       }
-      if (bulk.lessonsRemaining + lessonsChanged < 0){
+      if (bulk.lessonsRemaining + lessonsChanged < 0) {
         return res.status(400).json({ message: "Lessons remaining cannot be negative" });
       }
 
@@ -975,7 +980,7 @@ exports.updateBulkByAdmin = catchAsync(async (req, res) => {
         )
       });
     }
- return successResponse(res, "Bulk booking updated successfully", 200, updatedBulk);
+    return successResponse(res, "Bulk booking updated successfully", 200, updatedBulk);
 
   } catch (err) {
     console.error(err);

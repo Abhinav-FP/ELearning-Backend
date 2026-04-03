@@ -32,7 +32,6 @@ exports.GetRate = catchAsync(async (req, res) => {
     }
 });
 
-
 const fetchExchangeRates = async () => {
     try {
         const response = await axios.get(
